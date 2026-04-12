@@ -1,0 +1,24 @@
+# Build artifacts
+vendor_server/build/
+bank_client/build/
+*.a
+*.o
+*.so
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.eggs/
+
+# Artifacts (generated, not source)
+artifacts/*.bin
+artifacts/*.npy
+artifacts/*.pkl
+
+# Results (generated)
+results/
+
+# Env
+.env
+*.key
