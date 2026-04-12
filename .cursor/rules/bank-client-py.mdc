@@ -1,0 +1,10 @@
+---
+description: Bank client Python — sigmoid, timing breakdown, padding, slot extraction
+globs: bank_client/**/*.py
+alwaysApply: false
+---
+
+- Use scipy.special.expit for sigmoid, never implement manually
+- timing_breakdown dict must have exactly 5 keys matching proto v1.1
+- Always pad transactions to 16 before flattening
+- Extract slot[k*256] for Depth-1, slot[k*512] for Degree-2

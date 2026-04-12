@@ -1,0 +1,12 @@
+---
+description: C++ vendor server — SEAL hot path, singleton, timing, parms_id
+globs: vendor_server/**/*.cpp, vendor_server/**/*.h
+alwaysApply: false
+---
+
+- Never use std::stringstream for ciphertext I/O
+- Always pre-allocate CT_BUF = 420KB char[] buffer
+- FraudInferenceServiceImpl is a singleton — never construct per RPC
+- Always validate parms_id after ct.load()
+- Use chrono::high_resolution_clock for all timing
+- C++17 only, no pseudocode

@@ -1,0 +1,11 @@
+---
+description: Compiler Python — binary contracts, little-endian, file size checks
+globs: compiler/**/*.py
+alwaysApply: false
+---
+
+- All binary writes use '<f8' explicit little-endian float64
+- Validate file size after every write: Path(p).stat().st_size
+- model_weights.bin must be exactly 2060 bytes
+- degree2_weights.bin must be exactly 4108 bytes
+- Always save feature_idx.npy with dtype int64

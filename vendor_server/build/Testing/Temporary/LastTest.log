@@ -1,0 +1,22 @@
+Start testing: Apr 12 14:19 IST
+----------------------------------------------------------
+1/1 Testing: he_core
+1/1 Test: he_core
+Command: "/home/raghavp/BTP/vendor_server/build/test_he_core"
+Directory: /home/raghavp/BTP/vendor_server/build
+"he_core" start time: Apr 12 14:19 IST
+Output:
+----------------------------------------------------------
+Randomness seeded to: 1831064844
+===============================================================================
+All tests passed (10 assertions in 2 test cases)
+
+<end of output>
+Test time =  24.99 sec
+----------------------------------------------------------
+Test Passed.
+"he_core" end time: Apr 12 14:19 IST
+"he_core" time elapsed: 00:00:24
+----------------------------------------------------------
+
+End testing: Apr 12 14:19 IST

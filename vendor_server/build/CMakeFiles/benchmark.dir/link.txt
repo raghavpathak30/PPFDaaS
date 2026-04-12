@@ -1,0 +1,1 @@
+/bin/c++ -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/benchmark.dir/link.d CMakeFiles/benchmark.dir/src/benchmark.cpp.o -o benchmark  libhe_core.a /usr/local/lib/libseal-4.1.a /usr/lib/gcc/x86_64-linux-gnu/14/libgomp.so /usr/lib/x86_64-linux-gnu/libpthread.a

@@ -1,0 +1,2 @@
+/bin/ar qc libhe_core.a CMakeFiles/he_core.dir/src/ckks_context.cpp.o CMakeFiles/he_core.dir/src/weight_loader.cpp.o CMakeFiles/he_core.dir/src/rotation_hoisting.cpp.o CMakeFiles/he_core.dir/src/he_inference.cpp.o
+/bin/ranlib libhe_core.a

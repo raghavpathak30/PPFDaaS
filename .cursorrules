@@ -1,0 +1,103 @@
+# PPFDaaS — Privacy-Preserving Fraud Detection as a Service
+# Cursor AI Rules — Single Source of Truth
+
+## Project Overview
+This is a privacy-preserving payment fraud detection system using homomorphic encryption (CKKS scheme via Microsoft SEAL 4.1.1). The system runs logistic regression inference entirely on encrypted data — the vendor server never sees plaintext transaction data.
+
+## Architecture
+- vendor_server/     → C++ gRPC server, runs HE inference (SEAL, AVX2)
+- bank_client/       → Python client (Pybind11 + FastAPI + React frontend)
+- compiler/          → Python model training and weight serialization
+- proto/             → gRPC protobuf definitions
+- artifacts/         → generated model weights, keys, numpy arrays
+- results/           → benchmark CSVs, ROC curves, ablation data
+- scripts/           → environment verification, build helpers
+
+## Critical Technical Constraints
+
+### HE Parameters (Depth-1 Primary Path)
+- Scheme: CKKS, poly_modulus_degree = 8192
+- coeff_modulus: {60, 40, 40, 60} = 200 bits total
+- scale: 2^40
+- Galois keys: restricted set {1, 2, 4, 8, 16, 32, 64, 128} only
+- Max batch: 16 transactions × 256 features = 4096 slots
+- Latency target: < 10ms vendor-side, < 15ms client-side
+
+### Binary File Contract (NEVER change without updating both Python and C++)
+- model_weights.bin: 2060 bytes = uint32(n=256) + float64(bias) + float64[256](weights)
+- All values: little-endian. C++ has static_assert for LE platform.
+
+### Memory Rules (ABSOLUTE — never suggest violating these)
+- NEVER use std::stringstream for ciphertext I/O on the hot path
+- ALWAYS use pre-allocated char[] buffers (CT_BUF = 420KB for n=8192)
+- FraudInferenceServiceImpl MUST be a singleton — Galois keys loaded ONCE at startup
+- CKKSContext, weights, evaluator: NEVER construct per-RPC call
+
+### TimingBreakdown Proto (v1.1 — 5 fields, field numbers matter)
+- field 1: deserialization_us  (ct.load() time)
+- field 2: multiply_plain_us   (multiply + rescale)
+- field 3: rotation_hoisting_us
+- field 4: serialization_us
+- field 5: total_inference_us
+- INVARIANT: fields 1+2+3+4 ≈ field 5 (residual < 300µs)
+
+### Slot Layout
+- Depth-1: tiled[k*256 + j] = w[j] for k=0..15, j=0..255
+- After tree-sum: only slot[k*256] is valid for transaction k
+- decrypt_batch extracts: decoded[k * 256] for k in range(n_txns)
+
+## Code Style
+
+### C++
+- Standard: C++17
+- No pseudocode — all code must be compilable
+- Use chrono::high_resolution_clock for all timing
+- Always validate parms_id after ct.load()
+- No raw pointers that outlive their owner
+- Prefer std::unique_ptr for SEAL context ownership
+
+### Python
+- Type hints on all function signatures
+- numpy arrays: always specify dtype explicitly (np.float64, np.int64)
+- All binary writes: use '<f8' (explicit little-endian float64)
+- Validate file sizes after writing (Path(p).stat().st_size)
+- Use scipy.special.expit for sigmoid (never implement manually)
+
+### Proto
+- Always echo request_id in response
+- Status 0 = OK, never return raw gRPC errors to FastAPI
+
+## What AI Should Always Do
+- Reference the spec sections (§1, §2, etc.) when generating code for a component
+- Validate binary contracts when writing serialization code
+- Suggest Catch2 test gates for every new C++ component
+- Remind about atomic deployment when touching proto/server/client together
+- Check slot index math explicitly (off-by-one is a silent bug in HE)
+
+## What AI Should Never Do
+- Suggest stringstream for ciphertext serialization
+- Suggest constructing CKKSContext per RPC call
+- Add features not in the spec without flagging it explicitly
+- Skip the parms_id validation check
+- Use float32 anywhere — everything is float64
+
+## Dataset
+- ULB Credit Card Fraud Dataset (Kaggle)
+- 284,807 transactions, 492 fraud, 30 features (V1-V28 + Time + Amount)
+- After feature selection: top 256 features (PCA components + engineered)
+- SMOTE for class imbalance, stratified train/test split
+
+## Build Order (follow strictly)
+1. verify_env.sh → AVX2, C++17, OpenMP, Python ≥ 3.10
+2. SEAL smoke_test.cpp → noise budget > 0, round-trip < 1e-4
+3. CKKSContext → second_parms_id != first_parms_id
+4. weight_loader.cpp → 2060 byte round-trip, SIMD tiling
+5. rotation_hoisting.cpp → speedup ≥ 2x (Catch2)
+6. he_inference benchmark → avg < 10ms, Valgrind clean
+7. inference.proto → protoc compile C++ + Python
+8. seal_wrapper.cpp (Pybind11) → smoke_test.py exits 0
+9. train_xgboost.py + linearize.py → AUC ≥ 0.98
+10. auc_dispatch.py → dispatch_result.json written
+11. vendor_server → singleton confirmed, TimingBreakdown 5 fields
+12. bank_client.py → latency_ms < 15, timing dict 5 keys
+13. FastAPI + React → POST /api/infer 200, E2E < 100ms
