@@ -4,7 +4,7 @@
 # compile CXX with /bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/raghavp/BTP/vendor_server/include -isystem /usr/local/include/SEAL-4.1
+CXX_INCLUDES = -I/home/raghavp/BTP/vendor_server/include -I/home/raghavp/BTP/vendor_server/generated -isystem /usr/local/include/SEAL-4.1
 
-CXX_FLAGS = -O3 -DNDEBUG -std=c++17 -fPIC -mavx2 -fopenmp
+CXX_FLAGS = -O3 -DNDEBUG -std=c++17 -fPIC -mavx2 -O3 -pthread -DNOMINMAX -fopenmp
 

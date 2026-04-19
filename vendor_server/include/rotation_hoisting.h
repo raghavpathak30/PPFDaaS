@@ -2,12 +2,14 @@
 
 #include <seal/seal.h>
 
-seal::Ciphertext hoisted_tree_sum(
+seal::Ciphertext& hoisted_tree_sum(
         const seal::Ciphertext& ct,  // MUST be post-rescale (second_parms_id)
 
         const seal::GaloisKeys& gk,
 
         seal::Evaluator& ev,
+
+        seal::Ciphertext& acc_out,
 
         int n_features);              // must be 256
 

@@ -4,7 +4,7 @@
 # compile CXX with /bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/raghavp/BTP/vendor_server/include -I/home/raghavp/BTP/vendor_server/build/_deps/catch2-src/src/catch2/.. -I/home/raghavp/BTP/vendor_server/build/_deps/catch2-build/generated-includes -isystem /usr/local/include/SEAL-4.1
+CXX_INCLUDES = -I/home/raghavp/BTP/vendor_server/include -I/home/raghavp/BTP/vendor_server/generated -I/home/raghavp/BTP/vendor_server/build/_deps/catch2-src/src/catch2/.. -I/home/raghavp/BTP/vendor_server/build/_deps/catch2-build/generated-includes -isystem /usr/local/include/SEAL-4.1
 
-CXX_FLAGS = -O3 -DNDEBUG -std=c++17 -fPIE -mavx2 -fopenmp
+CXX_FLAGS = -O3 -DNDEBUG -std=c++17 -fPIE -mavx2 -O3 -pthread -DNOMINMAX -fopenmp
 

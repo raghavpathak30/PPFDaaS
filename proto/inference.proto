@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package ppfdaas;
+
+enum InferenceStatus {
+    OK                         = 0;
+    ERR_NOISE_BUDGET_EXHAUSTED = 1;
+    ERR_MALFORMED_CIPHERTEXT   = 2;
+    ERR_PARAM_MISMATCH         = 3;
+    ERR_TIMEOUT                = 4;
+    ERR_INTERNAL               = 5;
+}
+
+message TimingBreakdown {
+    int64 deserialization_us = 1;
+    int64 multiply_plain_us = 2;
+    int64 rotation_hoisting_us = 3;
+    int64 serialization_us = 4;
+    int64 total_inference_us = 5;
+}
+
+message InferenceRequest {
+    bytes ciphertext = 1;
+    string request_id = 2;
+    string institution_id = 3;
+    int32 n_transactions = 4;
+}
+
+message InferenceResponse {
+    InferenceStatus status = 1;
+    bytes result_ciphertext = 2;
+    string request_id = 3;
+    string error_message = 4;
+    TimingBreakdown timing = 5;
+}
+
+service FraudInferenceService {
+    rpc RunInference (InferenceRequest) returns (InferenceResponse);
+}

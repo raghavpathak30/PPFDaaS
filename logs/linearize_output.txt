@@ -1,0 +1,7 @@
+/home/raghavp/.local/lib/python3.13/site-packages/sklearn/linear_model/_sag.py:348: ConvergenceWarning: The max_iter was reached which means the coef_ did not converge
+  warnings.warn(
+/home/raghavp/.local/lib/python3.13/site-packages/sklearn/linear_model/_sag.py:348: ConvergenceWarning: The max_iter was reached which means the coef_ did not converge
+  warnings.warn(
+[linearize] test_auc=0.979112
+[serialize_weights] 2060 bytes → /home/raghavp/BTP/artifacts/model_weights.bin
+[linearize] artifacts verified

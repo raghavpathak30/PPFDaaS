@@ -1,6 +1,9 @@
+/home/raghavp/BTP/vendor_server/build/CMakeFiles/generate_inference_proto.dir
 /home/raghavp/BTP/vendor_server/build/CMakeFiles/he_core.dir
 /home/raghavp/BTP/vendor_server/build/CMakeFiles/ckks_smoke_test.dir
 /home/raghavp/BTP/vendor_server/build/CMakeFiles/benchmark.dir
+/home/raghavp/BTP/vendor_server/build/CMakeFiles/vendor_server_main.dir
+/home/raghavp/BTP/vendor_server/build/CMakeFiles/vendor_server_160.dir
 /home/raghavp/BTP/vendor_server/build/CMakeFiles/test_he_core.dir
 /home/raghavp/BTP/vendor_server/build/CMakeFiles/test.dir
 /home/raghavp/BTP/vendor_server/build/CMakeFiles/edit_cache.dir

@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.20)
+project(PPFDaaS VERSION 1.1 LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+enable_testing()
+add_subdirectory(vendor_server)
+add_subdirectory(bank_client)
+add_subdirectory(tests)

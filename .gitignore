@@ -16,6 +16,13 @@ artifacts/*.bin
 artifacts/*.npy
 artifacts/*.pkl
 
+# Local datasets (do not commit large raw data)
+data/creditcard.csv
+data/*.zip
+
+# Nested git checkout inside CMake fetched deps
+build/_deps/catch2-src/
+
 # Results (generated)
 results/
 

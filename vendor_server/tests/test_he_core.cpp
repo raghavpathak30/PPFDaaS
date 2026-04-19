@@ -74,8 +74,8 @@ TEST_CASE("test_rotation_hoisting", "[he_core]") {
     ctx.evaluator->multiply_plain_inplace(ct, pt_weights);
     ctx.evaluator->rescale_to_next_inplace(ct);
 
-    seal::Ciphertext hoisted =
-        hoisted_tree_sum(ct, ctx.galois_keys, *ctx.evaluator, 256);
+    seal::Ciphertext hoisted;
+    hoisted_tree_sum(ct, ctx.galois_keys, *ctx.evaluator, hoisted, 256);
 
     seal::Plaintext pt_out;
     ctx.decryptor->decrypt(hoisted, pt_out);
@@ -97,7 +97,8 @@ TEST_CASE("test_rotation_hoisting", "[he_core]") {
 
     clock::time_point t_h0 = clock::now();
     for (int i = 0; i < iters; ++i) {
-        (void)hoisted_tree_sum(ct, ctx.galois_keys, *ctx.evaluator, 256);
+        seal::Ciphertext acc;
+        (void)hoisted_tree_sum(ct, ctx.galois_keys, *ctx.evaluator, acc, 256);
     }
     const double hoisted_us =
         std::chrono::duration<double, std::micro>(clock::now() - t_h0).count();
@@ -112,4 +113,44 @@ TEST_CASE("test_rotation_hoisting", "[he_core]") {
     REQUIRE(hoisted_us > 0.0);
     const double speedup = naive_us / hoisted_us;
     REQUIRE(speedup >= 2.0);
+}
+
+TEST_CASE("hoisted_tree_sum output is deterministic across 100 runs", "[he_core]") {
+    CKKSContext ctx;
+
+    std::vector<double> features(4096, 1.0);
+    std::vector<double> weights(4096);
+    for (int k = 0; k < 16; ++k) {
+        for (int j = 0; j < 256; ++j) {
+            weights[k * 256 + j] = (j == 0) ? 1.0 : 0.0;
+        }
+    }
+
+    seal::Plaintext pt_features;
+    seal::Plaintext pt_weights;
+    ctx.encoder->encode(features, ctx.scale, pt_features);
+    ctx.encoder->encode(weights, ctx.scale, pt_weights);
+
+    seal::Ciphertext ct;
+    ctx.encryptor->encrypt(pt_features, ct);
+    ctx.evaluator->multiply_plain_inplace(ct, pt_weights);
+    ctx.evaluator->rescale_to_next_inplace(ct);
+
+    double reference = 0.0;
+    for (int i = 0; i < 100; ++i) {
+        seal::Ciphertext acc;
+        hoisted_tree_sum(ct, ctx.galois_keys, *ctx.evaluator, acc, 256);
+
+        seal::Plaintext pt_out;
+        ctx.decryptor->decrypt(acc, pt_out);
+        std::vector<double> decoded;
+        ctx.encoder->decode(pt_out, decoded);
+        REQUIRE(decoded.size() >= 1);
+
+        if (i == 0) {
+            reference = decoded[0];
+        } else {
+            REQUIRE_THAT(decoded[0], Catch::Matchers::WithinAbs(reference, 1e-6));
+        }
+    }
 }

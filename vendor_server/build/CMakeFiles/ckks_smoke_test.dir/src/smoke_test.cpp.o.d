@@ -400,4 +400,5 @@ CMakeFiles/ckks_smoke_test.dir/src/smoke_test.cpp.o: \
  /usr/local/include/SEAL-4.1/seal/relinkeys.h \
  /usr/local/include/SEAL-4.1/seal/keygenerator.h \
  /usr/local/include/SEAL-4.1/seal/randomtostd.h \
- /usr/include/c++/14/cassert /usr/include/assert.h
+ /usr/include/c++/14/optional /usr/include/c++/14/cassert \
+ /usr/include/assert.h

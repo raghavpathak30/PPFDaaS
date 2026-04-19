@@ -127,6 +127,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named generate_inference_proto
+
+# Build rule for target.
+generate_inference_proto: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 generate_inference_proto
+.PHONY : generate_inference_proto
+
+# fast build rule for target.
+generate_inference_proto/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/generate_inference_proto.dir/build.make CMakeFiles/generate_inference_proto.dir/build
+.PHONY : generate_inference_proto/fast
+
+#=============================================================================
 # Target rules for targets named he_core
 
 # Build rule for target.
@@ -166,6 +179,32 @@ benchmark/fast:
 .PHONY : benchmark/fast
 
 #=============================================================================
+# Target rules for targets named vendor_server_main
+
+# Build rule for target.
+vendor_server_main: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vendor_server_main
+.PHONY : vendor_server_main
+
+# fast build rule for target.
+vendor_server_main/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vendor_server_main.dir/build.make CMakeFiles/vendor_server_main.dir/build
+.PHONY : vendor_server_main/fast
+
+#=============================================================================
+# Target rules for targets named vendor_server_160
+
+# Build rule for target.
+vendor_server_160: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vendor_server_160
+.PHONY : vendor_server_160
+
+# fast build rule for target.
+vendor_server_160/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vendor_server_160.dir/build.make CMakeFiles/vendor_server_160.dir/build
+.PHONY : vendor_server_160/fast
+
+#=============================================================================
 # Target rules for targets named test_he_core
 
 # Build rule for target.
@@ -203,6 +242,54 @@ Catch2WithMain: cmake_check_build_system
 Catch2WithMain/fast:
 	$(MAKE) $(MAKESILENT) -f _deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/build.make _deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/build
 .PHONY : Catch2WithMain/fast
+
+generated/inference.grpc.pb.o: generated/inference.grpc.pb.cc.o
+.PHONY : generated/inference.grpc.pb.o
+
+# target to build an object file
+generated/inference.grpc.pb.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.o
+.PHONY : generated/inference.grpc.pb.cc.o
+
+generated/inference.grpc.pb.i: generated/inference.grpc.pb.cc.i
+.PHONY : generated/inference.grpc.pb.i
+
+# target to preprocess a source file
+generated/inference.grpc.pb.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.i
+.PHONY : generated/inference.grpc.pb.cc.i
+
+generated/inference.grpc.pb.s: generated/inference.grpc.pb.cc.s
+.PHONY : generated/inference.grpc.pb.s
+
+# target to generate assembly for a file
+generated/inference.grpc.pb.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.s
+.PHONY : generated/inference.grpc.pb.cc.s
+
+generated/inference.pb.o: generated/inference.pb.cc.o
+.PHONY : generated/inference.pb.o
+
+# target to build an object file
+generated/inference.pb.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/generated/inference.pb.cc.o
+.PHONY : generated/inference.pb.cc.o
+
+generated/inference.pb.i: generated/inference.pb.cc.i
+.PHONY : generated/inference.pb.i
+
+# target to preprocess a source file
+generated/inference.pb.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/generated/inference.pb.cc.i
+.PHONY : generated/inference.pb.cc.i
+
+generated/inference.pb.s: generated/inference.pb.cc.s
+.PHONY : generated/inference.pb.s
+
+# target to generate assembly for a file
+generated/inference.pb.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/generated/inference.pb.cc.s
+.PHONY : generated/inference.pb.cc.s
 
 src/benchmark.o: src/benchmark.cpp.o
 .PHONY : src/benchmark.o
@@ -252,6 +339,54 @@ src/ckks_context.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/src/ckks_context.cpp.s
 .PHONY : src/ckks_context.cpp.s
 
+src/ckks_context_160.o: src/ckks_context_160.cpp.o
+.PHONY : src/ckks_context_160.o
+
+# target to build an object file
+src/ckks_context_160.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vendor_server_160.dir/build.make CMakeFiles/vendor_server_160.dir/src/ckks_context_160.cpp.o
+.PHONY : src/ckks_context_160.cpp.o
+
+src/ckks_context_160.i: src/ckks_context_160.cpp.i
+.PHONY : src/ckks_context_160.i
+
+# target to preprocess a source file
+src/ckks_context_160.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vendor_server_160.dir/build.make CMakeFiles/vendor_server_160.dir/src/ckks_context_160.cpp.i
+.PHONY : src/ckks_context_160.cpp.i
+
+src/ckks_context_160.s: src/ckks_context_160.cpp.s
+.PHONY : src/ckks_context_160.s
+
+# target to generate assembly for a file
+src/ckks_context_160.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vendor_server_160.dir/build.make CMakeFiles/vendor_server_160.dir/src/ckks_context_160.cpp.s
+.PHONY : src/ckks_context_160.cpp.s
+
+src/ckks_context_depth2.o: src/ckks_context_depth2.cpp.o
+.PHONY : src/ckks_context_depth2.o
+
+# target to build an object file
+src/ckks_context_depth2.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.o
+.PHONY : src/ckks_context_depth2.cpp.o
+
+src/ckks_context_depth2.i: src/ckks_context_depth2.cpp.i
+.PHONY : src/ckks_context_depth2.i
+
+# target to preprocess a source file
+src/ckks_context_depth2.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.i
+.PHONY : src/ckks_context_depth2.cpp.i
+
+src/ckks_context_depth2.s: src/ckks_context_depth2.cpp.s
+.PHONY : src/ckks_context_depth2.s
+
+# target to generate assembly for a file
+src/ckks_context_depth2.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.s
+.PHONY : src/ckks_context_depth2.cpp.s
+
 src/he_inference.o: src/he_inference.cpp.o
 .PHONY : src/he_inference.o
 
@@ -275,6 +410,54 @@ src/he_inference.s: src/he_inference.cpp.s
 src/he_inference.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/src/he_inference.cpp.s
 .PHONY : src/he_inference.cpp.s
+
+src/inference_service.o: src/inference_service.cpp.o
+.PHONY : src/inference_service.o
+
+# target to build an object file
+src/inference_service.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/src/inference_service.cpp.o
+.PHONY : src/inference_service.cpp.o
+
+src/inference_service.i: src/inference_service.cpp.i
+.PHONY : src/inference_service.i
+
+# target to preprocess a source file
+src/inference_service.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/src/inference_service.cpp.i
+.PHONY : src/inference_service.cpp.i
+
+src/inference_service.s: src/inference_service.cpp.s
+.PHONY : src/inference_service.s
+
+# target to generate assembly for a file
+src/inference_service.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/src/inference_service.cpp.s
+.PHONY : src/inference_service.cpp.s
+
+src/inference_service_160.o: src/inference_service_160.cpp.o
+.PHONY : src/inference_service_160.o
+
+# target to build an object file
+src/inference_service_160.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vendor_server_160.dir/build.make CMakeFiles/vendor_server_160.dir/src/inference_service_160.cpp.o
+.PHONY : src/inference_service_160.cpp.o
+
+src/inference_service_160.i: src/inference_service_160.cpp.i
+.PHONY : src/inference_service_160.i
+
+# target to preprocess a source file
+src/inference_service_160.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vendor_server_160.dir/build.make CMakeFiles/vendor_server_160.dir/src/inference_service_160.cpp.i
+.PHONY : src/inference_service_160.cpp.i
+
+src/inference_service_160.s: src/inference_service_160.cpp.s
+.PHONY : src/inference_service_160.s
+
+# target to generate assembly for a file
+src/inference_service_160.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vendor_server_160.dir/build.make CMakeFiles/vendor_server_160.dir/src/inference_service_160.cpp.s
+.PHONY : src/inference_service_160.cpp.s
 
 src/rotation_hoisting.o: src/rotation_hoisting.cpp.o
 .PHONY : src/rotation_hoisting.o
@@ -300,6 +483,54 @@ src/rotation_hoisting.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/src/rotation_hoisting.cpp.s
 .PHONY : src/rotation_hoisting.cpp.s
 
+src/rotation_hoisting_degree2.o: src/rotation_hoisting_degree2.cpp.o
+.PHONY : src/rotation_hoisting_degree2.o
+
+# target to build an object file
+src/rotation_hoisting_degree2.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.o
+.PHONY : src/rotation_hoisting_degree2.cpp.o
+
+src/rotation_hoisting_degree2.i: src/rotation_hoisting_degree2.cpp.i
+.PHONY : src/rotation_hoisting_degree2.i
+
+# target to preprocess a source file
+src/rotation_hoisting_degree2.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.i
+.PHONY : src/rotation_hoisting_degree2.cpp.i
+
+src/rotation_hoisting_degree2.s: src/rotation_hoisting_degree2.cpp.s
+.PHONY : src/rotation_hoisting_degree2.s
+
+# target to generate assembly for a file
+src/rotation_hoisting_degree2.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.s
+.PHONY : src/rotation_hoisting_degree2.cpp.s
+
+src/server_main.o: src/server_main.cpp.o
+.PHONY : src/server_main.o
+
+# target to build an object file
+src/server_main.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vendor_server_main.dir/build.make CMakeFiles/vendor_server_main.dir/src/server_main.cpp.o
+.PHONY : src/server_main.cpp.o
+
+src/server_main.i: src/server_main.cpp.i
+.PHONY : src/server_main.i
+
+# target to preprocess a source file
+src/server_main.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vendor_server_main.dir/build.make CMakeFiles/vendor_server_main.dir/src/server_main.cpp.i
+.PHONY : src/server_main.cpp.i
+
+src/server_main.s: src/server_main.cpp.s
+.PHONY : src/server_main.s
+
+# target to generate assembly for a file
+src/server_main.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vendor_server_main.dir/build.make CMakeFiles/vendor_server_main.dir/src/server_main.cpp.s
+.PHONY : src/server_main.cpp.s
+
 src/smoke_test.o: src/smoke_test.cpp.o
 .PHONY : src/smoke_test.o
 
@@ -324,6 +555,30 @@ src/smoke_test.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ckks_smoke_test.dir/build.make CMakeFiles/ckks_smoke_test.dir/src/smoke_test.cpp.s
 .PHONY : src/smoke_test.cpp.s
 
+src/vendor_server_160.o: src/vendor_server_160.cpp.o
+.PHONY : src/vendor_server_160.o
+
+# target to build an object file
+src/vendor_server_160.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vendor_server_160.dir/build.make CMakeFiles/vendor_server_160.dir/src/vendor_server_160.cpp.o
+.PHONY : src/vendor_server_160.cpp.o
+
+src/vendor_server_160.i: src/vendor_server_160.cpp.i
+.PHONY : src/vendor_server_160.i
+
+# target to preprocess a source file
+src/vendor_server_160.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vendor_server_160.dir/build.make CMakeFiles/vendor_server_160.dir/src/vendor_server_160.cpp.i
+.PHONY : src/vendor_server_160.cpp.i
+
+src/vendor_server_160.s: src/vendor_server_160.cpp.s
+.PHONY : src/vendor_server_160.s
+
+# target to generate assembly for a file
+src/vendor_server_160.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/vendor_server_160.dir/build.make CMakeFiles/vendor_server_160.dir/src/vendor_server_160.cpp.s
+.PHONY : src/vendor_server_160.cpp.s
+
 src/weight_loader.o: src/weight_loader.cpp.o
 .PHONY : src/weight_loader.o
 
@@ -347,6 +602,30 @@ src/weight_loader.s: src/weight_loader.cpp.s
 src/weight_loader.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/src/weight_loader.cpp.s
 .PHONY : src/weight_loader.cpp.s
+
+src/weight_loader_degree2.o: src/weight_loader_degree2.cpp.o
+.PHONY : src/weight_loader_degree2.o
+
+# target to build an object file
+src/weight_loader_degree2.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.o
+.PHONY : src/weight_loader_degree2.cpp.o
+
+src/weight_loader_degree2.i: src/weight_loader_degree2.cpp.i
+.PHONY : src/weight_loader_degree2.i
+
+# target to preprocess a source file
+src/weight_loader_degree2.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.i
+.PHONY : src/weight_loader_degree2.cpp.i
+
+src/weight_loader_degree2.s: src/weight_loader_degree2.cpp.s
+.PHONY : src/weight_loader_degree2.s
+
+# target to generate assembly for a file
+src/weight_loader_degree2.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/he_core.dir/build.make CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.s
+.PHONY : src/weight_loader_degree2.cpp.s
 
 tests/test_he_core.o: tests/test_he_core.cpp.o
 .PHONY : tests/test_he_core.o
@@ -381,30 +660,63 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... test"
+	@echo "... generate_inference_proto"
 	@echo "... Catch2"
 	@echo "... Catch2WithMain"
 	@echo "... benchmark"
 	@echo "... ckks_smoke_test"
 	@echo "... he_core"
 	@echo "... test_he_core"
+	@echo "... vendor_server_160"
+	@echo "... vendor_server_main"
+	@echo "... generated/inference.grpc.pb.o"
+	@echo "... generated/inference.grpc.pb.i"
+	@echo "... generated/inference.grpc.pb.s"
+	@echo "... generated/inference.pb.o"
+	@echo "... generated/inference.pb.i"
+	@echo "... generated/inference.pb.s"
 	@echo "... src/benchmark.o"
 	@echo "... src/benchmark.i"
 	@echo "... src/benchmark.s"
 	@echo "... src/ckks_context.o"
 	@echo "... src/ckks_context.i"
 	@echo "... src/ckks_context.s"
+	@echo "... src/ckks_context_160.o"
+	@echo "... src/ckks_context_160.i"
+	@echo "... src/ckks_context_160.s"
+	@echo "... src/ckks_context_depth2.o"
+	@echo "... src/ckks_context_depth2.i"
+	@echo "... src/ckks_context_depth2.s"
 	@echo "... src/he_inference.o"
 	@echo "... src/he_inference.i"
 	@echo "... src/he_inference.s"
+	@echo "... src/inference_service.o"
+	@echo "... src/inference_service.i"
+	@echo "... src/inference_service.s"
+	@echo "... src/inference_service_160.o"
+	@echo "... src/inference_service_160.i"
+	@echo "... src/inference_service_160.s"
 	@echo "... src/rotation_hoisting.o"
 	@echo "... src/rotation_hoisting.i"
 	@echo "... src/rotation_hoisting.s"
+	@echo "... src/rotation_hoisting_degree2.o"
+	@echo "... src/rotation_hoisting_degree2.i"
+	@echo "... src/rotation_hoisting_degree2.s"
+	@echo "... src/server_main.o"
+	@echo "... src/server_main.i"
+	@echo "... src/server_main.s"
 	@echo "... src/smoke_test.o"
 	@echo "... src/smoke_test.i"
 	@echo "... src/smoke_test.s"
+	@echo "... src/vendor_server_160.o"
+	@echo "... src/vendor_server_160.i"
+	@echo "... src/vendor_server_160.s"
 	@echo "... src/weight_loader.o"
 	@echo "... src/weight_loader.i"
 	@echo "... src/weight_loader.s"
+	@echo "... src/weight_loader_degree2.o"
+	@echo "... src/weight_loader_degree2.i"
+	@echo "... src/weight_loader_degree2.s"
 	@echo "... tests/test_he_core.o"
 	@echo "... tests/test_he_core.i"
 	@echo "... tests/test_he_core.s"

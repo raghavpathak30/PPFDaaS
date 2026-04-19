@@ -1,0 +1,25 @@
+-- The CXX compiler identification is GNU 14.2.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Microsoft SEAL -> Version 4.1.2 detected
+-- Microsoft SEAL -> Targets available: SEAL::seal
+CMake Error at vendor_server/CMakeLists.txt:15 (find_package):
+  Could not find a package configuration file provided by "Protobuf" with any
+  of the following names:
+
+    ProtobufConfig.cmake
+    protobuf-config.cmake
+
+  Add the installation prefix of "Protobuf" to CMAKE_PREFIX_PATH or set
+  "Protobuf_DIR" to a directory containing one of the above files.  If
+  "Protobuf" provides a separate development package or SDK, be sure it has
+  been installed.
+
+
+-- Configuring incomplete, errors occurred!

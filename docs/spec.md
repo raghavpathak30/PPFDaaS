@@ -30,6 +30,48 @@ __NORMATIVE NOTICE__
 
 # __§0  Audit Resolution Matrix — v1\.1 Change Log__
 
+## __§0\.1  Performance Sprint Status Snapshot \[2026-04-14 POST-AUDIT UPDATE\]__
+
+This section records the current measured status of the "existing code only"
+performance sprint implementation. It does not change any protocol, model
+contract, or CKKS parameter defined elsewhere in this specification.
+
+__Implemented optimization blocks in current codebase__
+
+1. OPT-1 complete: hoisted rotation race eliminated with deterministic reduction,
+     plus 100-run determinism test.
+2. OPT-2 complete: shared output buffer removed from hot RPC path and replaced
+     with thread-local buffer usage.
+3. OPT-3 complete: constructor warmup expanded to execute full inference path.
+4. OPT-4 complete: gRPC sync poller pool pinned with environment override.
+5. OPT-5 complete: BankClient padding path converted to preallocated buffer.
+6. OPT-6 complete: benchmark uses 20 warmups + 100 measured runs with p99.
+7. OPT-7 complete: cold-start gate is optional/manual, timeout-bounded,
+     and skip-safe (no indefinite blocking).
+8. OPT-8 already satisfied in repository baseline (`max_iter=2000`, no `n_jobs`
+     in `compiler/linearize.py`).
+
+__Latest measured gate results \(2026-04-14\)__
+
+- Warm benchmark (`python3 tests/benchmark_comparison.py`):
+    - reduced_160bit mean_us = 2362.91
+    - reduced_160bit std_us = 761.21
+    - reduced_160bit p99_us = 4694.06
+    - gate outcomes: mean `<3000` PASS, p99 `<5000` PASS, std `<300` FAIL,
+        `all_passed` FAIL.
+
+- Manual cold-start gate (fresh server + exactly one request):
+    - cold-start latency = 9350 us
+    - cold-start SLA `<9000 us` = FAIL.
+
+__Interpretation__
+
+- Functional and protocol correctness remain intact.
+- Latency variance and cold-start SLA are the remaining blockers to final sprint
+    acceptance.
+- This is an operational status update only; normative interface and contract
+    sections remain unchanged.
+
 This table documents the disposition of every finding from the Pre\-Flight Audit Report\. Findings 1 and 2 were validated with no code changes required\. Finding 3 introduced five new normative code blocks\. Finding 4 introduced one proto field change and corresponding C\+\+ and Python updates\.
 
 __Finding__
@@ -3420,4 +3462,66 @@ Remaining developer actions \(not specification gaps\):
   • Run scripts/verify\_env\.sh to confirm AVX2 \+ all deps present
 
   • Execute auc\_dispatch\.py to determine active path
+
+## §5 Reduced Coeff Modulus Variant (160-bit) [POST-AUDIT ADDITION]
+
+### §5.1 Security Justification
+- Both the 200-bit baseline and 160-bit reduced variant use n=8192.
+- Per the HE standard parameter tables (homomorphicencryption.org), n=8192 permits up to 218 total coeff_modulus bits at 128-bit security.
+- 200-bit baseline (60+40+40+60): 128-bit secure, 1 spare multiplicative level after the Depth-1 circuit (unused in production inference).
+- 160-bit reduced (60+40+60): 128-bit secure, 0 spare levels after circuit.
+- Security level is IDENTICAL. The trade-off is operational: the 160-bit variant has no headroom for future circuit depth increases without a full key regeneration cycle.
+
+### §5.2 Parameter Contracts for 160-bit Variant
+Normative contracts:
+- poly_modulus_degree: 8192 (UNCHANGED)
+- coeff_modulus: {60, 40, 60} = 160 bits total
+- scale: 2^40 (UNCHANGED)
+- Galois key set: {1,2,4,8,16,32,64,128} (UNCHANGED)
+- Ciphertext size: ~288 KB (vs ~384 KB baseline, ~25% smaller)
+- gRPC max message size: 400 KB (vs 512 KB baseline)
+- Server port: :50052 (parallel deployment, does not replace :50051)
+- Key files: artifacts/public_key_160.bin, artifacts/secret_key_160.bin, artifacts/galois_keys_160.bin
+- Weight file: artifacts/model_weights.bin (UNCHANGED — weights are parameter-independent, only the encryption context changes)
+
+### §5.3 New Normative Files
+- vendor_server/include/ckks_context_160.h — Declares CKKSContext160 with n=8192, scale=2^40, and reduced 160-bit coeff_modulus contract.
+- vendor_server/src/ckks_context_160.cpp — Implements CKKSContext160 setup, second_parms_id derivation, fixed Galois set generation, and depth-1 post-rescale sanity validation.
+- vendor_server/src/vendor_server_160.cpp — Defines parallel vendor server entrypoint for the reduced-modulus service on port :50052.
+- compiler/gen_keys_160.py — Generates and writes 160-bit key artifacts (public, secret, Galois) for the reduced-modulus context.
+- tests/benchmark_comparison.py — Executes side-by-side 200-bit vs 160-bit inference benchmarking, computes summary statistics, and emits artifacts/comparison_results.json.
+
+### §5.4 Benchmark Evidence
+Normative performance baseline (from artifacts/comparison_results.json):
+- mean total_inference_us:
+    - baseline_200bit: 4872.5
+    - reduced_160bit: 2518.6
+- mean rotation_hoisting_us:
+    - baseline_200bit: 3982.9
+    - reduced_160bit: 2009.2
+- speedup percentages:
+    - total_inference_pct reduction: 48.3099025141098%
+    - rotation_hoisting_pct reduction: 49.55434482412313%
+- security_regression: false
+
+### §5.5 Deployment Decision
+- Recommended production default: 160-bit reduced variant.
+- Rationale: benchmarked mean total_inference_us and mean rotation_hoisting_us are both reduced by approximately 48–50% with security_regression=false and unchanged n=8192/scale/Galois contracts.
+- Condition to prefer 200-bit baseline: if near-term roadmap includes Depth-1 circuit depth expansion or feature additions that require spare multiplicative levels before the next key regeneration cycle.
+
+### §5.6 Runtime Optimizations (Implementation Contract)
+The following runtime optimizations are normative performance contracts for both 200-bit and 160-bit Depth-1 paths. They do not change cryptographic parameters or security level, but they are required to preserve benchmarked latency behavior.
+
+- Parallel rotation generation in hoisted tree-sum:
+    - Rotation set remains fixed at {1,2,4,8,16,32,64,128}.
+    - Rotations are generated in parallel (OpenMP) and then reduced in a deterministic sequential add order.
+    - Functional output contract is unchanged: valid transaction scores remain at slot[k*256], k in [0,15].
+
+- Persistent accumulator and preallocation:
+    - Server uses a persistent accumulator ciphertext buffer on the hot path to avoid per-request allocation churn.
+    - Ciphertext serialization uses preallocated output buffers sized for the deployed modulus profile.
+    - Constructor warmup is used to initialize recurrent allocation/code paths before serving production RPCs.
+
+- Compliance requirement:
+    - Any change that removes parallel rotation generation or preallocation behavior must be treated as a performance-contract change and requires rerunning the comparison benchmark and updating documented latency baselines.
 

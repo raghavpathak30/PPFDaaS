@@ -538,3 +538,42 @@ events:
         
       exitCode: 0
 ...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.31/Modules/Internal/CheckSourceCompiles.cmake:108 (try_compile)"
+      - "/usr/share/cmake-3.31/Modules/Internal/CheckCompilerFlag.cmake:18 (cmake_check_source_compiles)"
+      - "/usr/share/cmake-3.31/Modules/CheckCXXCompilerFlag.cmake:55 (cmake_check_compiler_flag)"
+      - "CMakeLists.txt:83 (check_cxx_compiler_flag)"
+    checks:
+      - "Performing Test COMPILER_HAS_AVX512F"
+    directories:
+      source: "/home/raghavp/BTP/vendor_server/build/CMakeFiles/CMakeScratch/TryCompile-GUf7Tr"
+      binary: "/home/raghavp/BTP/vendor_server/build/CMakeFiles/CMakeScratch/TryCompile-GUf7Tr"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/usr/local/lib/cmake/SEAL-4.1;/usr/lib/x86_64-linux-gnu/cmake/grpc/modules"
+      CMAKE_POSITION_INDEPENDENT_CODE: "ON"
+    buildResult:
+      variable: "COMPILER_HAS_AVX512F"
+      cached: true
+      stdout: |
+        Change Dir: '/home/raghavp/BTP/vendor_server/build/CMakeFiles/CMakeScratch/TryCompile-GUf7Tr'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /bin/gmake -f Makefile cmTC_0b2a7/fast
+        /bin/gmake  -f CMakeFiles/cmTC_0b2a7.dir/build.make CMakeFiles/cmTC_0b2a7.dir/build
+        gmake[1]: Entering directory '/home/raghavp/BTP/vendor_server/build/CMakeFiles/CMakeScratch/TryCompile-GUf7Tr'
+        Building CXX object CMakeFiles/cmTC_0b2a7.dir/src.cxx.o
+        /bin/c++ -DCOMPILER_HAS_AVX512F  -std=c++17 -fPIE   -mavx512f -o CMakeFiles/cmTC_0b2a7.dir/src.cxx.o -c /home/raghavp/BTP/vendor_server/build/CMakeFiles/CMakeScratch/TryCompile-GUf7Tr/src.cxx
+        Linking CXX executable cmTC_0b2a7
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_0b2a7.dir/link.txt --verbose=1
+        /bin/c++ CMakeFiles/cmTC_0b2a7.dir/src.cxx.o -o cmTC_0b2a7
+        gmake[1]: Leaving directory '/home/raghavp/BTP/vendor_server/build/CMakeFiles/CMakeScratch/TryCompile-GUf7Tr'
+        
+      exitCode: 0
+...

@@ -71,8 +71,8 @@ CMakeFiles/catch2-populate: CMakeFiles/catch2-populate-complete
 CMakeFiles/catch2-populate-complete: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-install
 CMakeFiles/catch2-populate-complete: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-mkdir
 CMakeFiles/catch2-populate-complete: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-download
-CMakeFiles/catch2-populate-complete: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update
-CMakeFiles/catch2-populate-complete: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-patch
+CMakeFiles/catch2-populate-complete: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update_disconnected
+CMakeFiles/catch2-populate-complete: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-patch_disconnected
 CMakeFiles/catch2-populate-complete: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-configure
 CMakeFiles/catch2-populate-complete: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-build
 CMakeFiles/catch2-populate-complete: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-install
@@ -82,16 +82,13 @@ CMakeFiles/catch2-populate-complete: catch2-populate-prefix/src/catch2-populate-
 	/usr/bin/cmake -E touch /home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/CMakeFiles/catch2-populate-complete
 	/usr/bin/cmake -E touch /home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-done
 
-catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update:
-.PHONY : catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update
-
 catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-build: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-configure
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir=/home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "No build step for 'catch2-populate'"
 	cd /home/raghavp/BTP/vendor_server/build/_deps/catch2-build && /usr/bin/cmake -E echo_append
 	cd /home/raghavp/BTP/vendor_server/build/_deps/catch2-build && /usr/bin/cmake -E touch /home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-build
 
 catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-configure: catch2-populate-prefix/tmp/catch2-populate-cfgcmd.txt
-catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-configure: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-patch
+catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-configure: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-patch_disconnected
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir=/home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "No configure step for 'catch2-populate'"
 	cd /home/raghavp/BTP/vendor_server/build/_deps/catch2-build && /usr/bin/cmake -E echo_append
 	cd /home/raghavp/BTP/vendor_server/build/_deps/catch2-build && /usr/bin/cmake -E touch /home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-configure
@@ -112,25 +109,23 @@ catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-mkdir:
 	/usr/bin/cmake -Dcfgdir= -P /home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/catch2-populate-prefix/tmp/catch2-populate-mkdirs.cmake
 	/usr/bin/cmake -E touch /home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-mkdir
 
-catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-patch: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-patch-info.txt
-catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-patch: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir=/home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "No patch step for 'catch2-populate'"
+catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-patch_disconnected: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-patch-info.txt
+catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-patch_disconnected: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update_disconnected
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir=/home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "No patch_disconnected step for 'catch2-populate'"
 	/usr/bin/cmake -E echo_append
-	/usr/bin/cmake -E touch /home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-patch
-
-catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update:
-.PHONY : catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update
+	/usr/bin/cmake -E touch /home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-patch_disconnected
 
 catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-test: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-install
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir=/home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "No test step for 'catch2-populate'"
 	cd /home/raghavp/BTP/vendor_server/build/_deps/catch2-build && /usr/bin/cmake -E echo_append
 	cd /home/raghavp/BTP/vendor_server/build/_deps/catch2-build && /usr/bin/cmake -E touch /home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-test
 
-catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update: catch2-populate-prefix/tmp/catch2-populate-gitupdate.cmake
-catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update-info.txt
-catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-download
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir=/home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Performing update step for 'catch2-populate'"
-	cd /home/raghavp/BTP/vendor_server/build/_deps/catch2-src && /usr/bin/cmake -Dcan_fetch=YES -DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE -P /home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/catch2-populate-prefix/tmp/catch2-populate-gitupdate.cmake
+catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update_disconnected: catch2-populate-prefix/tmp/catch2-populate-gitupdate.cmake
+catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update_disconnected: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update-info.txt
+catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update_disconnected: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-download
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --blue --bold --progress-dir=/home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Performing disconnected update step for 'catch2-populate'"
+	cd /home/raghavp/BTP/vendor_server/build/_deps/catch2-src && /usr/bin/cmake -Dcan_fetch=NO -DCMAKE_MESSAGE_LOG_LEVEL=VERBOSE -P /home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/catch2-populate-prefix/tmp/catch2-populate-gitupdate.cmake
+	cd /home/raghavp/BTP/vendor_server/build/_deps/catch2-src && /usr/bin/cmake -E touch /home/raghavp/BTP/vendor_server/build/_deps/catch2-subbuild/catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update_disconnected
 
 CMakeFiles/catch2-populate.dir/codegen:
 .PHONY : CMakeFiles/catch2-populate.dir/codegen
@@ -142,9 +137,9 @@ catch2-populate: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populat
 catch2-populate: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-download
 catch2-populate: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-install
 catch2-populate: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-mkdir
-catch2-populate: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-patch
+catch2-populate: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-patch_disconnected
 catch2-populate: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-test
-catch2-populate: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update
+catch2-populate: catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update_disconnected
 catch2-populate: CMakeFiles/catch2-populate.dir/build.make
 .PHONY : catch2-populate
 

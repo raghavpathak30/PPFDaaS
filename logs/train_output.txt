@@ -1,0 +1,3 @@
+[train_xgboost] train_auc=0.999997
+[train_xgboost] test_auc=0.986033
+[train_xgboost] saved artifacts to /home/raghavp/BTP/artifacts

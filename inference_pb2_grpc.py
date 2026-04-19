@@ -1,0 +1,1 @@
+from generated.inference_pb2_grpc import *

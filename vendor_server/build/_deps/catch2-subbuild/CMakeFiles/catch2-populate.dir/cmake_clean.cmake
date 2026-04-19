@@ -6,9 +6,9 @@ file(REMOVE_RECURSE
   "catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-download"
   "catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-install"
   "catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-mkdir"
-  "catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-patch"
+  "catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-patch_disconnected"
   "catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-test"
-  "catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update"
+  "catch2-populate-prefix/src/catch2-populate-stamp/catch2-populate-update_disconnected"
 )
 
 # Per-language clean rules from dependency scanning.

@@ -15,6 +15,8 @@ seal::Ciphertext depth1_he_inference(
 
     ctx.evaluator->rescale_to_next_inplace(ct);
 
-    return hoisted_tree_sum(ct, ctx.galois_keys, *ctx.evaluator, 256);
+    seal::Ciphertext acc;
+    hoisted_tree_sum(ct, ctx.galois_keys, *ctx.evaluator, acc, 256);
+    return acc;
 
 }

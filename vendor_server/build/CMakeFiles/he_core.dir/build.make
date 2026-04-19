@@ -72,10 +72,38 @@ include CMakeFiles/he_core.dir/flags.make
 CMakeFiles/he_core.dir/codegen:
 .PHONY : CMakeFiles/he_core.dir/codegen
 
+CMakeFiles/he_core.dir/generated/inference.pb.cc.o: CMakeFiles/he_core.dir/flags.make
+CMakeFiles/he_core.dir/generated/inference.pb.cc.o: /home/raghavp/BTP/vendor_server/generated/inference.pb.cc
+CMakeFiles/he_core.dir/generated/inference.pb.cc.o: CMakeFiles/he_core.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/raghavp/BTP/vendor_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/he_core.dir/generated/inference.pb.cc.o"
+	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/he_core.dir/generated/inference.pb.cc.o -MF CMakeFiles/he_core.dir/generated/inference.pb.cc.o.d -o CMakeFiles/he_core.dir/generated/inference.pb.cc.o -c /home/raghavp/BTP/vendor_server/generated/inference.pb.cc
+
+CMakeFiles/he_core.dir/generated/inference.pb.cc.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/he_core.dir/generated/inference.pb.cc.i"
+	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/raghavp/BTP/vendor_server/generated/inference.pb.cc > CMakeFiles/he_core.dir/generated/inference.pb.cc.i
+
+CMakeFiles/he_core.dir/generated/inference.pb.cc.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/he_core.dir/generated/inference.pb.cc.s"
+	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/raghavp/BTP/vendor_server/generated/inference.pb.cc -o CMakeFiles/he_core.dir/generated/inference.pb.cc.s
+
+CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.o: CMakeFiles/he_core.dir/flags.make
+CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.o: /home/raghavp/BTP/vendor_server/generated/inference.grpc.pb.cc
+CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.o: CMakeFiles/he_core.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/raghavp/BTP/vendor_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.o"
+	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.o -MF CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.o.d -o CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.o -c /home/raghavp/BTP/vendor_server/generated/inference.grpc.pb.cc
+
+CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.i"
+	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/raghavp/BTP/vendor_server/generated/inference.grpc.pb.cc > CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.i
+
+CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.s"
+	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/raghavp/BTP/vendor_server/generated/inference.grpc.pb.cc -o CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.s
+
 CMakeFiles/he_core.dir/src/ckks_context.cpp.o: CMakeFiles/he_core.dir/flags.make
 CMakeFiles/he_core.dir/src/ckks_context.cpp.o: /home/raghavp/BTP/vendor_server/src/ckks_context.cpp
 CMakeFiles/he_core.dir/src/ckks_context.cpp.o: CMakeFiles/he_core.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/raghavp/BTP/vendor_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/he_core.dir/src/ckks_context.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/raghavp/BTP/vendor_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/he_core.dir/src/ckks_context.cpp.o"
 	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/he_core.dir/src/ckks_context.cpp.o -MF CMakeFiles/he_core.dir/src/ckks_context.cpp.o.d -o CMakeFiles/he_core.dir/src/ckks_context.cpp.o -c /home/raghavp/BTP/vendor_server/src/ckks_context.cpp
 
 CMakeFiles/he_core.dir/src/ckks_context.cpp.i: cmake_force
@@ -86,10 +114,24 @@ CMakeFiles/he_core.dir/src/ckks_context.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/he_core.dir/src/ckks_context.cpp.s"
 	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/raghavp/BTP/vendor_server/src/ckks_context.cpp -o CMakeFiles/he_core.dir/src/ckks_context.cpp.s
 
+CMakeFiles/he_core.dir/src/inference_service.cpp.o: CMakeFiles/he_core.dir/flags.make
+CMakeFiles/he_core.dir/src/inference_service.cpp.o: /home/raghavp/BTP/vendor_server/src/inference_service.cpp
+CMakeFiles/he_core.dir/src/inference_service.cpp.o: CMakeFiles/he_core.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/raghavp/BTP/vendor_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/he_core.dir/src/inference_service.cpp.o"
+	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/he_core.dir/src/inference_service.cpp.o -MF CMakeFiles/he_core.dir/src/inference_service.cpp.o.d -o CMakeFiles/he_core.dir/src/inference_service.cpp.o -c /home/raghavp/BTP/vendor_server/src/inference_service.cpp
+
+CMakeFiles/he_core.dir/src/inference_service.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/he_core.dir/src/inference_service.cpp.i"
+	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/raghavp/BTP/vendor_server/src/inference_service.cpp > CMakeFiles/he_core.dir/src/inference_service.cpp.i
+
+CMakeFiles/he_core.dir/src/inference_service.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/he_core.dir/src/inference_service.cpp.s"
+	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/raghavp/BTP/vendor_server/src/inference_service.cpp -o CMakeFiles/he_core.dir/src/inference_service.cpp.s
+
 CMakeFiles/he_core.dir/src/weight_loader.cpp.o: CMakeFiles/he_core.dir/flags.make
 CMakeFiles/he_core.dir/src/weight_loader.cpp.o: /home/raghavp/BTP/vendor_server/src/weight_loader.cpp
 CMakeFiles/he_core.dir/src/weight_loader.cpp.o: CMakeFiles/he_core.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/raghavp/BTP/vendor_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/he_core.dir/src/weight_loader.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/raghavp/BTP/vendor_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/he_core.dir/src/weight_loader.cpp.o"
 	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/he_core.dir/src/weight_loader.cpp.o -MF CMakeFiles/he_core.dir/src/weight_loader.cpp.o.d -o CMakeFiles/he_core.dir/src/weight_loader.cpp.o -c /home/raghavp/BTP/vendor_server/src/weight_loader.cpp
 
 CMakeFiles/he_core.dir/src/weight_loader.cpp.i: cmake_force
@@ -103,7 +145,7 @@ CMakeFiles/he_core.dir/src/weight_loader.cpp.s: cmake_force
 CMakeFiles/he_core.dir/src/rotation_hoisting.cpp.o: CMakeFiles/he_core.dir/flags.make
 CMakeFiles/he_core.dir/src/rotation_hoisting.cpp.o: /home/raghavp/BTP/vendor_server/src/rotation_hoisting.cpp
 CMakeFiles/he_core.dir/src/rotation_hoisting.cpp.o: CMakeFiles/he_core.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/raghavp/BTP/vendor_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/he_core.dir/src/rotation_hoisting.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/raghavp/BTP/vendor_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/he_core.dir/src/rotation_hoisting.cpp.o"
 	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/he_core.dir/src/rotation_hoisting.cpp.o -MF CMakeFiles/he_core.dir/src/rotation_hoisting.cpp.o.d -o CMakeFiles/he_core.dir/src/rotation_hoisting.cpp.o -c /home/raghavp/BTP/vendor_server/src/rotation_hoisting.cpp
 
 CMakeFiles/he_core.dir/src/rotation_hoisting.cpp.i: cmake_force
@@ -117,7 +159,7 @@ CMakeFiles/he_core.dir/src/rotation_hoisting.cpp.s: cmake_force
 CMakeFiles/he_core.dir/src/he_inference.cpp.o: CMakeFiles/he_core.dir/flags.make
 CMakeFiles/he_core.dir/src/he_inference.cpp.o: /home/raghavp/BTP/vendor_server/src/he_inference.cpp
 CMakeFiles/he_core.dir/src/he_inference.cpp.o: CMakeFiles/he_core.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/raghavp/BTP/vendor_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/he_core.dir/src/he_inference.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/raghavp/BTP/vendor_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/he_core.dir/src/he_inference.cpp.o"
 	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/he_core.dir/src/he_inference.cpp.o -MF CMakeFiles/he_core.dir/src/he_inference.cpp.o.d -o CMakeFiles/he_core.dir/src/he_inference.cpp.o -c /home/raghavp/BTP/vendor_server/src/he_inference.cpp
 
 CMakeFiles/he_core.dir/src/he_inference.cpp.i: cmake_force
@@ -128,23 +170,77 @@ CMakeFiles/he_core.dir/src/he_inference.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/he_core.dir/src/he_inference.cpp.s"
 	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/raghavp/BTP/vendor_server/src/he_inference.cpp -o CMakeFiles/he_core.dir/src/he_inference.cpp.s
 
+CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.o: CMakeFiles/he_core.dir/flags.make
+CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.o: /home/raghavp/BTP/vendor_server/src/ckks_context_depth2.cpp
+CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.o: CMakeFiles/he_core.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/raghavp/BTP/vendor_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.o"
+	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.o -MF CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.o.d -o CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.o -c /home/raghavp/BTP/vendor_server/src/ckks_context_depth2.cpp
+
+CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.i"
+	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/raghavp/BTP/vendor_server/src/ckks_context_depth2.cpp > CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.i
+
+CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.s"
+	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/raghavp/BTP/vendor_server/src/ckks_context_depth2.cpp -o CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.s
+
+CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.o: CMakeFiles/he_core.dir/flags.make
+CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.o: /home/raghavp/BTP/vendor_server/src/weight_loader_degree2.cpp
+CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.o: CMakeFiles/he_core.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/raghavp/BTP/vendor_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.o"
+	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.o -MF CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.o.d -o CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.o -c /home/raghavp/BTP/vendor_server/src/weight_loader_degree2.cpp
+
+CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.i"
+	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/raghavp/BTP/vendor_server/src/weight_loader_degree2.cpp > CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.i
+
+CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.s"
+	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/raghavp/BTP/vendor_server/src/weight_loader_degree2.cpp -o CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.s
+
+CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.o: CMakeFiles/he_core.dir/flags.make
+CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.o: /home/raghavp/BTP/vendor_server/src/rotation_hoisting_degree2.cpp
+CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.o: CMakeFiles/he_core.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/raghavp/BTP/vendor_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.o"
+	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.o -MF CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.o.d -o CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.o -c /home/raghavp/BTP/vendor_server/src/rotation_hoisting_degree2.cpp
+
+CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.i"
+	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/raghavp/BTP/vendor_server/src/rotation_hoisting_degree2.cpp > CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.i
+
+CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.s"
+	/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/raghavp/BTP/vendor_server/src/rotation_hoisting_degree2.cpp -o CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.s
+
 # Object files for target he_core
 he_core_OBJECTS = \
+"CMakeFiles/he_core.dir/generated/inference.pb.cc.o" \
+"CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.o" \
 "CMakeFiles/he_core.dir/src/ckks_context.cpp.o" \
+"CMakeFiles/he_core.dir/src/inference_service.cpp.o" \
 "CMakeFiles/he_core.dir/src/weight_loader.cpp.o" \
 "CMakeFiles/he_core.dir/src/rotation_hoisting.cpp.o" \
-"CMakeFiles/he_core.dir/src/he_inference.cpp.o"
+"CMakeFiles/he_core.dir/src/he_inference.cpp.o" \
+"CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.o" \
+"CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.o" \
+"CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.o"
 
 # External object files for target he_core
 he_core_EXTERNAL_OBJECTS =
 
+libhe_core.a: CMakeFiles/he_core.dir/generated/inference.pb.cc.o
+libhe_core.a: CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.o
 libhe_core.a: CMakeFiles/he_core.dir/src/ckks_context.cpp.o
+libhe_core.a: CMakeFiles/he_core.dir/src/inference_service.cpp.o
 libhe_core.a: CMakeFiles/he_core.dir/src/weight_loader.cpp.o
 libhe_core.a: CMakeFiles/he_core.dir/src/rotation_hoisting.cpp.o
 libhe_core.a: CMakeFiles/he_core.dir/src/he_inference.cpp.o
+libhe_core.a: CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.o
+libhe_core.a: CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.o
+libhe_core.a: CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.o
 libhe_core.a: CMakeFiles/he_core.dir/build.make
 libhe_core.a: CMakeFiles/he_core.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/raghavp/BTP/vendor_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX static library libhe_core.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/raghavp/BTP/vendor_server/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Linking CXX static library libhe_core.a"
 	$(CMAKE_COMMAND) -P CMakeFiles/he_core.dir/cmake_clean_target.cmake
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/he_core.dir/link.txt --verbose=$(VERBOSE)
 
