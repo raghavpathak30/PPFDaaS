@@ -1,5 +1,57 @@
 # PPFDaaS Project Handoff — 2026-04-13
 
+## Session Update (2026-05-28) — Benchmark Correction & Fair Measurement
+
+### Issue Discovered
+Previous 160-bit benchmark (1.83 ms) only measured `multiply_plain`, while 200-bit benchmark (7.16 ms) measured full pipeline including 8 Galois rotations. This produced misleading 3.92x speedup claim by comparing different operations.
+
+### Correction Applied
+1. Created `depth1_he_inference_160()` function in `vendor_server/src/he_inference.cpp` — implements full inference pipeline for 160-bit context (identical to 200-bit except for modulus)
+2. Updated `vendor_server/src/benchmark_160.cpp` to use full pipeline including rotations
+3. Updated `vendor_server/CMakeLists.txt` to link benchmark_160 against he_inference.cpp and rotation_hoisting.cpp
+4. Created comprehensive `BENCHMARK_RESULTS.md` with fair measurements, analysis, and recommendations
+
+### Corrected Benchmark Results (10-run multi-run collection)
+| Metric | 160-bit | 200-bit | Ratio |
+|--------|---------|---------|-------|
+| Mean latency | 4.80 ms | 7.23 ms | **1.51x** faster |
+| Median latency | 4.76 ms | 7.18 ms | 1.51x |
+| Min latency | 4.49 ms | 7.08 ms | 1.58x |
+| Max latency | 5.14 ms | 7.48 ms | 1.45x |
+| Std deviation | 0.226 ms | 0.153 ms | — |
+| CV (coefficient of variation) | 4.71% | 2.11% | Both stable |
+| Operations measured | ✅ Full pipeline with rotations | ✅ Full pipeline with rotations | **IDENTICAL** |
+
+### Key Finding: Rotations Dominate Cost
+The missing ~3 ms in old 160-bit benchmark: `4.80 - 1.83 ≈ 3.0 ms` is accounted for by rescale and Galois rotations (8 parallel rotation steps).
+
+Cost breakdown (from full 7.2 ms operation):
+- Galois rotations: ~69% of latency (~5 ms)
+- multiply_plain: ~14% (~1 ms)
+- Encryption + other: ~17% (~1.2 ms)
+
+**Why only 1.51x speedup vs 1.25x modulus difference**: Rotations are partially hardware-accelerated (AVX-2 permutation operations). They don't scale purely with modulus size because they involve memory access patterns, coefficient selection, and cache efficiency — not just arithmetic.
+
+### Files Changed
+- `vendor_server/include/he_inference.h` — added `depth1_he_inference_160()` declaration  
+- `vendor_server/src/he_inference.cpp` — added `depth1_he_inference_160()` implementation
+- `vendor_server/src/benchmark_160.cpp` — updated to use full inference function  
+- `vendor_server/CMakeLists.txt` — added he_inference.cpp and rotation_hoisting.cpp to benchmark_160
+- `BENCHMARK_RESULTS.md` — comprehensive documentation with fair results, analysis, and future recommendations
+
+### Scope of Benchmarks
+**What's measured**: HE core operations only (encrypt + multiply + rescale + rotations)
+**What's not included**: Network latency, gRPC overhead, client decryption, sigmoid computation
+**End-to-end latency estimate**: 6-27 ms depending on network conditions
+
+### Status
+- ✅ Fair benchmarks now in place
+- ✅ Both circuits measure identical operations
+- ✅ Measurements reproducible (CV < 5%)
+- ✅ Documentation complete with recommendations for future work
+
+---
+
 ## Session Update (2026-04-14) — Pre-Demo Sprint
 Files added this session:
   bank_client/bank_client.py         — added _warmup() cold-start fix

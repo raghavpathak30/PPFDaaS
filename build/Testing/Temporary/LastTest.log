@@ -1,29 +1,46 @@
-Start testing: Apr 14 02:36 IST
+Start testing: Apr 21 15:36 IST
 ----------------------------------------------------------
 1/3 Testing: he_core
 1/3 Test: he_core
 Command: "/home/raghavp/BTP/build/vendor_server/test_he_core"
 Directory: /home/raghavp/BTP/build/vendor_server
-"he_core" start time: Apr 14 02:36 IST
+"he_core" start time: Apr 21 15:36 IST
 Output:
 ----------------------------------------------------------
-Randomness seeded to: 4292088630
+Randomness seeded to: 3960064963
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+test_he_core is a Catch2 v3.5.4 host application.
+Run with -? for options
+
+-------------------------------------------------------------------------------
+test_rotation_hoisting
+-------------------------------------------------------------------------------
+/home/raghavp/BTP/vendor_server/tests/test_he_core.cpp:51
+...............................................................................
+
+/home/raghavp/BTP/vendor_server/tests/test_he_core.cpp:85: FAILED:
+  REQUIRE_THAT( decoded[0], Catch::Matchers::WithinAbs(256.0 * value, 1e-3) )
+with expansion:
+  3788544222500284416.0 is within 0.001 of 1.0
+
 ===============================================================================
-All tests passed (209 assertions in 3 test cases)
+test cases:   3 |   2 passed | 1 failed
+assertions: 207 | 206 passed | 1 failed
 
 <end of output>
-Test time =  25.51 sec
+Test time =   0.57 sec
 ----------------------------------------------------------
-Test Passed.
-"he_core" end time: Apr 14 02:37 IST
-"he_core" time elapsed: 00:00:25
+Test Failed.
+"he_core" end time: Apr 21 15:36 IST
+"he_core" time elapsed: 00:00:00
 ----------------------------------------------------------
 
 2/3 Testing: verify_all
 2/3 Test: verify_all
 Command: "/usr/bin/python3" "/home/raghavp/BTP/tests/verify_all.py"
 Directory: /home/raghavp/BTP
-"verify_all" start time: Apr 14 02:37 IST
+"verify_all" start time: Apr 21 15:36 IST
 Output:
 ----------------------------------------------------------
 STEP 1/10
@@ -82,7 +99,7 @@ PASS: verify_all complete
 Test time =   0.03 sec
 ----------------------------------------------------------
 Test Passed.
-"verify_all" end time: Apr 14 02:37 IST
+"verify_all" end time: Apr 21 15:36 IST
 "verify_all" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -90,19 +107,36 @@ Test Passed.
 3/3 Test: catch2_he_core
 Command: "/home/raghavp/BTP/build/vendor_server/test_he_core"
 Directory: /home/raghavp/BTP/build/tests
-"catch2_he_core" start time: Apr 14 02:37 IST
+"catch2_he_core" start time: Apr 21 15:36 IST
 Output:
 ----------------------------------------------------------
-Randomness seeded to: 4149594267
+Randomness seeded to: 384895874
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+test_he_core is a Catch2 v3.5.4 host application.
+Run with -? for options
+
+-------------------------------------------------------------------------------
+test_rotation_hoisting
+-------------------------------------------------------------------------------
+/home/raghavp/BTP/vendor_server/tests/test_he_core.cpp:51
+...............................................................................
+
+/home/raghavp/BTP/vendor_server/tests/test_he_core.cpp:85: FAILED:
+  REQUIRE_THAT( decoded[0], Catch::Matchers::WithinAbs(256.0 * value, 1e-3) )
+with expansion:
+  27205426089499615232.0 is within 0.001 of 1.0
+
 ===============================================================================
-All tests passed (209 assertions in 3 test cases)
+test cases:   3 |   2 passed | 1 failed
+assertions: 207 | 206 passed | 1 failed
 
 <end of output>
-Test time =  25.67 sec
+Test time =   0.58 sec
 ----------------------------------------------------------
-Test Passed.
-"catch2_he_core" end time: Apr 14 02:37 IST
-"catch2_he_core" time elapsed: 00:00:25
+Test Failed.
+"catch2_he_core" end time: Apr 21 15:36 IST
+"catch2_he_core" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-End testing: Apr 14 02:37 IST
+End testing: Apr 21 15:36 IST

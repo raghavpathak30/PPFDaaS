@@ -6,7 +6,13 @@
 
 #include <cmath>
 
+#include <fstream>
+
+#include <iostream>
+
 #include <stdexcept>
+
+#include <string>
 
 #include <vector>
 
@@ -20,7 +26,20 @@ CKKSContext::CKKSContext() : params(seal::scheme_type::ckks) {
     seal::KeyGenerator keygen(*context);
     secret_key = keygen.secret_key();
     keygen.create_public_key(public_key);
-    keygen.create_galois_keys(std::vector<int>{1,2,4,8,16,32,64,128}, galois_keys);
+
+    const std::string galois_path = std::string(PPFDAAS_REPO_ROOT) + "/artifacts/galois_keys.bin";
+    std::ifstream galois_in(galois_path, std::ios::binary);
+    if (galois_in.is_open()) {
+        try {
+            galois_keys.load(*context, galois_in);
+        } catch (const std::exception& e) {
+            throw std::runtime_error(std::string("CKKSContext: failed to load galois_keys.bin: ") + e.what());
+        }
+    } else {
+        std::cerr << "[Server] WARNING: missing " << galois_path
+                  << "; generating local Galois keys (results may be semantically incorrect for client ciphertexts)\n";
+        keygen.create_galois_keys(std::vector<int>{1,2,4,8,16,32,64,128}, galois_keys);
+    }
 
     encoder.emplace(*context);
     encryptor.emplace(*context, public_key);

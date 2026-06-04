@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -23,26 +24,39 @@ def _start_server() -> subprocess.Popen:
     if not server_bin.exists():
         raise FileNotFoundError(f"Missing server binary: {server_bin}")
 
+    if _is_port_open("127.0.0.1", 50052):
+        raise RuntimeError(
+            "Port 50052 is already in use. Stop the existing server process before running demo_e2e.py."
+        )
+
     proc = subprocess.Popen(
         [str(server_bin), str(weights), "50052"],
         cwd=str(REPO_ROOT),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
     return proc
+
+
+def _is_port_open(host: str, port: int, timeout: float = 0.25) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
 
 
 def _wait_ready(proc: subprocess.Popen, timeout: float = 20.0) -> None:
     deadline = time.time() + timeout
     while time.time() < deadline:
-        line = proc.stdout.readline()
-        if line:
-            print(f"[server] {line.rstrip()}")
-            if "listening on" in line:
-                return
         if proc.poll() is not None:
             raise RuntimeError(f"Server exited early with code {proc.returncode}")
+        if _is_port_open("127.0.0.1", 50052):
+            time.sleep(0.1)
+            if proc.poll() is not None:
+                raise RuntimeError(f"Server exited after bind attempt with code {proc.returncode}")
+            return
+        time.sleep(0.2)
     raise TimeoutError("Server did not become ready within timeout")
 
 

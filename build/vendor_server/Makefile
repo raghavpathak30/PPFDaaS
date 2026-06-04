@@ -183,6 +183,20 @@ benchmark/fast:
 .PHONY : benchmark/fast
 
 # Convenience name for target.
+vendor_server/CMakeFiles/benchmark_160.dir/rule:
+	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vendor_server/CMakeFiles/benchmark_160.dir/rule
+.PHONY : vendor_server/CMakeFiles/benchmark_160.dir/rule
+
+# Convenience name for target.
+benchmark_160: vendor_server/CMakeFiles/benchmark_160.dir/rule
+.PHONY : benchmark_160
+
+# fast build rule for target.
+benchmark_160/fast:
+	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/benchmark_160.dir/build.make vendor_server/CMakeFiles/benchmark_160.dir/build
+.PHONY : benchmark_160/fast
+
+# Convenience name for target.
 vendor_server/CMakeFiles/vendor_server_main.dir/rule:
 	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vendor_server/CMakeFiles/vendor_server_main.dir/rule
 .PHONY : vendor_server/CMakeFiles/vendor_server_main.dir/rule
@@ -209,20 +223,6 @@ vendor_server_160: vendor_server/CMakeFiles/vendor_server_160.dir/rule
 vendor_server_160/fast:
 	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_160.dir/build.make vendor_server/CMakeFiles/vendor_server_160.dir/build
 .PHONY : vendor_server_160/fast
-
-# Convenience name for target.
-vendor_server/CMakeFiles/vendor_server_unified.dir/rule:
-	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vendor_server/CMakeFiles/vendor_server_unified.dir/rule
-.PHONY : vendor_server/CMakeFiles/vendor_server_unified.dir/rule
-
-# Convenience name for target.
-vendor_server_unified: vendor_server/CMakeFiles/vendor_server_unified.dir/rule
-.PHONY : vendor_server_unified
-
-# fast build rule for target.
-vendor_server_unified/fast:
-	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_unified.dir/build.make vendor_server/CMakeFiles/vendor_server_unified.dir/build
-.PHONY : vendor_server_unified/fast
 
 # Convenience name for target.
 vendor_server/CMakeFiles/test_he_core.dir/rule:
@@ -310,6 +310,30 @@ src/benchmark.cpp.s:
 	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/benchmark.dir/build.make vendor_server/CMakeFiles/benchmark.dir/src/benchmark.cpp.s
 .PHONY : src/benchmark.cpp.s
 
+src/benchmark_160.o: src/benchmark_160.cpp.o
+.PHONY : src/benchmark_160.o
+
+# target to build an object file
+src/benchmark_160.cpp.o:
+	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/benchmark_160.dir/build.make vendor_server/CMakeFiles/benchmark_160.dir/src/benchmark_160.cpp.o
+.PHONY : src/benchmark_160.cpp.o
+
+src/benchmark_160.i: src/benchmark_160.cpp.i
+.PHONY : src/benchmark_160.i
+
+# target to preprocess a source file
+src/benchmark_160.cpp.i:
+	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/benchmark_160.dir/build.make vendor_server/CMakeFiles/benchmark_160.dir/src/benchmark_160.cpp.i
+.PHONY : src/benchmark_160.cpp.i
+
+src/benchmark_160.s: src/benchmark_160.cpp.s
+.PHONY : src/benchmark_160.s
+
+# target to generate assembly for a file
+src/benchmark_160.cpp.s:
+	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/benchmark_160.dir/build.make vendor_server/CMakeFiles/benchmark_160.dir/src/benchmark_160.cpp.s
+.PHONY : src/benchmark_160.cpp.s
+
 src/ckks_context.o: src/ckks_context.cpp.o
 .PHONY : src/ckks_context.o
 
@@ -339,8 +363,8 @@ src/ckks_context_160.o: src/ckks_context_160.cpp.o
 
 # target to build an object file
 src/ckks_context_160.cpp.o:
+	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/benchmark_160.dir/build.make vendor_server/CMakeFiles/benchmark_160.dir/src/ckks_context_160.cpp.o
 	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_160.dir/build.make vendor_server/CMakeFiles/vendor_server_160.dir/src/ckks_context_160.cpp.o
-	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_unified.dir/build.make vendor_server/CMakeFiles/vendor_server_unified.dir/src/ckks_context_160.cpp.o
 .PHONY : src/ckks_context_160.cpp.o
 
 src/ckks_context_160.i: src/ckks_context_160.cpp.i
@@ -348,8 +372,8 @@ src/ckks_context_160.i: src/ckks_context_160.cpp.i
 
 # target to preprocess a source file
 src/ckks_context_160.cpp.i:
+	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/benchmark_160.dir/build.make vendor_server/CMakeFiles/benchmark_160.dir/src/ckks_context_160.cpp.i
 	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_160.dir/build.make vendor_server/CMakeFiles/vendor_server_160.dir/src/ckks_context_160.cpp.i
-	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_unified.dir/build.make vendor_server/CMakeFiles/vendor_server_unified.dir/src/ckks_context_160.cpp.i
 .PHONY : src/ckks_context_160.cpp.i
 
 src/ckks_context_160.s: src/ckks_context_160.cpp.s
@@ -357,8 +381,8 @@ src/ckks_context_160.s: src/ckks_context_160.cpp.s
 
 # target to generate assembly for a file
 src/ckks_context_160.cpp.s:
+	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/benchmark_160.dir/build.make vendor_server/CMakeFiles/benchmark_160.dir/src/ckks_context_160.cpp.s
 	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_160.dir/build.make vendor_server/CMakeFiles/vendor_server_160.dir/src/ckks_context_160.cpp.s
-	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_unified.dir/build.make vendor_server/CMakeFiles/vendor_server_unified.dir/src/ckks_context_160.cpp.s
 .PHONY : src/ckks_context_160.cpp.s
 
 src/ckks_context_depth2.o: src/ckks_context_depth2.cpp.o
@@ -391,6 +415,7 @@ src/he_inference.o: src/he_inference.cpp.o
 # target to build an object file
 src/he_inference.cpp.o:
 	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/he_core.dir/build.make vendor_server/CMakeFiles/he_core.dir/src/he_inference.cpp.o
+	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/benchmark_160.dir/build.make vendor_server/CMakeFiles/benchmark_160.dir/src/he_inference.cpp.o
 .PHONY : src/he_inference.cpp.o
 
 src/he_inference.i: src/he_inference.cpp.i
@@ -399,6 +424,7 @@ src/he_inference.i: src/he_inference.cpp.i
 # target to preprocess a source file
 src/he_inference.cpp.i:
 	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/he_core.dir/build.make vendor_server/CMakeFiles/he_core.dir/src/he_inference.cpp.i
+	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/benchmark_160.dir/build.make vendor_server/CMakeFiles/benchmark_160.dir/src/he_inference.cpp.i
 .PHONY : src/he_inference.cpp.i
 
 src/he_inference.s: src/he_inference.cpp.s
@@ -407,6 +433,7 @@ src/he_inference.s: src/he_inference.cpp.s
 # target to generate assembly for a file
 src/he_inference.cpp.s:
 	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/he_core.dir/build.make vendor_server/CMakeFiles/he_core.dir/src/he_inference.cpp.s
+	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/benchmark_160.dir/build.make vendor_server/CMakeFiles/benchmark_160.dir/src/he_inference.cpp.s
 .PHONY : src/he_inference.cpp.s
 
 src/inference_service.o: src/inference_service.cpp.o
@@ -439,7 +466,6 @@ src/inference_service_160.o: src/inference_service_160.cpp.o
 # target to build an object file
 src/inference_service_160.cpp.o:
 	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_160.dir/build.make vendor_server/CMakeFiles/vendor_server_160.dir/src/inference_service_160.cpp.o
-	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_unified.dir/build.make vendor_server/CMakeFiles/vendor_server_unified.dir/src/inference_service_160.cpp.o
 .PHONY : src/inference_service_160.cpp.o
 
 src/inference_service_160.i: src/inference_service_160.cpp.i
@@ -448,7 +474,6 @@ src/inference_service_160.i: src/inference_service_160.cpp.i
 # target to preprocess a source file
 src/inference_service_160.cpp.i:
 	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_160.dir/build.make vendor_server/CMakeFiles/vendor_server_160.dir/src/inference_service_160.cpp.i
-	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_unified.dir/build.make vendor_server/CMakeFiles/vendor_server_unified.dir/src/inference_service_160.cpp.i
 .PHONY : src/inference_service_160.cpp.i
 
 src/inference_service_160.s: src/inference_service_160.cpp.s
@@ -457,32 +482,7 @@ src/inference_service_160.s: src/inference_service_160.cpp.s
 # target to generate assembly for a file
 src/inference_service_160.cpp.s:
 	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_160.dir/build.make vendor_server/CMakeFiles/vendor_server_160.dir/src/inference_service_160.cpp.s
-	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_unified.dir/build.make vendor_server/CMakeFiles/vendor_server_unified.dir/src/inference_service_160.cpp.s
 .PHONY : src/inference_service_160.cpp.s
-
-src/main_unified.o: src/main_unified.cpp.o
-.PHONY : src/main_unified.o
-
-# target to build an object file
-src/main_unified.cpp.o:
-	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_unified.dir/build.make vendor_server/CMakeFiles/vendor_server_unified.dir/src/main_unified.cpp.o
-.PHONY : src/main_unified.cpp.o
-
-src/main_unified.i: src/main_unified.cpp.i
-.PHONY : src/main_unified.i
-
-# target to preprocess a source file
-src/main_unified.cpp.i:
-	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_unified.dir/build.make vendor_server/CMakeFiles/vendor_server_unified.dir/src/main_unified.cpp.i
-.PHONY : src/main_unified.cpp.i
-
-src/main_unified.s: src/main_unified.cpp.s
-.PHONY : src/main_unified.s
-
-# target to generate assembly for a file
-src/main_unified.cpp.s:
-	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_unified.dir/build.make vendor_server/CMakeFiles/vendor_server_unified.dir/src/main_unified.cpp.s
-.PHONY : src/main_unified.cpp.s
 
 src/rotation_hoisting.o: src/rotation_hoisting.cpp.o
 .PHONY : src/rotation_hoisting.o
@@ -490,6 +490,7 @@ src/rotation_hoisting.o: src/rotation_hoisting.cpp.o
 # target to build an object file
 src/rotation_hoisting.cpp.o:
 	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/he_core.dir/build.make vendor_server/CMakeFiles/he_core.dir/src/rotation_hoisting.cpp.o
+	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/benchmark_160.dir/build.make vendor_server/CMakeFiles/benchmark_160.dir/src/rotation_hoisting.cpp.o
 .PHONY : src/rotation_hoisting.cpp.o
 
 src/rotation_hoisting.i: src/rotation_hoisting.cpp.i
@@ -498,6 +499,7 @@ src/rotation_hoisting.i: src/rotation_hoisting.cpp.i
 # target to preprocess a source file
 src/rotation_hoisting.cpp.i:
 	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/he_core.dir/build.make vendor_server/CMakeFiles/he_core.dir/src/rotation_hoisting.cpp.i
+	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/benchmark_160.dir/build.make vendor_server/CMakeFiles/benchmark_160.dir/src/rotation_hoisting.cpp.i
 .PHONY : src/rotation_hoisting.cpp.i
 
 src/rotation_hoisting.s: src/rotation_hoisting.cpp.s
@@ -506,6 +508,7 @@ src/rotation_hoisting.s: src/rotation_hoisting.cpp.s
 # target to generate assembly for a file
 src/rotation_hoisting.cpp.s:
 	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/he_core.dir/build.make vendor_server/CMakeFiles/he_core.dir/src/rotation_hoisting.cpp.s
+	cd /home/raghavp/BTP/build && $(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/benchmark_160.dir/build.make vendor_server/CMakeFiles/benchmark_160.dir/src/rotation_hoisting.cpp.s
 .PHONY : src/rotation_hoisting.cpp.s
 
 src/rotation_hoisting_degree2.o: src/rotation_hoisting_degree2.cpp.o
@@ -687,12 +690,12 @@ help:
 	@echo "... test"
 	@echo "... generate_inference_proto"
 	@echo "... benchmark"
+	@echo "... benchmark_160"
 	@echo "... ckks_smoke_test"
 	@echo "... he_core"
 	@echo "... test_he_core"
 	@echo "... vendor_server_160"
 	@echo "... vendor_server_main"
-	@echo "... vendor_server_unified"
 	@echo "... generated/inference.grpc.pb.o"
 	@echo "... generated/inference.grpc.pb.i"
 	@echo "... generated/inference.grpc.pb.s"
@@ -702,6 +705,9 @@ help:
 	@echo "... src/benchmark.o"
 	@echo "... src/benchmark.i"
 	@echo "... src/benchmark.s"
+	@echo "... src/benchmark_160.o"
+	@echo "... src/benchmark_160.i"
+	@echo "... src/benchmark_160.s"
 	@echo "... src/ckks_context.o"
 	@echo "... src/ckks_context.i"
 	@echo "... src/ckks_context.s"
@@ -720,9 +726,6 @@ help:
 	@echo "... src/inference_service_160.o"
 	@echo "... src/inference_service_160.i"
 	@echo "... src/inference_service_160.s"
-	@echo "... src/main_unified.o"
-	@echo "... src/main_unified.i"
-	@echo "... src/main_unified.s"
 	@echo "... src/rotation_hoisting.o"
 	@echo "... src/rotation_hoisting.i"
 	@echo "... src/rotation_hoisting.s"

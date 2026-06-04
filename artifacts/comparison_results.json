@@ -1,1636 +1,1637 @@
 {
+  "hardware_note": "gates calibrated to reference hardware; run with performance CPU governor for valid comparison",
   "summary": {
     "baseline_200bit": {
       "n": 100,
-      "mean_us": 4370.34,
-      "std_us": 987.3410274064377,
-      "p50_us": 4616.5,
-      "p95_us": 5702.999999999998,
-      "p99_us": 7096.270000000008,
-      "min_us": 2834.0,
-      "max_us": 8608.0
+      "mean_us": 3665.28,
+      "std_us": 660.3917183005856,
+      "p50_us": 3470.5,
+      "p95_us": 4939.1,
+      "p99_us": 5301.18,
+      "min_us": 2781.0,
+      "max_us": 5418.0
     },
     "reduced_160bit": {
       "n": 100,
-      "mean_us": 2362.91,
-      "std_us": 761.2055582429756,
-      "p50_us": 2391.5,
-      "p95_us": 3399.6499999999987,
-      "p99_us": 4694.0600000000095,
-      "min_us": 1538.0,
-      "max_us": 6482.0
+      "mean_us": 2026.12,
+      "std_us": 374.5547030808717,
+      "p50_us": 1874.5,
+      "p95_us": 2621.7,
+      "p99_us": 2984.840000000001,
+      "min_us": 1465.0,
+      "max_us": 3167.0
     }
   },
   "gates": {
     "mean_under_3000": true,
     "p99_under_5000": true,
-    "std_under_300": false,
+    "std_under_500": true,
     "pass_rate_10000": 1.0,
-    "all_passed": false
+    "all_passed": true
   },
   "raw_results": {
     "baseline_200bit": [
       {
-        "wall_us": 8753.751,
-        "total_inference_us": 3673.0,
-        "rotation_hoisting_us": 2983.0,
-        "multiply_plain_us": 474.0,
-        "deserialization_us": 71.0,
-        "serialization_us": 143.0
+        "wall_us": 9057.279,
+        "total_inference_us": 3524.0,
+        "rotation_hoisting_us": 2922.0,
+        "multiply_plain_us": 485.0,
+        "deserialization_us": 64.0,
+        "serialization_us": 51.0
       },
       {
-        "wall_us": 8056.501,
-        "total_inference_us": 3019.0,
-        "rotation_hoisting_us": 2311.0,
-        "multiply_plain_us": 580.0,
-        "deserialization_us": 65.0,
-        "serialization_us": 61.0
-      },
-      {
-        "wall_us": 7810.566,
-        "total_inference_us": 3119.0,
-        "rotation_hoisting_us": 2421.0,
-        "multiply_plain_us": 561.0,
-        "deserialization_us": 74.0,
-        "serialization_us": 62.0
-      },
-      {
-        "wall_us": 8095.669,
-        "total_inference_us": 3407.0,
-        "rotation_hoisting_us": 2634.0,
-        "multiply_plain_us": 542.0,
-        "deserialization_us": 63.0,
-        "serialization_us": 166.0
-      },
-      {
-        "wall_us": 8982.947,
-        "total_inference_us": 3963.0,
-        "rotation_hoisting_us": 3288.0,
-        "multiply_plain_us": 554.0,
-        "deserialization_us": 67.0,
-        "serialization_us": 54.0
-      },
-      {
-        "wall_us": 8234.694,
-        "total_inference_us": 3299.0,
-        "rotation_hoisting_us": 2623.0,
-        "multiply_plain_us": 526.0,
-        "deserialization_us": 95.0,
-        "serialization_us": 54.0
-      },
-      {
-        "wall_us": 7673.258,
-        "total_inference_us": 3225.0,
-        "rotation_hoisting_us": 2562.0,
-        "multiply_plain_us": 555.0,
-        "deserialization_us": 53.0,
-        "serialization_us": 53.0
-      },
-      {
-        "wall_us": 9813.451,
-        "total_inference_us": 4699.0,
-        "rotation_hoisting_us": 3948.0,
-        "multiply_plain_us": 561.0,
-        "deserialization_us": 67.0,
-        "serialization_us": 121.0
-      },
-      {
-        "wall_us": 8339.219,
-        "total_inference_us": 3287.0,
-        "rotation_hoisting_us": 2616.0,
-        "multiply_plain_us": 538.0,
-        "deserialization_us": 65.0,
-        "serialization_us": 67.0
-      },
-      {
-        "wall_us": 7967.226,
-        "total_inference_us": 3205.0,
-        "rotation_hoisting_us": 2450.0,
-        "multiply_plain_us": 544.0,
-        "deserialization_us": 54.0,
-        "serialization_us": 155.0
-      },
-      {
-        "wall_us": 8066.787,
-        "total_inference_us": 3162.0,
-        "rotation_hoisting_us": 2540.0,
-        "multiply_plain_us": 516.0,
-        "deserialization_us": 53.0,
-        "serialization_us": 52.0
-      },
-      {
-        "wall_us": 10502.677,
-        "total_inference_us": 5224.0,
-        "rotation_hoisting_us": 4595.0,
-        "multiply_plain_us": 507.0,
-        "deserialization_us": 57.0,
-        "serialization_us": 63.0
-      },
-      {
-        "wall_us": 11982.148,
-        "total_inference_us": 7081.0,
-        "rotation_hoisting_us": 6325.0,
-        "multiply_plain_us": 566.0,
-        "deserialization_us": 69.0,
-        "serialization_us": 120.0
-      },
-      {
-        "wall_us": 7951.783,
-        "total_inference_us": 3159.0,
-        "rotation_hoisting_us": 2521.0,
-        "multiply_plain_us": 535.0,
+        "wall_us": 8735.974,
+        "total_inference_us": 3717.0,
+        "rotation_hoisting_us": 3070.0,
+        "multiply_plain_us": 537.0,
         "deserialization_us": 52.0,
-        "serialization_us": 50.0
+        "serialization_us": 57.0
       },
       {
-        "wall_us": 9745.646,
-        "total_inference_us": 4782.0,
-        "rotation_hoisting_us": 4114.0,
-        "multiply_plain_us": 543.0,
-        "deserialization_us": 61.0,
-        "serialization_us": 63.0
-      },
-      {
-        "wall_us": 8737.517,
+        "wall_us": 8268.487,
         "total_inference_us": 3380.0,
-        "rotation_hoisting_us": 2745.0,
-        "multiply_plain_us": 513.0,
-        "deserialization_us": 66.0,
-        "serialization_us": 55.0
+        "rotation_hoisting_us": 2804.0,
+        "multiply_plain_us": 477.0,
+        "deserialization_us": 51.0,
+        "serialization_us": 47.0
       },
       {
-        "wall_us": 9939.252,
-        "total_inference_us": 4713.0,
-        "rotation_hoisting_us": 3981.0,
-        "multiply_plain_us": 556.0,
-        "deserialization_us": 53.0,
-        "serialization_us": 121.0
+        "wall_us": 8999.358,
+        "total_inference_us": 3991.0,
+        "rotation_hoisting_us": 3387.0,
+        "multiply_plain_us": 509.0,
+        "deserialization_us": 50.0,
+        "serialization_us": 44.0
       },
       {
-        "wall_us": 9774.524,
-        "total_inference_us": 4771.0,
-        "rotation_hoisting_us": 4084.0,
-        "multiply_plain_us": 548.0,
-        "deserialization_us": 58.0,
-        "serialization_us": 79.0
-      },
-      {
-        "wall_us": 9766.543,
-        "total_inference_us": 4712.0,
-        "rotation_hoisting_us": 3989.0,
-        "multiply_plain_us": 592.0,
-        "deserialization_us": 79.0,
-        "serialization_us": 51.0
-      },
-      {
-        "wall_us": 9920.917,
-        "total_inference_us": 4956.0,
-        "rotation_hoisting_us": 4275.0,
-        "multiply_plain_us": 552.0,
-        "deserialization_us": 67.0,
-        "serialization_us": 60.0
-      },
-      {
-        "wall_us": 9317.746,
-        "total_inference_us": 4500.0,
-        "rotation_hoisting_us": 3874.0,
-        "multiply_plain_us": 514.0,
-        "deserialization_us": 64.0,
-        "serialization_us": 48.0
-      },
-      {
-        "wall_us": 10290.226,
-        "total_inference_us": 5149.0,
-        "rotation_hoisting_us": 3921.0,
-        "multiply_plain_us": 1091.0,
-        "deserialization_us": 83.0,
-        "serialization_us": 53.0
-      },
-      {
-        "wall_us": 9209.767,
-        "total_inference_us": 4465.0,
-        "rotation_hoisting_us": 3828.0,
-        "multiply_plain_us": 530.0,
-        "deserialization_us": 58.0,
-        "serialization_us": 48.0
-      },
-      {
-        "wall_us": 10783.871,
-        "total_inference_us": 4961.0,
-        "rotation_hoisting_us": 4193.0,
-        "multiply_plain_us": 561.0,
-        "deserialization_us": 78.0,
-        "serialization_us": 128.0
-      },
-      {
-        "wall_us": 11280.506,
-        "total_inference_us": 6197.0,
-        "rotation_hoisting_us": 5391.0,
-        "multiply_plain_us": 642.0,
-        "deserialization_us": 68.0,
-        "serialization_us": 94.0
-      },
-      {
-        "wall_us": 8728.137,
-        "total_inference_us": 3383.0,
-        "rotation_hoisting_us": 2467.0,
-        "multiply_plain_us": 738.0,
-        "deserialization_us": 123.0,
-        "serialization_us": 54.0
-      },
-      {
-        "wall_us": 9799.794,
-        "total_inference_us": 4734.0,
-        "rotation_hoisting_us": 3994.0,
-        "multiply_plain_us": 570.0,
-        "deserialization_us": 96.0,
-        "serialization_us": 71.0
-      },
-      {
-        "wall_us": 7983.275,
-        "total_inference_us": 3287.0,
-        "rotation_hoisting_us": 2535.0,
-        "multiply_plain_us": 616.0,
-        "deserialization_us": 76.0,
-        "serialization_us": 59.0
-      },
-      {
-        "wall_us": 10172.489,
-        "total_inference_us": 5332.0,
-        "rotation_hoisting_us": 4122.0,
-        "multiply_plain_us": 1012.0,
-        "deserialization_us": 142.0,
-        "serialization_us": 55.0
-      },
-      {
-        "wall_us": 10393.471,
-        "total_inference_us": 5193.0,
-        "rotation_hoisting_us": 4200.0,
-        "multiply_plain_us": 760.0,
-        "deserialization_us": 101.0,
-        "serialization_us": 130.0
-      },
-      {
-        "wall_us": 9416.198,
-        "total_inference_us": 4646.0,
-        "rotation_hoisting_us": 3978.0,
-        "multiply_plain_us": 540.0,
-        "deserialization_us": 54.0,
-        "serialization_us": 72.0
-      },
-      {
-        "wall_us": 11384.419,
-        "total_inference_us": 5504.0,
-        "rotation_hoisting_us": 4095.0,
-        "multiply_plain_us": 1133.0,
-        "deserialization_us": 123.0,
-        "serialization_us": 151.0
-      },
-      {
-        "wall_us": 10518.061,
-        "total_inference_us": 4069.0,
-        "rotation_hoisting_us": 2977.0,
-        "multiply_plain_us": 935.0,
-        "deserialization_us": 100.0,
-        "serialization_us": 55.0
-      },
-      {
-        "wall_us": 10197.923,
-        "total_inference_us": 4765.0,
-        "rotation_hoisting_us": 4115.0,
-        "multiply_plain_us": 541.0,
-        "deserialization_us": 60.0,
-        "serialization_us": 48.0
-      },
-      {
-        "wall_us": 8503.499,
-        "total_inference_us": 3565.0,
-        "rotation_hoisting_us": 2908.0,
-        "multiply_plain_us": 533.0,
-        "deserialization_us": 55.0,
-        "serialization_us": 67.0
-      },
-      {
-        "wall_us": 9798.998,
-        "total_inference_us": 4951.0,
-        "rotation_hoisting_us": 4265.0,
-        "multiply_plain_us": 545.0,
-        "deserialization_us": 55.0,
-        "serialization_us": 85.0
-      },
-      {
-        "wall_us": 8628.244,
-        "total_inference_us": 3354.0,
-        "rotation_hoisting_us": 2660.0,
-        "multiply_plain_us": 510.0,
-        "deserialization_us": 63.0,
-        "serialization_us": 119.0
-      },
-      {
-        "wall_us": 9192.389,
-        "total_inference_us": 4426.0,
-        "rotation_hoisting_us": 3715.0,
-        "multiply_plain_us": 540.0,
-        "deserialization_us": 55.0,
-        "serialization_us": 114.0
-      },
-      {
-        "wall_us": 8231.888,
-        "total_inference_us": 3211.0,
-        "rotation_hoisting_us": 2527.0,
-        "multiply_plain_us": 563.0,
-        "deserialization_us": 60.0,
-        "serialization_us": 59.0
-      },
-      {
-        "wall_us": 9947.387,
-        "total_inference_us": 4938.0,
-        "rotation_hoisting_us": 4242.0,
-        "multiply_plain_us": 528.0,
-        "deserialization_us": 55.0,
-        "serialization_us": 111.0
-      },
-      {
-        "wall_us": 9185.284,
-        "total_inference_us": 3415.0,
-        "rotation_hoisting_us": 2644.0,
-        "multiply_plain_us": 547.0,
-        "deserialization_us": 71.0,
-        "serialization_us": 152.0
-      },
-      {
-        "wall_us": 11274.964,
-        "total_inference_us": 5506.0,
-        "rotation_hoisting_us": 4560.0,
-        "multiply_plain_us": 740.0,
+        "wall_us": 8416.498,
+        "total_inference_us": 3482.0,
+        "rotation_hoisting_us": 2893.0,
+        "multiply_plain_us": 473.0,
         "deserialization_us": 72.0,
-        "serialization_us": 132.0
+        "serialization_us": 43.0
       },
       {
-        "wall_us": 9558.277,
-        "total_inference_us": 4626.0,
-        "rotation_hoisting_us": 3450.0,
-        "multiply_plain_us": 988.0,
-        "deserialization_us": 127.0,
-        "serialization_us": 60.0
+        "wall_us": 8625.613,
+        "total_inference_us": 3822.0,
+        "rotation_hoisting_us": 3128.0,
+        "multiply_plain_us": 598.0,
+        "deserialization_us": 51.0,
+        "serialization_us": 43.0
       },
       {
-        "wall_us": 9889.554,
-        "total_inference_us": 4679.0,
-        "rotation_hoisting_us": 3985.0,
-        "multiply_plain_us": 555.0,
-        "deserialization_us": 61.0,
-        "serialization_us": 76.0
+        "wall_us": 7731.772,
+        "total_inference_us": 3280.0,
+        "rotation_hoisting_us": 2751.0,
+        "multiply_plain_us": 448.0,
+        "deserialization_us": 43.0,
+        "serialization_us": 37.0
       },
       {
-        "wall_us": 8165.076,
-        "total_inference_us": 3418.0,
-        "rotation_hoisting_us": 2697.0,
-        "multiply_plain_us": 595.0,
-        "deserialization_us": 69.0,
-        "serialization_us": 57.0
+        "wall_us": 7817.996,
+        "total_inference_us": 3182.0,
+        "rotation_hoisting_us": 2500.0,
+        "multiply_plain_us": 591.0,
+        "deserialization_us": 49.0,
+        "serialization_us": 40.0
       },
       {
-        "wall_us": 8110.748,
-        "total_inference_us": 3290.0,
-        "rotation_hoisting_us": 2538.0,
-        "multiply_plain_us": 577.0,
-        "deserialization_us": 57.0,
-        "serialization_us": 115.0
+        "wall_us": 7700.287,
+        "total_inference_us": 3245.0,
+        "rotation_hoisting_us": 2706.0,
+        "multiply_plain_us": 455.0,
+        "deserialization_us": 44.0,
+        "serialization_us": 38.0
       },
       {
-        "wall_us": 8194.21,
+        "wall_us": 7807.518,
+        "total_inference_us": 3183.0,
+        "rotation_hoisting_us": 2493.0,
+        "multiply_plain_us": 597.0,
+        "deserialization_us": 51.0,
+        "serialization_us": 41.0
+      },
+      {
+        "wall_us": 7752.485,
         "total_inference_us": 3217.0,
-        "rotation_hoisting_us": 2551.0,
-        "multiply_plain_us": 515.0,
-        "deserialization_us": 61.0,
-        "serialization_us": 89.0
-      },
-      {
-        "wall_us": 9428.443,
-        "total_inference_us": 4643.0,
-        "rotation_hoisting_us": 3883.0,
-        "multiply_plain_us": 540.0,
-        "deserialization_us": 58.0,
-        "serialization_us": 160.0
-      },
-      {
-        "wall_us": 7668.95,
-        "total_inference_us": 3010.0,
-        "rotation_hoisting_us": 2410.0,
-        "multiply_plain_us": 481.0,
-        "deserialization_us": 60.0,
-        "serialization_us": 57.0
-      },
-      {
-        "wall_us": 10193.743,
-        "total_inference_us": 4929.0,
-        "rotation_hoisting_us": 4181.0,
-        "multiply_plain_us": 612.0,
-        "deserialization_us": 58.0,
-        "serialization_us": 77.0
-      },
-      {
-        "wall_us": 9709.658,
-        "total_inference_us": 4139.0,
-        "rotation_hoisting_us": 2972.0,
-        "multiply_plain_us": 967.0,
-        "deserialization_us": 114.0,
-        "serialization_us": 85.0
-      },
-      {
-        "wall_us": 8412.572,
-        "total_inference_us": 3221.0,
-        "rotation_hoisting_us": 2544.0,
-        "multiply_plain_us": 548.0,
-        "deserialization_us": 64.0,
-        "serialization_us": 63.0
-      },
-      {
-        "wall_us": 10514.493,
-        "total_inference_us": 5505.0,
-        "rotation_hoisting_us": 4385.0,
-        "multiply_plain_us": 956.0,
-        "deserialization_us": 101.0,
-        "serialization_us": 62.0
-      },
-      {
-        "wall_us": 10051.911,
-        "total_inference_us": 4706.0,
-        "rotation_hoisting_us": 3443.0,
-        "multiply_plain_us": 996.0,
-        "deserialization_us": 98.0,
-        "serialization_us": 167.0
-      },
-      {
-        "wall_us": 8624.001,
-        "total_inference_us": 3636.0,
-        "rotation_hoisting_us": 2914.0,
-        "multiply_plain_us": 593.0,
-        "deserialization_us": 60.0,
-        "serialization_us": 67.0
-      },
-      {
-        "wall_us": 9777.781,
-        "total_inference_us": 4729.0,
-        "rotation_hoisting_us": 4026.0,
-        "multiply_plain_us": 580.0,
-        "deserialization_us": 66.0,
-        "serialization_us": 56.0
-      },
-      {
-        "wall_us": 9510.582,
-        "total_inference_us": 4742.0,
-        "rotation_hoisting_us": 3569.0,
-        "multiply_plain_us": 1000.0,
-        "deserialization_us": 120.0,
-        "serialization_us": 51.0
-      },
-      {
-        "wall_us": 9369.465,
-        "total_inference_us": 4721.0,
-        "rotation_hoisting_us": 4053.0,
-        "multiply_plain_us": 498.0,
-        "deserialization_us": 64.0,
-        "serialization_us": 105.0
-      },
-      {
-        "wall_us": 9677.922,
-        "total_inference_us": 4605.0,
-        "rotation_hoisting_us": 3925.0,
-        "multiply_plain_us": 551.0,
-        "deserialization_us": 68.0,
-        "serialization_us": 60.0
-      },
-      {
-        "wall_us": 9687.494,
-        "total_inference_us": 4812.0,
-        "rotation_hoisting_us": 4098.0,
-        "multiply_plain_us": 489.0,
-        "deserialization_us": 55.0,
-        "serialization_us": 169.0
-      },
-      {
-        "wall_us": 9547.38,
-        "total_inference_us": 4766.0,
-        "rotation_hoisting_us": 4166.0,
-        "multiply_plain_us": 483.0,
-        "deserialization_us": 61.0,
-        "serialization_us": 53.0
-      },
-      {
-        "wall_us": 10466.188,
-        "total_inference_us": 5657.0,
-        "rotation_hoisting_us": 4930.0,
+        "rotation_hoisting_us": 2541.0,
         "multiply_plain_us": 589.0,
-        "deserialization_us": 78.0,
-        "serialization_us": 58.0
+        "deserialization_us": 47.0,
+        "serialization_us": 39.0
       },
       {
-        "wall_us": 10203.399,
-        "total_inference_us": 4733.0,
-        "rotation_hoisting_us": 4091.0,
-        "multiply_plain_us": 519.0,
+        "wall_us": 7861.281,
+        "total_inference_us": 3165.0,
+        "rotation_hoisting_us": 2630.0,
+        "multiply_plain_us": 446.0,
+        "deserialization_us": 48.0,
+        "serialization_us": 38.0
+      },
+      {
+        "wall_us": 7618.207,
+        "total_inference_us": 3202.0,
+        "rotation_hoisting_us": 2515.0,
+        "multiply_plain_us": 589.0,
         "deserialization_us": 57.0,
-        "serialization_us": 65.0
+        "serialization_us": 39.0
       },
       {
-        "wall_us": 17611.003,
-        "total_inference_us": 8608.0,
-        "rotation_hoisting_us": 7107.0,
-        "multiply_plain_us": 1314.0,
-        "deserialization_us": 118.0,
-        "serialization_us": 68.0
+        "wall_us": 7722.906,
+        "total_inference_us": 3233.0,
+        "rotation_hoisting_us": 2679.0,
+        "multiply_plain_us": 473.0,
+        "deserialization_us": 44.0,
+        "serialization_us": 34.0
       },
       {
-        "wall_us": 14389.832,
-        "total_inference_us": 6396.0,
-        "rotation_hoisting_us": 5586.0,
-        "multiply_plain_us": 678.0,
+        "wall_us": 7943.878,
+        "total_inference_us": 3286.0,
+        "rotation_hoisting_us": 2582.0,
+        "multiply_plain_us": 598.0,
+        "deserialization_us": 58.0,
+        "serialization_us": 47.0
+      },
+      {
+        "wall_us": 8176.156,
+        "total_inference_us": 3322.0,
+        "rotation_hoisting_us": 2716.0,
+        "multiply_plain_us": 502.0,
+        "deserialization_us": 55.0,
+        "serialization_us": 47.0
+      },
+      {
+        "wall_us": 7866.441,
+        "total_inference_us": 3237.0,
+        "rotation_hoisting_us": 2532.0,
+        "multiply_plain_us": 607.0,
+        "deserialization_us": 53.0,
+        "serialization_us": 43.0
+      },
+      {
+        "wall_us": 9245.421,
+        "total_inference_us": 4708.0,
+        "rotation_hoisting_us": 3641.0,
+        "multiply_plain_us": 905.0,
+        "deserialization_us": 82.0,
+        "serialization_us": 78.0
+      },
+      {
+        "wall_us": 7785.765,
+        "total_inference_us": 3215.0,
+        "rotation_hoisting_us": 2530.0,
+        "multiply_plain_us": 590.0,
+        "deserialization_us": 52.0,
+        "serialization_us": 41.0
+      },
+      {
+        "wall_us": 10262.011,
+        "total_inference_us": 4939.0,
+        "rotation_hoisting_us": 3761.0,
+        "multiply_plain_us": 981.0,
+        "deserialization_us": 100.0,
+        "serialization_us": 95.0
+      },
+      {
+        "wall_us": 7958.984,
+        "total_inference_us": 2918.0,
+        "rotation_hoisting_us": 2340.0,
+        "multiply_plain_us": 479.0,
+        "deserialization_us": 57.0,
+        "serialization_us": 40.0
+      },
+      {
+        "wall_us": 7976.214,
+        "total_inference_us": 3480.0,
+        "rotation_hoisting_us": 2645.0,
+        "multiply_plain_us": 720.0,
+        "deserialization_us": 75.0,
+        "serialization_us": 39.0
+      },
+      {
+        "wall_us": 7832.122,
+        "total_inference_us": 2875.0,
+        "rotation_hoisting_us": 2291.0,
+        "multiply_plain_us": 482.0,
+        "deserialization_us": 65.0,
+        "serialization_us": 36.0
+      },
+      {
+        "wall_us": 8381.22,
+        "total_inference_us": 3461.0,
+        "rotation_hoisting_us": 2701.0,
+        "multiply_plain_us": 645.0,
         "deserialization_us": 69.0,
-        "serialization_us": 62.0
+        "serialization_us": 45.0
       },
       {
-        "wall_us": 10157.983,
-        "total_inference_us": 4834.0,
-        "rotation_hoisting_us": 4176.0,
-        "multiply_plain_us": 533.0,
+        "wall_us": 7667.214,
+        "total_inference_us": 2860.0,
+        "rotation_hoisting_us": 2286.0,
+        "multiply_plain_us": 468.0,
+        "deserialization_us": 65.0,
+        "serialization_us": 40.0
+      },
+      {
+        "wall_us": 9152.685,
+        "total_inference_us": 4433.0,
+        "rotation_hoisting_us": 3621.0,
+        "multiply_plain_us": 700.0,
+        "deserialization_us": 75.0,
+        "serialization_us": 35.0
+      },
+      {
+        "wall_us": 7865.203,
+        "total_inference_us": 2843.0,
+        "rotation_hoisting_us": 2263.0,
+        "multiply_plain_us": 497.0,
+        "deserialization_us": 44.0,
+        "serialization_us": 38.0
+      },
+      {
+        "wall_us": 9148.833,
+        "total_inference_us": 4637.0,
+        "rotation_hoisting_us": 3610.0,
+        "multiply_plain_us": 911.0,
+        "deserialization_us": 77.0,
+        "serialization_us": 38.0
+      },
+      {
+        "wall_us": 7299.213,
+        "total_inference_us": 2891.0,
+        "rotation_hoisting_us": 2290.0,
+        "multiply_plain_us": 516.0,
+        "deserialization_us": 49.0,
+        "serialization_us": 36.0
+      },
+      {
+        "wall_us": 7970.571,
+        "total_inference_us": 3314.0,
+        "rotation_hoisting_us": 2720.0,
+        "multiply_plain_us": 504.0,
+        "deserialization_us": 53.0,
+        "serialization_us": 35.0
+      },
+      {
+        "wall_us": 7399.965,
+        "total_inference_us": 2854.0,
+        "rotation_hoisting_us": 2255.0,
+        "multiply_plain_us": 501.0,
         "deserialization_us": 56.0,
-        "serialization_us": 67.0
+        "serialization_us": 41.0
       },
       {
-        "wall_us": 10001.246,
-        "total_inference_us": 5058.0,
-        "rotation_hoisting_us": 3865.0,
-        "multiply_plain_us": 998.0,
-        "deserialization_us": 129.0,
-        "serialization_us": 65.0
-      },
-      {
-        "wall_us": 9736.202,
-        "total_inference_us": 5023.0,
-        "rotation_hoisting_us": 4297.0,
-        "multiply_plain_us": 510.0,
-        "deserialization_us": 56.0,
-        "serialization_us": 159.0
-      },
-      {
-        "wall_us": 9274.853,
-        "total_inference_us": 4502.0,
-        "rotation_hoisting_us": 3891.0,
-        "multiply_plain_us": 503.0,
-        "deserialization_us": 55.0,
-        "serialization_us": 50.0
-      },
-      {
-        "wall_us": 9099.205,
-        "total_inference_us": 4248.0,
-        "rotation_hoisting_us": 3576.0,
-        "multiply_plain_us": 548.0,
-        "deserialization_us": 64.0,
-        "serialization_us": 59.0
-      },
-      {
-        "wall_us": 9320.934,
-        "total_inference_us": 4632.0,
-        "rotation_hoisting_us": 4026.0,
+        "wall_us": 7872.894,
+        "total_inference_us": 3258.0,
+        "rotation_hoisting_us": 2677.0,
         "multiply_plain_us": 495.0,
-        "deserialization_us": 55.0,
+        "deserialization_us": 47.0,
+        "serialization_us": 38.0
+      },
+      {
+        "wall_us": 7331.708,
+        "total_inference_us": 2851.0,
+        "rotation_hoisting_us": 2289.0,
+        "multiply_plain_us": 471.0,
+        "deserialization_us": 51.0,
+        "serialization_us": 39.0
+      },
+      {
+        "wall_us": 7449.913,
+        "total_inference_us": 2962.0,
+        "rotation_hoisting_us": 2372.0,
+        "multiply_plain_us": 510.0,
+        "deserialization_us": 38.0,
+        "serialization_us": 41.0
+      },
+      {
+        "wall_us": 10361.246,
+        "total_inference_us": 5147.0,
+        "rotation_hoisting_us": 3992.0,
+        "multiply_plain_us": 951.0,
+        "deserialization_us": 104.0,
+        "serialization_us": 99.0
+      },
+      {
+        "wall_us": 9154.7,
+        "total_inference_us": 3788.0,
+        "rotation_hoisting_us": 3112.0,
+        "multiply_plain_us": 567.0,
+        "deserialization_us": 53.0,
         "serialization_us": 55.0
       },
       {
-        "wall_us": 7964.853,
-        "total_inference_us": 3226.0,
-        "rotation_hoisting_us": 2563.0,
-        "multiply_plain_us": 513.0,
-        "deserialization_us": 64.0,
-        "serialization_us": 84.0
-      },
-      {
-        "wall_us": 9471.114,
-        "total_inference_us": 4538.0,
-        "rotation_hoisting_us": 3933.0,
-        "multiply_plain_us": 487.0,
-        "deserialization_us": 60.0,
-        "serialization_us": 56.0
-      },
-      {
-        "wall_us": 8774.087,
-        "total_inference_us": 3801.0,
-        "rotation_hoisting_us": 2814.0,
-        "multiply_plain_us": 639.0,
-        "deserialization_us": 90.0,
-        "serialization_us": 257.0
-      },
-      {
-        "wall_us": 10199.903,
-        "total_inference_us": 5127.0,
-        "rotation_hoisting_us": 4423.0,
-        "multiply_plain_us": 574.0,
-        "deserialization_us": 71.0,
-        "serialization_us": 58.0
-      },
-      {
-        "wall_us": 8154.097,
-        "total_inference_us": 3150.0,
-        "rotation_hoisting_us": 2428.0,
-        "multiply_plain_us": 596.0,
-        "deserialization_us": 66.0,
+        "wall_us": 9135.4,
+        "total_inference_us": 3586.0,
+        "rotation_hoisting_us": 2954.0,
+        "multiply_plain_us": 519.0,
+        "deserialization_us": 52.0,
         "serialization_us": 60.0
       },
       {
-        "wall_us": 9576.132,
-        "total_inference_us": 4654.0,
-        "rotation_hoisting_us": 3974.0,
-        "multiply_plain_us": 550.0,
-        "deserialization_us": 67.0,
-        "serialization_us": 62.0
+        "wall_us": 9023.843,
+        "total_inference_us": 3725.0,
+        "rotation_hoisting_us": 3121.0,
+        "multiply_plain_us": 500.0,
+        "deserialization_us": 53.0,
+        "serialization_us": 49.0
       },
       {
-        "wall_us": 9616.508,
-        "total_inference_us": 4531.0,
-        "rotation_hoisting_us": 3255.0,
-        "multiply_plain_us": 982.0,
-        "deserialization_us": 127.0,
-        "serialization_us": 165.0
-      },
-      {
-        "wall_us": 8168.445,
-        "total_inference_us": 3402.0,
-        "rotation_hoisting_us": 2683.0,
-        "multiply_plain_us": 540.0,
-        "deserialization_us": 69.0,
-        "serialization_us": 110.0
-      },
-      {
-        "wall_us": 9410.868,
-        "total_inference_us": 4739.0,
-        "rotation_hoisting_us": 4119.0,
-        "multiply_plain_us": 497.0,
-        "deserialization_us": 62.0,
-        "serialization_us": 59.0
-      },
-      {
-        "wall_us": 11575.658,
-        "total_inference_us": 6286.0,
-        "rotation_hoisting_us": 5113.0,
-        "multiply_plain_us": 980.0,
-        "deserialization_us": 142.0,
-        "serialization_us": 50.0
-      },
-      {
-        "wall_us": 9545.981,
-        "total_inference_us": 4646.0,
-        "rotation_hoisting_us": 4038.0,
-        "multiply_plain_us": 496.0,
-        "deserialization_us": 58.0,
-        "serialization_us": 52.0
-      },
-      {
-        "wall_us": 10634.171,
-        "total_inference_us": 5677.0,
-        "rotation_hoisting_us": 5018.0,
-        "multiply_plain_us": 536.0,
-        "deserialization_us": 58.0,
+        "wall_us": 9774.875,
+        "total_inference_us": 4371.0,
+        "rotation_hoisting_us": 3276.0,
+        "multiply_plain_us": 933.0,
+        "deserialization_us": 96.0,
         "serialization_us": 64.0
       },
       {
-        "wall_us": 9623.875,
-        "total_inference_us": 4915.0,
-        "rotation_hoisting_us": 4297.0,
-        "multiply_plain_us": 503.0,
-        "deserialization_us": 63.0,
-        "serialization_us": 50.0
-      },
-      {
-        "wall_us": 9700.438,
-        "total_inference_us": 4857.0,
-        "rotation_hoisting_us": 4242.0,
-        "multiply_plain_us": 488.0,
-        "deserialization_us": 56.0,
-        "serialization_us": 70.0
-      },
-      {
-        "wall_us": 10675.84,
-        "total_inference_us": 5000.0,
-        "rotation_hoisting_us": 4214.0,
-        "multiply_plain_us": 661.0,
-        "deserialization_us": 65.0,
-        "serialization_us": 58.0
-      },
-      {
-        "wall_us": 13458.711,
-        "total_inference_us": 4637.0,
-        "rotation_hoisting_us": 3230.0,
-        "multiply_plain_us": 1233.0,
-        "deserialization_us": 111.0,
-        "serialization_us": 62.0
-      },
-      {
-        "wall_us": 9784.022,
-        "total_inference_us": 4527.0,
-        "rotation_hoisting_us": 3741.0,
-        "multiply_plain_us": 654.0,
-        "deserialization_us": 65.0,
-        "serialization_us": 66.0
-      },
-      {
-        "wall_us": 10341.661,
-        "total_inference_us": 4111.0,
-        "rotation_hoisting_us": 3356.0,
-        "multiply_plain_us": 623.0,
-        "deserialization_us": 71.0,
-        "serialization_us": 59.0
-      },
-      {
-        "wall_us": 10183.196,
-        "total_inference_us": 3665.0,
-        "rotation_hoisting_us": 2892.0,
-        "multiply_plain_us": 629.0,
-        "deserialization_us": 84.0,
-        "serialization_us": 60.0
-      },
-      {
-        "wall_us": 8525.475,
-        "total_inference_us": 2834.0,
-        "rotation_hoisting_us": 2190.0,
-        "multiply_plain_us": 523.0,
-        "deserialization_us": 73.0,
+        "wall_us": 9069.902,
+        "total_inference_us": 3810.0,
+        "rotation_hoisting_us": 3088.0,
+        "multiply_plain_us": 609.0,
+        "deserialization_us": 66.0,
         "serialization_us": 46.0
       },
       {
-        "wall_us": 9485.56,
-        "total_inference_us": 3110.0,
-        "rotation_hoisting_us": 2453.0,
-        "multiply_plain_us": 542.0,
-        "deserialization_us": 52.0,
+        "wall_us": 9562.016,
+        "total_inference_us": 4074.0,
+        "rotation_hoisting_us": 3323.0,
+        "multiply_plain_us": 640.0,
+        "deserialization_us": 49.0,
         "serialization_us": 61.0
       },
       {
-        "wall_us": 9045.602,
-        "total_inference_us": 4320.0,
-        "rotation_hoisting_us": 3217.0,
-        "multiply_plain_us": 939.0,
-        "deserialization_us": 81.0,
-        "serialization_us": 81.0
+        "wall_us": 9228.527,
+        "total_inference_us": 3830.0,
+        "rotation_hoisting_us": 3169.0,
+        "multiply_plain_us": 555.0,
+        "deserialization_us": 61.0,
+        "serialization_us": 45.0
       },
       {
-        "wall_us": 8156.595,
-        "total_inference_us": 3134.0,
-        "rotation_hoisting_us": 2466.0,
-        "multiply_plain_us": 535.0,
-        "deserialization_us": 65.0,
-        "serialization_us": 66.0
+        "wall_us": 8679.847,
+        "total_inference_us": 3322.0,
+        "rotation_hoisting_us": 2684.0,
+        "multiply_plain_us": 517.0,
+        "deserialization_us": 56.0,
+        "serialization_us": 63.0
       },
       {
-        "wall_us": 8017.789,
-        "total_inference_us": 3133.0,
-        "rotation_hoisting_us": 2480.0,
-        "multiply_plain_us": 534.0,
-        "deserialization_us": 60.0,
-        "serialization_us": 58.0
+        "wall_us": 8693.53,
+        "total_inference_us": 3402.0,
+        "rotation_hoisting_us": 2741.0,
+        "multiply_plain_us": 544.0,
+        "deserialization_us": 61.0,
+        "serialization_us": 55.0
       },
       {
-        "wall_us": 10513.605,
-        "total_inference_us": 5282.0,
-        "rotation_hoisting_us": 4055.0,
-        "multiply_plain_us": 991.0,
-        "deserialization_us": 120.0,
+        "wall_us": 10117.946,
+        "total_inference_us": 4520.0,
+        "rotation_hoisting_us": 3446.0,
+        "multiply_plain_us": 936.0,
+        "deserialization_us": 88.0,
+        "serialization_us": 49.0
+      },
+      {
+        "wall_us": 8499.154,
+        "total_inference_us": 3105.0,
+        "rotation_hoisting_us": 2485.0,
+        "multiply_plain_us": 522.0,
+        "deserialization_us": 52.0,
+        "serialization_us": 45.0
+      },
+      {
+        "wall_us": 10435.215,
+        "total_inference_us": 5122.0,
+        "rotation_hoisting_us": 3883.0,
+        "multiply_plain_us": 1092.0,
+        "deserialization_us": 101.0,
+        "serialization_us": 45.0
+      },
+      {
+        "wall_us": 9195.894,
+        "total_inference_us": 3229.0,
+        "rotation_hoisting_us": 2580.0,
+        "multiply_plain_us": 533.0,
+        "deserialization_us": 61.0,
+        "serialization_us": 54.0
+      },
+      {
+        "wall_us": 10197.646,
+        "total_inference_us": 4418.0,
+        "rotation_hoisting_us": 3782.0,
+        "multiply_plain_us": 539.0,
+        "deserialization_us": 53.0,
+        "serialization_us": 43.0
+      },
+      {
+        "wall_us": 9088.322,
+        "total_inference_us": 4312.0,
+        "rotation_hoisting_us": 3718.0,
+        "multiply_plain_us": 499.0,
+        "deserialization_us": 50.0,
+        "serialization_us": 43.0
+      },
+      {
+        "wall_us": 8748.167,
+        "total_inference_us": 4267.0,
+        "rotation_hoisting_us": 3641.0,
+        "multiply_plain_us": 538.0,
+        "deserialization_us": 49.0,
+        "serialization_us": 37.0
+      },
+      {
+        "wall_us": 8899.366,
+        "total_inference_us": 4362.0,
+        "rotation_hoisting_us": 3774.0,
+        "multiply_plain_us": 497.0,
+        "deserialization_us": 47.0,
+        "serialization_us": 43.0
+      },
+      {
+        "wall_us": 7850.247,
+        "total_inference_us": 3123.0,
+        "rotation_hoisting_us": 2504.0,
+        "multiply_plain_us": 521.0,
+        "deserialization_us": 52.0,
+        "serialization_us": 45.0
+      },
+      {
+        "wall_us": 8099.441,
+        "total_inference_us": 3281.0,
+        "rotation_hoisting_us": 2645.0,
+        "multiply_plain_us": 517.0,
+        "deserialization_us": 48.0,
+        "serialization_us": 69.0
+      },
+      {
+        "wall_us": 7890.514,
+        "total_inference_us": 2980.0,
+        "rotation_hoisting_us": 2369.0,
+        "multiply_plain_us": 517.0,
+        "deserialization_us": 48.0,
+        "serialization_us": 44.0
+      },
+      {
+        "wall_us": 7354.754,
+        "total_inference_us": 2902.0,
+        "rotation_hoisting_us": 2298.0,
+        "multiply_plain_us": 514.0,
+        "deserialization_us": 47.0,
+        "serialization_us": 42.0
+      },
+      {
+        "wall_us": 7438.468,
+        "total_inference_us": 2781.0,
+        "rotation_hoisting_us": 2203.0,
+        "multiply_plain_us": 495.0,
+        "deserialization_us": 42.0,
+        "serialization_us": 39.0
+      },
+      {
+        "wall_us": 7467.134,
+        "total_inference_us": 2940.0,
+        "rotation_hoisting_us": 2340.0,
+        "multiply_plain_us": 518.0,
+        "deserialization_us": 42.0,
+        "serialization_us": 39.0
+      },
+      {
+        "wall_us": 7234.882,
+        "total_inference_us": 2875.0,
+        "rotation_hoisting_us": 2300.0,
+        "multiply_plain_us": 485.0,
+        "deserialization_us": 52.0,
+        "serialization_us": 38.0
+      },
+      {
+        "wall_us": 7509.521,
+        "total_inference_us": 2925.0,
+        "rotation_hoisting_us": 2349.0,
+        "multiply_plain_us": 476.0,
+        "deserialization_us": 56.0,
+        "serialization_us": 41.0
+      },
+      {
+        "wall_us": 9704.873,
+        "total_inference_us": 4941.0,
+        "rotation_hoisting_us": 3799.0,
+        "multiply_plain_us": 978.0,
+        "deserialization_us": 59.0,
+        "serialization_us": 104.0
+      },
+      {
+        "wall_us": 8347.315,
+        "total_inference_us": 3160.0,
+        "rotation_hoisting_us": 2539.0,
+        "multiply_plain_us": 512.0,
+        "deserialization_us": 49.0,
+        "serialization_us": 57.0
+      },
+      {
+        "wall_us": 7826.993,
+        "total_inference_us": 3128.0,
+        "rotation_hoisting_us": 2524.0,
+        "multiply_plain_us": 506.0,
+        "deserialization_us": 54.0,
+        "serialization_us": 43.0
+      },
+      {
+        "wall_us": 7843.775,
+        "total_inference_us": 3173.0,
+        "rotation_hoisting_us": 2522.0,
+        "multiply_plain_us": 521.0,
+        "deserialization_us": 57.0,
+        "serialization_us": 72.0
+      },
+      {
+        "wall_us": 8082.703,
+        "total_inference_us": 3262.0,
+        "rotation_hoisting_us": 2665.0,
+        "multiply_plain_us": 488.0,
+        "deserialization_us": 48.0,
+        "serialization_us": 59.0
+      },
+      {
+        "wall_us": 8103.772,
+        "total_inference_us": 3317.0,
+        "rotation_hoisting_us": 2515.0,
+        "multiply_plain_us": 537.0,
+        "deserialization_us": 149.0,
         "serialization_us": 115.0
       },
       {
-        "wall_us": 9601.787,
-        "total_inference_us": 4607.0,
-        "rotation_hoisting_us": 3960.0,
+        "wall_us": 8485.31,
+        "total_inference_us": 3522.0,
+        "rotation_hoisting_us": 2895.0,
+        "multiply_plain_us": 513.0,
+        "deserialization_us": 64.0,
+        "serialization_us": 49.0
+      },
+      {
+        "wall_us": 8340.007,
+        "total_inference_us": 3183.0,
+        "rotation_hoisting_us": 2579.0,
+        "multiply_plain_us": 495.0,
+        "deserialization_us": 48.0,
+        "serialization_us": 59.0
+      },
+      {
+        "wall_us": 7957.828,
+        "total_inference_us": 3223.0,
+        "rotation_hoisting_us": 2443.0,
         "multiply_plain_us": 518.0,
-        "deserialization_us": 68.0,
-        "serialization_us": 60.0
+        "deserialization_us": 59.0,
+        "serialization_us": 201.0
       },
       {
-        "wall_us": 8065.46,
-        "total_inference_us": 3210.0,
-        "rotation_hoisting_us": 2548.0,
-        "multiply_plain_us": 542.0,
+        "wall_us": 8619.853,
+        "total_inference_us": 3106.0,
+        "rotation_hoisting_us": 2500.0,
+        "multiply_plain_us": 477.0,
+        "deserialization_us": 62.0,
+        "serialization_us": 65.0
+      },
+      {
+        "wall_us": 8143.208,
+        "total_inference_us": 3299.0,
+        "rotation_hoisting_us": 2596.0,
+        "multiply_plain_us": 519.0,
+        "deserialization_us": 49.0,
+        "serialization_us": 133.0
+      },
+      {
+        "wall_us": 10181.155,
+        "total_inference_us": 4836.0,
+        "rotation_hoisting_us": 3944.0,
+        "multiply_plain_us": 753.0,
+        "deserialization_us": 70.0,
+        "serialization_us": 67.0
+      },
+      {
+        "wall_us": 8151.385,
+        "total_inference_us": 3118.0,
+        "rotation_hoisting_us": 2495.0,
+        "multiply_plain_us": 511.0,
+        "deserialization_us": 53.0,
+        "serialization_us": 58.0
+      },
+      {
+        "wall_us": 9770.376,
+        "total_inference_us": 4730.0,
+        "rotation_hoisting_us": 3933.0,
+        "multiply_plain_us": 540.0,
+        "deserialization_us": 73.0,
+        "serialization_us": 182.0
+      },
+      {
+        "wall_us": 10704.632,
+        "total_inference_us": 5418.0,
+        "rotation_hoisting_us": 4154.0,
+        "multiply_plain_us": 1004.0,
+        "deserialization_us": 112.0,
+        "serialization_us": 147.0
+      },
+      {
+        "wall_us": 10562.629,
+        "total_inference_us": 5300.0,
+        "rotation_hoisting_us": 4094.0,
+        "multiply_plain_us": 957.0,
+        "deserialization_us": 83.0,
+        "serialization_us": 165.0
+      },
+      {
+        "wall_us": 9341.867,
+        "total_inference_us": 3918.0,
+        "rotation_hoisting_us": 3316.0,
+        "multiply_plain_us": 495.0,
+        "deserialization_us": 57.0,
+        "serialization_us": 48.0
+      },
+      {
+        "wall_us": 10503.712,
+        "total_inference_us": 4935.0,
+        "rotation_hoisting_us": 3845.0,
+        "multiply_plain_us": 873.0,
+        "deserialization_us": 112.0,
+        "serialization_us": 104.0
+      },
+      {
+        "wall_us": 9159.118,
+        "total_inference_us": 3700.0,
+        "rotation_hoisting_us": 3093.0,
+        "multiply_plain_us": 496.0,
+        "deserialization_us": 48.0,
+        "serialization_us": 61.0
+      },
+      {
+        "wall_us": 8838.75,
+        "total_inference_us": 3573.0,
+        "rotation_hoisting_us": 2907.0,
+        "multiply_plain_us": 545.0,
+        "deserialization_us": 75.0,
+        "serialization_us": 45.0
+      },
+      {
+        "wall_us": 8676.009,
+        "total_inference_us": 3638.0,
+        "rotation_hoisting_us": 3007.0,
+        "multiply_plain_us": 520.0,
+        "deserialization_us": 55.0,
+        "serialization_us": 54.0
+      },
+      {
+        "wall_us": 8826.997,
+        "total_inference_us": 3530.0,
+        "rotation_hoisting_us": 2646.0,
+        "multiply_plain_us": 730.0,
+        "deserialization_us": 105.0,
+        "serialization_us": 47.0
+      },
+      {
+        "wall_us": 9865.114,
+        "total_inference_us": 4406.0,
+        "rotation_hoisting_us": 3315.0,
+        "multiply_plain_us": 914.0,
+        "deserialization_us": 84.0,
+        "serialization_us": 92.0
+      },
+      {
+        "wall_us": 8564.008,
+        "total_inference_us": 3559.0,
+        "rotation_hoisting_us": 2828.0,
+        "multiply_plain_us": 620.0,
+        "deserialization_us": 61.0,
+        "serialization_us": 49.0
+      },
+      {
+        "wall_us": 9694.195,
+        "total_inference_us": 3931.0,
+        "rotation_hoisting_us": 3016.0,
+        "multiply_plain_us": 778.0,
+        "deserialization_us": 87.0,
+        "serialization_us": 48.0
+      },
+      {
+        "wall_us": 8766.928,
+        "total_inference_us": 3610.0,
+        "rotation_hoisting_us": 2859.0,
+        "multiply_plain_us": 636.0,
+        "deserialization_us": 69.0,
+        "serialization_us": 45.0
+      },
+      {
+        "wall_us": 9586.861,
+        "total_inference_us": 4317.0,
+        "rotation_hoisting_us": 3170.0,
+        "multiply_plain_us": 946.0,
+        "deserialization_us": 96.0,
+        "serialization_us": 104.0
+      },
+      {
+        "wall_us": 8778.706,
+        "total_inference_us": 3331.0,
+        "rotation_hoisting_us": 2549.0,
+        "multiply_plain_us": 653.0,
+        "deserialization_us": 80.0,
+        "serialization_us": 47.0
+      },
+      {
+        "wall_us": 9061.499,
+        "total_inference_us": 3771.0,
+        "rotation_hoisting_us": 3090.0,
+        "multiply_plain_us": 504.0,
+        "deserialization_us": 111.0,
+        "serialization_us": 65.0
+      },
+      {
+        "wall_us": 8714.766,
+        "total_inference_us": 3590.0,
+        "rotation_hoisting_us": 2781.0,
+        "multiply_plain_us": 638.0,
         "deserialization_us": 66.0,
-        "serialization_us": 53.0
+        "serialization_us": 104.0
       },
       {
-        "wall_us": 8322.591,
-        "total_inference_us": 3314.0,
-        "rotation_hoisting_us": 2564.0,
-        "multiply_plain_us": 616.0,
-        "deserialization_us": 65.0,
-        "serialization_us": 68.0
+        "wall_us": 9556.375,
+        "total_inference_us": 4143.0,
+        "rotation_hoisting_us": 3083.0,
+        "multiply_plain_us": 922.0,
+        "deserialization_us": 86.0,
+        "serialization_us": 51.0
       },
       {
-        "wall_us": 8219.431,
-        "total_inference_us": 3129.0,
-        "rotation_hoisting_us": 2425.0,
-        "multiply_plain_us": 579.0,
+        "wall_us": 8962.703,
+        "total_inference_us": 3403.0,
+        "rotation_hoisting_us": 2606.0,
+        "multiply_plain_us": 669.0,
         "deserialization_us": 60.0,
-        "serialization_us": 64.0
+        "serialization_us": 66.0
+      },
+      {
+        "wall_us": 10026.362,
+        "total_inference_us": 4546.0,
+        "rotation_hoisting_us": 3427.0,
+        "multiply_plain_us": 956.0,
+        "deserialization_us": 96.0,
+        "serialization_us": 66.0
+      },
+      {
+        "wall_us": 9186.225,
+        "total_inference_us": 3247.0,
+        "rotation_hoisting_us": 2494.0,
+        "multiply_plain_us": 614.0,
+        "deserialization_us": 64.0,
+        "serialization_us": 73.0
+      },
+      {
+        "wall_us": 9792.637,
+        "total_inference_us": 4854.0,
+        "rotation_hoisting_us": 4174.0,
+        "multiply_plain_us": 569.0,
+        "deserialization_us": 52.0,
+        "serialization_us": 58.0
+      },
+      {
+        "wall_us": 8731.486,
+        "total_inference_us": 3581.0,
+        "rotation_hoisting_us": 2770.0,
+        "multiply_plain_us": 637.0,
+        "deserialization_us": 63.0,
+        "serialization_us": 109.0
+      },
+      {
+        "wall_us": 9890.766,
+        "total_inference_us": 4682.0,
+        "rotation_hoisting_us": 4011.0,
+        "multiply_plain_us": 557.0,
+        "deserialization_us": 65.0,
+        "serialization_us": 48.0
+      },
+      {
+        "wall_us": 8601.642,
+        "total_inference_us": 3246.0,
+        "rotation_hoisting_us": 2521.0,
+        "multiply_plain_us": 546.0,
+        "deserialization_us": 63.0,
+        "serialization_us": 115.0
+      },
+      {
+        "wall_us": 8959.516,
+        "total_inference_us": 4066.0,
+        "rotation_hoisting_us": 3475.0,
+        "multiply_plain_us": 490.0,
+        "deserialization_us": 53.0,
+        "serialization_us": 46.0
+      },
+      {
+        "wall_us": 9656.795,
+        "total_inference_us": 4071.0,
+        "rotation_hoisting_us": 3386.0,
+        "multiply_plain_us": 511.0,
+        "deserialization_us": 52.0,
+        "serialization_us": 122.0
       }
     ],
     "reduced_160bit": [
       {
-        "wall_us": 7116.167,
-        "total_inference_us": 3006.0,
-        "rotation_hoisting_us": 2557.0,
-        "multiply_plain_us": 378.0,
-        "deserialization_us": 39.0,
-        "serialization_us": 30.0
-      },
-      {
-        "wall_us": 7244.666,
-        "total_inference_us": 2867.0,
-        "rotation_hoisting_us": 2421.0,
-        "multiply_plain_us": 371.0,
-        "deserialization_us": 41.0,
-        "serialization_us": 33.0
-      },
-      {
-        "wall_us": 6398.75,
-        "total_inference_us": 2420.0,
-        "rotation_hoisting_us": 2031.0,
-        "multiply_plain_us": 318.0,
-        "deserialization_us": 41.0,
-        "serialization_us": 29.0
-      },
-      {
-        "wall_us": 6860.039,
-        "total_inference_us": 2997.0,
-        "rotation_hoisting_us": 2535.0,
-        "multiply_plain_us": 384.0,
-        "deserialization_us": 44.0,
-        "serialization_us": 32.0
-      },
-      {
-        "wall_us": 7600.913,
-        "total_inference_us": 3377.0,
-        "rotation_hoisting_us": 2853.0,
-        "multiply_plain_us": 374.0,
-        "deserialization_us": 42.0,
-        "serialization_us": 106.0
-      },
-      {
-        "wall_us": 6948.686,
-        "total_inference_us": 3202.0,
-        "rotation_hoisting_us": 2800.0,
-        "multiply_plain_us": 333.0,
-        "deserialization_us": 37.0,
-        "serialization_us": 31.0
-      },
-      {
-        "wall_us": 6671.275,
-        "total_inference_us": 2482.0,
-        "rotation_hoisting_us": 2079.0,
-        "multiply_plain_us": 342.0,
-        "deserialization_us": 35.0,
-        "serialization_us": 25.0
-      },
-      {
-        "wall_us": 5736.953,
-        "total_inference_us": 1998.0,
-        "rotation_hoisting_us": 1586.0,
-        "multiply_plain_us": 334.0,
-        "deserialization_us": 42.0,
-        "serialization_us": 34.0
-      },
-      {
-        "wall_us": 5933.947,
-        "total_inference_us": 2363.0,
-        "rotation_hoisting_us": 1909.0,
-        "multiply_plain_us": 324.0,
-        "deserialization_us": 32.0,
-        "serialization_us": 97.0
-      },
-      {
-        "wall_us": 5737.535,
-        "total_inference_us": 1772.0,
-        "rotation_hoisting_us": 1369.0,
-        "multiply_plain_us": 333.0,
-        "deserialization_us": 35.0,
-        "serialization_us": 33.0
-      },
-      {
-        "wall_us": 5245.368,
-        "total_inference_us": 1675.0,
-        "rotation_hoisting_us": 1274.0,
-        "multiply_plain_us": 337.0,
-        "deserialization_us": 41.0,
-        "serialization_us": 21.0
-      },
-      {
-        "wall_us": 6396.908,
-        "total_inference_us": 2709.0,
-        "rotation_hoisting_us": 1957.0,
+        "wall_us": 7006.336,
+        "total_inference_us": 2983.0,
+        "rotation_hoisting_us": 2240.0,
         "multiply_plain_us": 642.0,
-        "deserialization_us": 77.0,
-        "serialization_us": 33.0
+        "deserialization_us": 59.0,
+        "serialization_us": 40.0
       },
       {
-        "wall_us": 5187.737,
-        "total_inference_us": 1678.0,
-        "rotation_hoisting_us": 1256.0,
-        "multiply_plain_us": 354.0,
+        "wall_us": 6504.429,
+        "total_inference_us": 2635.0,
+        "rotation_hoisting_us": 2234.0,
+        "multiply_plain_us": 327.0,
+        "deserialization_us": 32.0,
+        "serialization_us": 41.0
+      },
+      {
+        "wall_us": 7041.603,
+        "total_inference_us": 3167.0,
+        "rotation_hoisting_us": 2402.0,
+        "multiply_plain_us": 588.0,
+        "deserialization_us": 57.0,
+        "serialization_us": 118.0
+      },
+      {
+        "wall_us": 6139.211,
+        "total_inference_us": 2583.0,
+        "rotation_hoisting_us": 2074.0,
+        "multiply_plain_us": 444.0,
         "deserialization_us": 35.0,
-        "serialization_us": 32.0
+        "serialization_us": 28.0
       },
       {
-        "wall_us": 5513.958,
-        "total_inference_us": 1865.0,
-        "rotation_hoisting_us": 1397.0,
-        "multiply_plain_us": 335.0,
-        "deserialization_us": 46.0,
-        "serialization_us": 86.0
-      },
-      {
-        "wall_us": 5294.349,
-        "total_inference_us": 1735.0,
-        "rotation_hoisting_us": 1323.0,
-        "multiply_plain_us": 341.0,
-        "deserialization_us": 36.0,
-        "serialization_us": 33.0
-      },
-      {
-        "wall_us": 5328.253,
-        "total_inference_us": 1619.0,
-        "rotation_hoisting_us": 1236.0,
-        "multiply_plain_us": 306.0,
-        "deserialization_us": 41.0,
-        "serialization_us": 35.0
-      },
-      {
-        "wall_us": 5261.903,
-        "total_inference_us": 1661.0,
-        "rotation_hoisting_us": 1262.0,
-        "multiply_plain_us": 332.0,
-        "deserialization_us": 41.0,
-        "serialization_us": 26.0
-      },
-      {
-        "wall_us": 5683.229,
-        "total_inference_us": 2273.0,
-        "rotation_hoisting_us": 1849.0,
-        "multiply_plain_us": 353.0,
-        "deserialization_us": 40.0,
-        "serialization_us": 30.0
-      },
-      {
-        "wall_us": 5434.741,
-        "total_inference_us": 1607.0,
-        "rotation_hoisting_us": 1216.0,
-        "multiply_plain_us": 315.0,
-        "deserialization_us": 39.0,
-        "serialization_us": 35.0
-      },
-      {
-        "wall_us": 5414.797,
-        "total_inference_us": 1732.0,
-        "rotation_hoisting_us": 1332.0,
-        "multiply_plain_us": 335.0,
-        "deserialization_us": 38.0,
-        "serialization_us": 26.0
-      },
-      {
-        "wall_us": 6371.786,
-        "total_inference_us": 2587.0,
-        "rotation_hoisting_us": 2179.0,
-        "multiply_plain_us": 330.0,
-        "deserialization_us": 42.0,
-        "serialization_us": 33.0
-      },
-      {
-        "wall_us": 5633.673,
-        "total_inference_us": 1673.0,
-        "rotation_hoisting_us": 1220.0,
-        "multiply_plain_us": 367.0,
-        "deserialization_us": 54.0,
-        "serialization_us": 31.0
-      },
-      {
-        "wall_us": 6024.091,
-        "total_inference_us": 2413.0,
-        "rotation_hoisting_us": 2028.0,
-        "multiply_plain_us": 315.0,
-        "deserialization_us": 43.0,
-        "serialization_us": 25.0
-      },
-      {
-        "wall_us": 6196.122,
-        "total_inference_us": 2431.0,
-        "rotation_hoisting_us": 1998.0,
-        "multiply_plain_us": 363.0,
-        "deserialization_us": 38.0,
-        "serialization_us": 30.0
-      },
-      {
-        "wall_us": 5228.407,
-        "total_inference_us": 1634.0,
-        "rotation_hoisting_us": 1260.0,
-        "multiply_plain_us": 311.0,
-        "deserialization_us": 36.0,
-        "serialization_us": 25.0
-      },
-      {
-        "wall_us": 6018.385,
-        "total_inference_us": 2398.0,
-        "rotation_hoisting_us": 2007.0,
-        "multiply_plain_us": 322.0,
-        "deserialization_us": 39.0,
-        "serialization_us": 29.0
-      },
-      {
-        "wall_us": 7250.463,
-        "total_inference_us": 3091.0,
-        "rotation_hoisting_us": 2175.0,
-        "multiply_plain_us": 775.0,
-        "deserialization_us": 81.0,
-        "serialization_us": 58.0
-      },
-      {
-        "wall_us": 6509.701,
-        "total_inference_us": 2750.0,
-        "rotation_hoisting_us": 1978.0,
-        "multiply_plain_us": 608.0,
-        "deserialization_us": 71.0,
-        "serialization_us": 91.0
-      },
-      {
-        "wall_us": 7865.597,
-        "total_inference_us": 3830.0,
-        "rotation_hoisting_us": 3024.0,
-        "multiply_plain_us": 662.0,
-        "deserialization_us": 82.0,
-        "serialization_us": 61.0
-      },
-      {
-        "wall_us": 6604.555,
-        "total_inference_us": 2593.0,
-        "rotation_hoisting_us": 1863.0,
-        "multiply_plain_us": 625.0,
-        "deserialization_us": 75.0,
-        "serialization_us": 29.0
-      },
-      {
-        "wall_us": 6959.709,
-        "total_inference_us": 2990.0,
-        "rotation_hoisting_us": 2181.0,
-        "multiply_plain_us": 629.0,
-        "deserialization_us": 63.0,
-        "serialization_us": 116.0
-      },
-      {
-        "wall_us": 7488.813,
-        "total_inference_us": 3332.0,
-        "rotation_hoisting_us": 2601.0,
-        "multiply_plain_us": 628.0,
-        "deserialization_us": 75.0,
-        "serialization_us": 27.0
-      },
-      {
-        "wall_us": 6567.142,
-        "total_inference_us": 2719.0,
-        "rotation_hoisting_us": 1982.0,
-        "multiply_plain_us": 626.0,
-        "deserialization_us": 77.0,
-        "serialization_us": 32.0
-      },
-      {
-        "wall_us": 5935.543,
-        "total_inference_us": 2423.0,
-        "rotation_hoisting_us": 1980.0,
-        "multiply_plain_us": 351.0,
-        "deserialization_us": 58.0,
-        "serialization_us": 32.0
-      },
-      {
-        "wall_us": 5589.49,
-        "total_inference_us": 1690.0,
-        "rotation_hoisting_us": 1245.0,
-        "multiply_plain_us": 334.0,
-        "deserialization_us": 35.0,
-        "serialization_us": 75.0
-      },
-      {
-        "wall_us": 6871.569,
-        "total_inference_us": 3065.0,
-        "rotation_hoisting_us": 2202.0,
-        "multiply_plain_us": 691.0,
-        "deserialization_us": 107.0,
-        "serialization_us": 63.0
-      },
-      {
-        "wall_us": 6338.279,
-        "total_inference_us": 1839.0,
-        "rotation_hoisting_us": 1281.0,
-        "multiply_plain_us": 433.0,
-        "deserialization_us": 46.0,
-        "serialization_us": 78.0
-      },
-      {
-        "wall_us": 6152.856,
-        "total_inference_us": 2385.0,
-        "rotation_hoisting_us": 1972.0,
-        "multiply_plain_us": 339.0,
-        "deserialization_us": 40.0,
+        "wall_us": 6309.056,
+        "total_inference_us": 2595.0,
+        "rotation_hoisting_us": 2205.0,
+        "multiply_plain_us": 320.0,
+        "deserialization_us": 34.0,
         "serialization_us": 34.0
       },
       {
-        "wall_us": 6009.879,
-        "total_inference_us": 2245.0,
-        "rotation_hoisting_us": 1412.0,
-        "multiply_plain_us": 704.0,
-        "deserialization_us": 85.0,
-        "serialization_us": 43.0
-      },
-      {
-        "wall_us": 6363.681,
-        "total_inference_us": 2531.0,
-        "rotation_hoisting_us": 2060.0,
-        "multiply_plain_us": 392.0,
-        "deserialization_us": 42.0,
-        "serialization_us": 35.0
-      },
-      {
-        "wall_us": 6467.354,
-        "total_inference_us": 2832.0,
-        "rotation_hoisting_us": 1997.0,
-        "multiply_plain_us": 643.0,
-        "deserialization_us": 69.0,
-        "serialization_us": 122.0
-      },
-      {
-        "wall_us": 7632.647,
-        "total_inference_us": 3910.0,
-        "rotation_hoisting_us": 3428.0,
-        "multiply_plain_us": 365.0,
-        "deserialization_us": 43.0,
-        "serialization_us": 72.0
-      },
-      {
-        "wall_us": 6448.67,
-        "total_inference_us": 2663.0,
-        "rotation_hoisting_us": 1927.0,
-        "multiply_plain_us": 630.0,
-        "deserialization_us": 75.0,
-        "serialization_us": 29.0
-      },
-      {
-        "wall_us": 5492.744,
-        "total_inference_us": 1734.0,
-        "rotation_hoisting_us": 1306.0,
-        "multiply_plain_us": 350.0,
-        "deserialization_us": 49.0,
-        "serialization_us": 27.0
-      },
-      {
-        "wall_us": 5402.724,
-        "total_inference_us": 1762.0,
-        "rotation_hoisting_us": 1255.0,
-        "multiply_plain_us": 369.0,
-        "deserialization_us": 33.0,
-        "serialization_us": 103.0
-      },
-      {
-        "wall_us": 5187.046,
-        "total_inference_us": 1780.0,
-        "rotation_hoisting_us": 1345.0,
-        "multiply_plain_us": 354.0,
-        "deserialization_us": 44.0,
-        "serialization_us": 35.0
-      },
-      {
-        "wall_us": 8914.508,
-        "total_inference_us": 1710.0,
-        "rotation_hoisting_us": 1319.0,
+        "wall_us": 5619.771,
+        "total_inference_us": 2209.0,
+        "rotation_hoisting_us": 1759.0,
         "multiply_plain_us": 323.0,
-        "deserialization_us": 36.0,
-        "serialization_us": 30.0
-      },
-      {
-        "wall_us": 6418.392,
-        "total_inference_us": 1785.0,
-        "rotation_hoisting_us": 1362.0,
-        "multiply_plain_us": 340.0,
-        "deserialization_us": 39.0,
-        "serialization_us": 42.0
-      },
-      {
-        "wall_us": 18636.255,
-        "total_inference_us": 6482.0,
-        "rotation_hoisting_us": 5285.0,
-        "multiply_plain_us": 956.0,
-        "deserialization_us": 78.0,
-        "serialization_us": 161.0
-      },
-      {
-        "wall_us": 15599.769,
-        "total_inference_us": 4340.0,
-        "rotation_hoisting_us": 3659.0,
-        "multiply_plain_us": 583.0,
-        "deserialization_us": 55.0,
-        "serialization_us": 42.0
-      },
-      {
-        "wall_us": 10292.457,
-        "total_inference_us": 2609.0,
-        "rotation_hoisting_us": 2194.0,
-        "multiply_plain_us": 334.0,
-        "deserialization_us": 38.0,
-        "serialization_us": 42.0
-      },
-      {
-        "wall_us": 10858.423,
-        "total_inference_us": 4676.0,
-        "rotation_hoisting_us": 3747.0,
-        "multiply_plain_us": 749.0,
-        "deserialization_us": 100.0,
-        "serialization_us": 79.0
-      },
-      {
-        "wall_us": 7168.184,
-        "total_inference_us": 3334.0,
-        "rotation_hoisting_us": 2891.0,
-        "multiply_plain_us": 364.0,
-        "deserialization_us": 40.0,
-        "serialization_us": 38.0
-      },
-      {
-        "wall_us": 6233.206,
-        "total_inference_us": 2462.0,
-        "rotation_hoisting_us": 2054.0,
-        "multiply_plain_us": 339.0,
-        "deserialization_us": 42.0,
-        "serialization_us": 25.0
-      },
-      {
-        "wall_us": 5397.147,
-        "total_inference_us": 1740.0,
-        "rotation_hoisting_us": 1317.0,
-        "multiply_plain_us": 310.0,
-        "deserialization_us": 42.0,
-        "serialization_us": 69.0
-      },
-      {
-        "wall_us": 6034.733,
-        "total_inference_us": 2579.0,
-        "rotation_hoisting_us": 2187.0,
-        "multiply_plain_us": 327.0,
-        "deserialization_us": 36.0,
-        "serialization_us": 28.0
-      },
-      {
-        "wall_us": 5212.938,
-        "total_inference_us": 1696.0,
-        "rotation_hoisting_us": 1328.0,
-        "multiply_plain_us": 302.0,
         "deserialization_us": 37.0,
-        "serialization_us": 28.0
+        "serialization_us": 87.0
       },
       {
-        "wall_us": 6422.031,
-        "total_inference_us": 2736.0,
-        "rotation_hoisting_us": 2304.0,
-        "multiply_plain_us": 356.0,
-        "deserialization_us": 39.0,
-        "serialization_us": 36.0
-      },
-      {
-        "wall_us": 6182.498,
-        "total_inference_us": 2506.0,
-        "rotation_hoisting_us": 2057.0,
-        "multiply_plain_us": 365.0,
-        "deserialization_us": 54.0,
-        "serialization_us": 29.0
-      },
-      {
-        "wall_us": 6295.591,
-        "total_inference_us": 2549.0,
-        "rotation_hoisting_us": 2143.0,
-        "multiply_plain_us": 329.0,
-        "deserialization_us": 46.0,
-        "serialization_us": 29.0
-      },
-      {
-        "wall_us": 5463.644,
-        "total_inference_us": 1816.0,
-        "rotation_hoisting_us": 1398.0,
-        "multiply_plain_us": 349.0,
-        "deserialization_us": 43.0,
+        "wall_us": 5748.412,
+        "total_inference_us": 2298.0,
+        "rotation_hoisting_us": 1935.0,
+        "multiply_plain_us": 308.0,
+        "deserialization_us": 29.0,
         "serialization_us": 24.0
       },
       {
-        "wall_us": 6508.071,
-        "total_inference_us": 2624.0,
-        "rotation_hoisting_us": 2174.0,
-        "multiply_plain_us": 352.0,
-        "deserialization_us": 63.0,
-        "serialization_us": 34.0
-      },
-      {
-        "wall_us": 5216.347,
-        "total_inference_us": 1646.0,
-        "rotation_hoisting_us": 1259.0,
-        "multiply_plain_us": 320.0,
-        "deserialization_us": 35.0,
-        "serialization_us": 31.0
-      },
-      {
-        "wall_us": 6548.765,
-        "total_inference_us": 2816.0,
-        "rotation_hoisting_us": 2364.0,
-        "multiply_plain_us": 380.0,
-        "deserialization_us": 35.0,
-        "serialization_us": 35.0
-      },
-      {
-        "wall_us": 6164.643,
-        "total_inference_us": 2520.0,
-        "rotation_hoisting_us": 2118.0,
-        "multiply_plain_us": 334.0,
-        "deserialization_us": 38.0,
-        "serialization_us": 28.0
-      },
-      {
-        "wall_us": 5813.055,
-        "total_inference_us": 2099.0,
-        "rotation_hoisting_us": 1642.0,
-        "multiply_plain_us": 383.0,
-        "deserialization_us": 44.0,
-        "serialization_us": 29.0
-      },
-      {
-        "wall_us": 5471.908,
-        "total_inference_us": 1851.0,
-        "rotation_hoisting_us": 1411.0,
-        "multiply_plain_us": 366.0,
-        "deserialization_us": 41.0,
-        "serialization_us": 32.0
-      },
-      {
-        "wall_us": 5043.734,
-        "total_inference_us": 1701.0,
-        "rotation_hoisting_us": 1298.0,
-        "multiply_plain_us": 327.0,
-        "deserialization_us": 38.0,
-        "serialization_us": 37.0
-      },
-      {
-        "wall_us": 5545.565,
-        "total_inference_us": 1726.0,
-        "rotation_hoisting_us": 1280.0,
-        "multiply_plain_us": 309.0,
-        "deserialization_us": 36.0,
-        "serialization_us": 99.0
-      },
-      {
-        "wall_us": 7732.712,
-        "total_inference_us": 3252.0,
-        "rotation_hoisting_us": 2451.0,
-        "multiply_plain_us": 631.0,
-        "deserialization_us": 76.0,
-        "serialization_us": 93.0
-      },
-      {
-        "wall_us": 6753.37,
-        "total_inference_us": 2814.0,
-        "rotation_hoisting_us": 2302.0,
-        "multiply_plain_us": 376.0,
-        "deserialization_us": 36.0,
-        "serialization_us": 98.0
-      },
-      {
-        "wall_us": 6653.831,
-        "total_inference_us": 2614.0,
-        "rotation_hoisting_us": 1818.0,
-        "multiply_plain_us": 634.0,
-        "deserialization_us": 86.0,
-        "serialization_us": 75.0
-      },
-      {
-        "wall_us": 7655.542,
-        "total_inference_us": 3166.0,
-        "rotation_hoisting_us": 2276.0,
-        "multiply_plain_us": 743.0,
-        "deserialization_us": 113.0,
-        "serialization_us": 32.0
-      },
-      {
-        "wall_us": 6031.257,
-        "total_inference_us": 2458.0,
-        "rotation_hoisting_us": 2069.0,
-        "multiply_plain_us": 319.0,
-        "deserialization_us": 42.0,
-        "serialization_us": 27.0
-      },
-      {
-        "wall_us": 6266.648,
-        "total_inference_us": 2608.0,
-        "rotation_hoisting_us": 2225.0,
-        "multiply_plain_us": 315.0,
-        "deserialization_us": 40.0,
-        "serialization_us": 27.0
-      },
-      {
-        "wall_us": 5795.988,
-        "total_inference_us": 2313.0,
-        "rotation_hoisting_us": 1943.0,
-        "multiply_plain_us": 309.0,
-        "deserialization_us": 35.0,
+        "wall_us": 7096.06,
+        "total_inference_us": 2207.0,
+        "rotation_hoisting_us": 1569.0,
+        "multiply_plain_us": 537.0,
+        "deserialization_us": 74.0,
         "serialization_us": 25.0
       },
       {
-        "wall_us": 6090.785,
-        "total_inference_us": 2597.0,
-        "rotation_hoisting_us": 2217.0,
-        "multiply_plain_us": 314.0,
-        "deserialization_us": 37.0,
-        "serialization_us": 27.0
-      },
-      {
-        "wall_us": 6038.634,
-        "total_inference_us": 2505.0,
-        "rotation_hoisting_us": 2059.0,
-        "multiply_plain_us": 325.0,
+        "wall_us": 5858.71,
+        "total_inference_us": 2145.0,
+        "rotation_hoisting_us": 1755.0,
+        "multiply_plain_us": 321.0,
         "deserialization_us": 36.0,
-        "serialization_us": 83.0
+        "serialization_us": 31.0
       },
       {
-        "wall_us": 5602.769,
-        "total_inference_us": 2260.0,
-        "rotation_hoisting_us": 1889.0,
-        "multiply_plain_us": 308.0,
-        "deserialization_us": 39.0,
+        "wall_us": 5308.903,
+        "total_inference_us": 1900.0,
+        "rotation_hoisting_us": 1464.0,
+        "multiply_plain_us": 322.0,
+        "deserialization_us": 29.0,
+        "serialization_us": 84.0
+      },
+      {
+        "wall_us": 5915.911,
+        "total_inference_us": 2363.0,
+        "rotation_hoisting_us": 1997.0,
+        "multiply_plain_us": 311.0,
+        "deserialization_us": 31.0,
+        "serialization_us": 23.0
+      },
+      {
+        "wall_us": 5530.381,
+        "total_inference_us": 1895.0,
+        "rotation_hoisting_us": 1494.0,
+        "multiply_plain_us": 335.0,
+        "deserialization_us": 31.0,
+        "serialization_us": 34.0
+      },
+      {
+        "wall_us": 5272.624,
+        "total_inference_us": 1655.0,
+        "rotation_hoisting_us": 1287.0,
+        "multiply_plain_us": 312.0,
+        "deserialization_us": 31.0,
+        "serialization_us": 24.0
+      },
+      {
+        "wall_us": 5506.221,
+        "total_inference_us": 1882.0,
+        "rotation_hoisting_us": 1507.0,
+        "multiply_plain_us": 320.0,
+        "deserialization_us": 30.0,
+        "serialization_us": 24.0
+      },
+      {
+        "wall_us": 5279.993,
+        "total_inference_us": 1905.0,
+        "rotation_hoisting_us": 1535.0,
+        "multiply_plain_us": 317.0,
+        "deserialization_us": 30.0,
         "serialization_us": 22.0
       },
       {
-        "wall_us": 5950.548,
-        "total_inference_us": 2482.0,
-        "rotation_hoisting_us": 2108.0,
-        "multiply_plain_us": 309.0,
-        "deserialization_us": 40.0,
+        "wall_us": 5710.286,
+        "total_inference_us": 1897.0,
+        "rotation_hoisting_us": 1502.0,
+        "multiply_plain_us": 332.0,
+        "deserialization_us": 38.0,
+        "serialization_us": 23.0
+      },
+      {
+        "wall_us": 5524.638,
+        "total_inference_us": 1871.0,
+        "rotation_hoisting_us": 1510.0,
+        "multiply_plain_us": 308.0,
+        "deserialization_us": 28.0,
         "serialization_us": 24.0
       },
       {
-        "wall_us": 4981.25,
-        "total_inference_us": 1538.0,
-        "rotation_hoisting_us": 1141.0,
+        "wall_us": 5510.051,
+        "total_inference_us": 1895.0,
+        "rotation_hoisting_us": 1475.0,
+        "multiply_plain_us": 327.0,
+        "deserialization_us": 31.0,
+        "serialization_us": 60.0
+      },
+      {
+        "wall_us": 5645.687,
+        "total_inference_us": 1962.0,
+        "rotation_hoisting_us": 1576.0,
+        "multiply_plain_us": 326.0,
+        "deserialization_us": 36.0,
+        "serialization_us": 22.0
+      },
+      {
+        "wall_us": 5438.979,
+        "total_inference_us": 1849.0,
+        "rotation_hoisting_us": 1467.0,
+        "multiply_plain_us": 307.0,
+        "deserialization_us": 52.0,
+        "serialization_us": 22.0
+      },
+      {
+        "wall_us": 6081.358,
+        "total_inference_us": 2369.0,
+        "rotation_hoisting_us": 1970.0,
+        "multiply_plain_us": 333.0,
+        "deserialization_us": 37.0,
+        "serialization_us": 27.0
+      },
+      {
+        "wall_us": 5837.123,
+        "total_inference_us": 2352.0,
+        "rotation_hoisting_us": 1978.0,
+        "multiply_plain_us": 320.0,
+        "deserialization_us": 32.0,
+        "serialization_us": 21.0
+      },
+      {
+        "wall_us": 6276.055,
+        "total_inference_us": 2327.0,
+        "rotation_hoisting_us": 1592.0,
+        "multiply_plain_us": 592.0,
+        "deserialization_us": 63.0,
+        "serialization_us": 79.0
+      },
+      {
+        "wall_us": 5616.229,
+        "total_inference_us": 2367.0,
+        "rotation_hoisting_us": 2029.0,
+        "multiply_plain_us": 287.0,
+        "deserialization_us": 30.0,
+        "serialization_us": 21.0
+      },
+      {
+        "wall_us": 5452.107,
+        "total_inference_us": 2013.0,
+        "rotation_hoisting_us": 1572.0,
+        "multiply_plain_us": 342.0,
+        "deserialization_us": 35.0,
+        "serialization_us": 63.0
+      },
+      {
+        "wall_us": 5357.544,
+        "total_inference_us": 2193.0,
+        "rotation_hoisting_us": 1835.0,
+        "multiply_plain_us": 308.0,
+        "deserialization_us": 28.0,
+        "serialization_us": 20.0
+      },
+      {
+        "wall_us": 5343.409,
+        "total_inference_us": 1886.0,
+        "rotation_hoisting_us": 1430.0,
+        "multiply_plain_us": 376.0,
+        "deserialization_us": 58.0,
+        "serialization_us": 20.0
+      },
+      {
+        "wall_us": 4807.005,
+        "total_inference_us": 1601.0,
+        "rotation_hoisting_us": 1255.0,
+        "multiply_plain_us": 298.0,
+        "deserialization_us": 28.0,
+        "serialization_us": 19.0
+      },
+      {
+        "wall_us": 5079.852,
+        "total_inference_us": 1790.0,
+        "rotation_hoisting_us": 1435.0,
+        "multiply_plain_us": 318.0,
+        "deserialization_us": 22.0,
+        "serialization_us": 14.0
+      },
+      {
+        "wall_us": 4885.92,
+        "total_inference_us": 1573.0,
+        "rotation_hoisting_us": 1227.0,
+        "multiply_plain_us": 302.0,
+        "deserialization_us": 28.0,
+        "serialization_us": 14.0
+      },
+      {
+        "wall_us": 6238.348,
+        "total_inference_us": 2572.0,
+        "rotation_hoisting_us": 2182.0,
+        "multiply_plain_us": 330.0,
+        "deserialization_us": 28.0,
+        "serialization_us": 31.0
+      },
+      {
+        "wall_us": 5135.032,
+        "total_inference_us": 1703.0,
+        "rotation_hoisting_us": 1326.0,
         "multiply_plain_us": 323.0,
-        "deserialization_us": 45.0,
+        "deserialization_us": 32.0,
+        "serialization_us": 20.0
+      },
+      {
+        "wall_us": 5833.332,
+        "total_inference_us": 2602.0,
+        "rotation_hoisting_us": 2229.0,
+        "multiply_plain_us": 323.0,
+        "deserialization_us": 28.0,
+        "serialization_us": 21.0
+      },
+      {
+        "wall_us": 4667.238,
+        "total_inference_us": 1654.0,
+        "rotation_hoisting_us": 1285.0,
+        "multiply_plain_us": 320.0,
+        "deserialization_us": 29.0,
+        "serialization_us": 18.0
+      },
+      {
+        "wall_us": 6149.359,
+        "total_inference_us": 2477.0,
+        "rotation_hoisting_us": 2081.0,
+        "multiply_plain_us": 325.0,
+        "deserialization_us": 28.0,
+        "serialization_us": 42.0
+      },
+      {
+        "wall_us": 5962.488,
+        "total_inference_us": 1864.0,
+        "rotation_hoisting_us": 1496.0,
+        "multiply_plain_us": 314.0,
+        "deserialization_us": 30.0,
+        "serialization_us": 22.0
+      },
+      {
+        "wall_us": 6848.702,
+        "total_inference_us": 2235.0,
+        "rotation_hoisting_us": 1845.0,
+        "multiply_plain_us": 328.0,
+        "deserialization_us": 32.0,
         "serialization_us": 28.0
       },
       {
-        "wall_us": 5876.985,
-        "total_inference_us": 2536.0,
-        "rotation_hoisting_us": 2107.0,
-        "multiply_plain_us": 325.0,
-        "deserialization_us": 34.0,
-        "serialization_us": 68.0
-      },
-      {
-        "wall_us": 5229.893,
-        "total_inference_us": 1747.0,
-        "rotation_hoisting_us": 1313.0,
-        "multiply_plain_us": 355.0,
-        "deserialization_us": 51.0,
-        "serialization_us": 26.0
-      },
-      {
-        "wall_us": 5453.895,
-        "total_inference_us": 2172.0,
-        "rotation_hoisting_us": 1712.0,
-        "multiply_plain_us": 329.0,
-        "deserialization_us": 37.0,
-        "serialization_us": 92.0
-      },
-      {
-        "wall_us": 4907.814,
-        "total_inference_us": 1657.0,
-        "rotation_hoisting_us": 1288.0,
-        "multiply_plain_us": 311.0,
+        "wall_us": 6341.399,
+        "total_inference_us": 1794.0,
+        "rotation_hoisting_us": 1403.0,
+        "multiply_plain_us": 323.0,
         "deserialization_us": 33.0,
+        "serialization_us": 34.0
+      },
+      {
+        "wall_us": 6877.772,
+        "total_inference_us": 2836.0,
+        "rotation_hoisting_us": 2336.0,
+        "multiply_plain_us": 420.0,
+        "deserialization_us": 39.0,
+        "serialization_us": 40.0
+      },
+      {
+        "wall_us": 6100.127,
+        "total_inference_us": 1837.0,
+        "rotation_hoisting_us": 1453.0,
+        "multiply_plain_us": 317.0,
+        "deserialization_us": 32.0,
+        "serialization_us": 33.0
+      },
+      {
+        "wall_us": 6459.481,
+        "total_inference_us": 2468.0,
+        "rotation_hoisting_us": 2044.0,
+        "multiply_plain_us": 360.0,
+        "deserialization_us": 39.0,
         "serialization_us": 24.0
       },
       {
-        "wall_us": 4906.223,
-        "total_inference_us": 1641.0,
-        "rotation_hoisting_us": 1243.0,
-        "multiply_plain_us": 298.0,
-        "deserialization_us": 40.0,
-        "serialization_us": 58.0
+        "wall_us": 5846.474,
+        "total_inference_us": 1992.0,
+        "rotation_hoisting_us": 1623.0,
+        "multiply_plain_us": 314.0,
+        "deserialization_us": 32.0,
+        "serialization_us": 22.0
       },
       {
-        "wall_us": 5036.449,
-        "total_inference_us": 1627.0,
-        "rotation_hoisting_us": 1236.0,
-        "multiply_plain_us": 329.0,
-        "deserialization_us": 34.0,
-        "serialization_us": 26.0
+        "wall_us": 6382.1,
+        "total_inference_us": 2483.0,
+        "rotation_hoisting_us": 2060.0,
+        "multiply_plain_us": 354.0,
+        "deserialization_us": 45.0,
+        "serialization_us": 22.0
       },
       {
-        "wall_us": 4881.462,
-        "total_inference_us": 1666.0,
-        "rotation_hoisting_us": 1301.0,
-        "multiply_plain_us": 300.0,
-        "deserialization_us": 35.0,
-        "serialization_us": 29.0
+        "wall_us": 5452.494,
+        "total_inference_us": 1776.0,
+        "rotation_hoisting_us": 1438.0,
+        "multiply_plain_us": 288.0,
+        "deserialization_us": 29.0,
+        "serialization_us": 19.0
       },
       {
-        "wall_us": 4963.399,
-        "total_inference_us": 1706.0,
-        "rotation_hoisting_us": 1307.0,
-        "multiply_plain_us": 334.0,
-        "deserialization_us": 37.0,
-        "serialization_us": 27.0
+        "wall_us": 6539.003,
+        "total_inference_us": 2512.0,
+        "rotation_hoisting_us": 2136.0,
+        "multiply_plain_us": 325.0,
+        "deserialization_us": 29.0,
+        "serialization_us": 21.0
       },
       {
-        "wall_us": 5818.06,
-        "total_inference_us": 2423.0,
-        "rotation_hoisting_us": 2056.0,
-        "multiply_plain_us": 304.0,
-        "deserialization_us": 33.0,
-        "serialization_us": 29.0
-      },
-      {
-        "wall_us": 5154.706,
-        "total_inference_us": 1643.0,
-        "rotation_hoisting_us": 1209.0,
-        "multiply_plain_us": 365.0,
-        "deserialization_us": 38.0,
-        "serialization_us": 29.0
-      },
-      {
-        "wall_us": 4995.379,
-        "total_inference_us": 1701.0,
-        "rotation_hoisting_us": 1334.0,
-        "multiply_plain_us": 303.0,
-        "deserialization_us": 35.0,
-        "serialization_us": 27.0
-      },
-      {
-        "wall_us": 4924.513,
-        "total_inference_us": 1643.0,
-        "rotation_hoisting_us": 1245.0,
-        "multiply_plain_us": 339.0,
+        "wall_us": 5418.235,
+        "total_inference_us": 1959.0,
+        "rotation_hoisting_us": 1580.0,
+        "multiply_plain_us": 319.0,
         "deserialization_us": 33.0,
         "serialization_us": 25.0
       },
       {
-        "wall_us": 5463.219,
-        "total_inference_us": 1959.0,
-        "rotation_hoisting_us": 1586.0,
-        "multiply_plain_us": 305.0,
-        "deserialization_us": 36.0,
-        "serialization_us": 30.0
-      },
-      {
-        "wall_us": 5514.917,
-        "total_inference_us": 1771.0,
-        "rotation_hoisting_us": 1373.0,
-        "multiply_plain_us": 325.0,
-        "deserialization_us": 42.0,
-        "serialization_us": 30.0
-      },
-      {
-        "wall_us": 5366.639,
-        "total_inference_us": 1734.0,
-        "rotation_hoisting_us": 1329.0,
-        "multiply_plain_us": 326.0,
-        "deserialization_us": 41.0,
-        "serialization_us": 35.0
-      },
-      {
-        "wall_us": 5052.167,
-        "total_inference_us": 1718.0,
-        "rotation_hoisting_us": 1297.0,
-        "multiply_plain_us": 348.0,
-        "deserialization_us": 44.0,
-        "serialization_us": 28.0
-      },
-      {
-        "wall_us": 5105.509,
-        "total_inference_us": 1717.0,
-        "rotation_hoisting_us": 1339.0,
-        "multiply_plain_us": 313.0,
-        "deserialization_us": 34.0,
-        "serialization_us": 30.0
-      },
-      {
-        "wall_us": 5914.963,
-        "total_inference_us": 2515.0,
-        "rotation_hoisting_us": 2091.0,
-        "multiply_plain_us": 360.0,
+        "wall_us": 6563.964,
+        "total_inference_us": 2621.0,
+        "rotation_hoisting_us": 2223.0,
+        "multiply_plain_us": 330.0,
         "deserialization_us": 35.0,
+        "serialization_us": 32.0
+      },
+      {
+        "wall_us": 5591.132,
+        "total_inference_us": 2028.0,
+        "rotation_hoisting_us": 1659.0,
+        "multiply_plain_us": 313.0,
+        "deserialization_us": 32.0,
+        "serialization_us": 22.0
+      },
+      {
+        "wall_us": 5321.49,
+        "total_inference_us": 1807.0,
+        "rotation_hoisting_us": 1342.0,
+        "multiply_plain_us": 408.0,
+        "deserialization_us": 31.0,
+        "serialization_us": 25.0
+      },
+      {
+        "wall_us": 6483.199,
+        "total_inference_us": 2553.0,
+        "rotation_hoisting_us": 2174.0,
+        "multiply_plain_us": 293.0,
+        "deserialization_us": 31.0,
+        "serialization_us": 55.0
+      },
+      {
+        "wall_us": 5347.541,
+        "total_inference_us": 1819.0,
+        "rotation_hoisting_us": 1373.0,
+        "multiply_plain_us": 384.0,
+        "deserialization_us": 35.0,
+        "serialization_us": 25.0
+      },
+      {
+        "wall_us": 5956.776,
+        "total_inference_us": 2500.0,
+        "rotation_hoisting_us": 1831.0,
+        "multiply_plain_us": 582.0,
+        "deserialization_us": 53.0,
+        "serialization_us": 33.0
+      },
+      {
+        "wall_us": 5034.868,
+        "total_inference_us": 1695.0,
+        "rotation_hoisting_us": 1232.0,
+        "multiply_plain_us": 411.0,
+        "deserialization_us": 32.0,
+        "serialization_us": 18.0
+      },
+      {
+        "wall_us": 5025.706,
+        "total_inference_us": 1586.0,
+        "rotation_hoisting_us": 1224.0,
+        "multiply_plain_us": 307.0,
+        "deserialization_us": 34.0,
+        "serialization_us": 20.0
+      },
+      {
+        "wall_us": 5100.62,
+        "total_inference_us": 1724.0,
+        "rotation_hoisting_us": 1279.0,
+        "multiply_plain_us": 390.0,
+        "deserialization_us": 32.0,
+        "serialization_us": 21.0
+      },
+      {
+        "wall_us": 5058.849,
+        "total_inference_us": 1611.0,
+        "rotation_hoisting_us": 1243.0,
+        "multiply_plain_us": 312.0,
+        "deserialization_us": 35.0,
+        "serialization_us": 20.0
+      },
+      {
+        "wall_us": 4647.873,
+        "total_inference_us": 1760.0,
+        "rotation_hoisting_us": 1183.0,
+        "multiply_plain_us": 509.0,
+        "deserialization_us": 49.0,
+        "serialization_us": 17.0
+      },
+      {
+        "wall_us": 4559.564,
+        "total_inference_us": 1522.0,
+        "rotation_hoisting_us": 1179.0,
+        "multiply_plain_us": 296.0,
+        "deserialization_us": 25.0,
+        "serialization_us": 21.0
+      },
+      {
+        "wall_us": 5711.691,
+        "total_inference_us": 2479.0,
+        "rotation_hoisting_us": 2110.0,
+        "multiply_plain_us": 317.0,
+        "deserialization_us": 25.0,
+        "serialization_us": 24.0
+      },
+      {
+        "wall_us": 5492.083,
+        "total_inference_us": 2399.0,
+        "rotation_hoisting_us": 2043.0,
+        "multiply_plain_us": 309.0,
+        "deserialization_us": 26.0,
+        "serialization_us": 19.0
+      },
+      {
+        "wall_us": 5797.306,
+        "total_inference_us": 2557.0,
+        "rotation_hoisting_us": 1884.0,
+        "multiply_plain_us": 573.0,
+        "deserialization_us": 60.0,
+        "serialization_us": 39.0
+      },
+      {
+        "wall_us": 5417.646,
+        "total_inference_us": 2338.0,
+        "rotation_hoisting_us": 1998.0,
+        "multiply_plain_us": 298.0,
+        "deserialization_us": 25.0,
+        "serialization_us": 15.0
+      },
+      {
+        "wall_us": 5348.693,
+        "total_inference_us": 2499.0,
+        "rotation_hoisting_us": 1846.0,
+        "multiply_plain_us": 572.0,
+        "deserialization_us": 47.0,
+        "serialization_us": 33.0
+      },
+      {
+        "wall_us": 5531.564,
+        "total_inference_us": 2382.0,
+        "rotation_hoisting_us": 2031.0,
+        "multiply_plain_us": 303.0,
+        "deserialization_us": 26.0,
+        "serialization_us": 21.0
+      },
+      {
+        "wall_us": 5310.218,
+        "total_inference_us": 1860.0,
+        "rotation_hoisting_us": 1494.0,
+        "multiply_plain_us": 310.0,
+        "deserialization_us": 33.0,
+        "serialization_us": 21.0
+      },
+      {
+        "wall_us": 5111.32,
+        "total_inference_us": 1974.0,
+        "rotation_hoisting_us": 1612.0,
+        "multiply_plain_us": 309.0,
+        "deserialization_us": 30.0,
+        "serialization_us": 22.0
+      },
+      {
+        "wall_us": 4929.89,
+        "total_inference_us": 1563.0,
+        "rotation_hoisting_us": 1203.0,
+        "multiply_plain_us": 306.0,
+        "deserialization_us": 29.0,
+        "serialization_us": 23.0
+      },
+      {
+        "wall_us": 5100.13,
+        "total_inference_us": 1822.0,
+        "rotation_hoisting_us": 1463.0,
+        "multiply_plain_us": 311.0,
+        "deserialization_us": 27.0,
+        "serialization_us": 19.0
+      },
+      {
+        "wall_us": 4790.088,
+        "total_inference_us": 1561.0,
+        "rotation_hoisting_us": 1213.0,
+        "multiply_plain_us": 302.0,
+        "deserialization_us": 26.0,
+        "serialization_us": 18.0
+      },
+      {
+        "wall_us": 5010.765,
+        "total_inference_us": 1805.0,
+        "rotation_hoisting_us": 1452.0,
+        "multiply_plain_us": 299.0,
+        "deserialization_us": 26.0,
+        "serialization_us": 26.0
+      },
+      {
+        "wall_us": 4769.731,
+        "total_inference_us": 1591.0,
+        "rotation_hoisting_us": 1256.0,
+        "multiply_plain_us": 297.0,
+        "deserialization_us": 24.0,
+        "serialization_us": 12.0
+      },
+      {
+        "wall_us": 5006.209,
+        "total_inference_us": 1808.0,
+        "rotation_hoisting_us": 1478.0,
+        "multiply_plain_us": 296.0,
+        "deserialization_us": 21.0,
+        "serialization_us": 11.0
+      },
+      {
+        "wall_us": 4506.671,
+        "total_inference_us": 1608.0,
+        "rotation_hoisting_us": 1267.0,
+        "multiply_plain_us": 297.0,
+        "deserialization_us": 29.0,
+        "serialization_us": 14.0
+      },
+      {
+        "wall_us": 4640.724,
+        "total_inference_us": 1731.0,
+        "rotation_hoisting_us": 1396.0,
+        "multiply_plain_us": 299.0,
+        "deserialization_us": 23.0,
+        "serialization_us": 12.0
+      },
+      {
+        "wall_us": 4836.559,
+        "total_inference_us": 1752.0,
+        "rotation_hoisting_us": 1417.0,
+        "multiply_plain_us": 296.0,
+        "deserialization_us": 24.0,
+        "serialization_us": 13.0
+      },
+      {
+        "wall_us": 4639.84,
+        "total_inference_us": 1824.0,
+        "rotation_hoisting_us": 1467.0,
+        "multiply_plain_us": 310.0,
+        "deserialization_us": 27.0,
+        "serialization_us": 19.0
+      },
+      {
+        "wall_us": 4481.686,
+        "total_inference_us": 1496.0,
+        "rotation_hoisting_us": 1157.0,
+        "multiply_plain_us": 301.0,
+        "deserialization_us": 24.0,
+        "serialization_us": 13.0
+      },
+      {
+        "wall_us": 4781.559,
+        "total_inference_us": 1696.0,
+        "rotation_hoisting_us": 1362.0,
+        "multiply_plain_us": 297.0,
+        "deserialization_us": 25.0,
+        "serialization_us": 10.0
+      },
+      {
+        "wall_us": 4560.991,
+        "total_inference_us": 1465.0,
+        "rotation_hoisting_us": 1124.0,
+        "multiply_plain_us": 300.0,
+        "deserialization_us": 24.0,
+        "serialization_us": 15.0
+      },
+      {
+        "wall_us": 4942.905,
+        "total_inference_us": 1792.0,
+        "rotation_hoisting_us": 1423.0,
+        "multiply_plain_us": 316.0,
+        "deserialization_us": 30.0,
+        "serialization_us": 21.0
+      },
+      {
+        "wall_us": 5034.537,
+        "total_inference_us": 1761.0,
+        "rotation_hoisting_us": 1385.0,
+        "multiply_plain_us": 318.0,
+        "deserialization_us": 30.0,
+        "serialization_us": 27.0
+      },
+      {
+        "wall_us": 4868.093,
+        "total_inference_us": 1737.0,
+        "rotation_hoisting_us": 1383.0,
+        "multiply_plain_us": 309.0,
+        "deserialization_us": 27.0,
+        "serialization_us": 16.0
+      },
+      {
+        "wall_us": 4723.06,
+        "total_inference_us": 1705.0,
+        "rotation_hoisting_us": 1327.0,
+        "multiply_plain_us": 305.0,
+        "deserialization_us": 26.0,
+        "serialization_us": 45.0
+      },
+      {
+        "wall_us": 4588.356,
+        "total_inference_us": 1711.0,
+        "rotation_hoisting_us": 1372.0,
+        "multiply_plain_us": 303.0,
+        "deserialization_us": 21.0,
+        "serialization_us": 13.0
+      },
+      {
+        "wall_us": 5808.927,
+        "total_inference_us": 2511.0,
+        "rotation_hoisting_us": 1858.0,
+        "multiply_plain_us": 576.0,
+        "deserialization_us": 40.0,
+        "serialization_us": 36.0
+      },
+      {
+        "wall_us": 6808.132,
+        "total_inference_us": 2742.0,
+        "rotation_hoisting_us": 1898.0,
+        "multiply_plain_us": 578.0,
+        "deserialization_us": 50.0,
+        "serialization_us": 215.0
+      },
+      {
+        "wall_us": 6560.184,
+        "total_inference_us": 1853.0,
+        "rotation_hoisting_us": 1479.0,
+        "multiply_plain_us": 321.0,
+        "deserialization_us": 31.0,
+        "serialization_us": 20.0
+      },
+      {
+        "wall_us": 5291.038,
+        "total_inference_us": 1776.0,
+        "rotation_hoisting_us": 1259.0,
+        "multiply_plain_us": 391.0,
+        "deserialization_us": 41.0,
+        "serialization_us": 84.0
+      },
+      {
+        "wall_us": 4886.169,
+        "total_inference_us": 1754.0,
+        "rotation_hoisting_us": 1395.0,
+        "multiply_plain_us": 308.0,
+        "deserialization_us": 33.0,
+        "serialization_us": 17.0
+      },
+      {
+        "wall_us": 4782.414,
+        "total_inference_us": 1708.0,
+        "rotation_hoisting_us": 1231.0,
+        "multiply_plain_us": 379.0,
+        "deserialization_us": 35.0,
+        "serialization_us": 61.0
+      },
+      {
+        "wall_us": 4928.29,
+        "total_inference_us": 1784.0,
+        "rotation_hoisting_us": 1433.0,
+        "multiply_plain_us": 304.0,
+        "deserialization_us": 29.0,
+        "serialization_us": 16.0
+      },
+      {
+        "wall_us": 5152.035,
+        "total_inference_us": 1739.0,
+        "rotation_hoisting_us": 1303.0,
+        "multiply_plain_us": 383.0,
+        "deserialization_us": 32.0,
+        "serialization_us": 19.0
+      },
+      {
+        "wall_us": 5626.05,
+        "total_inference_us": 2131.0,
+        "rotation_hoisting_us": 1756.0,
+        "multiply_plain_us": 315.0,
+        "deserialization_us": 30.0,
         "serialization_us": 28.0
       },
       {
-        "wall_us": 5206.667,
-        "total_inference_us": 1767.0,
-        "rotation_hoisting_us": 1382.0,
-        "multiply_plain_us": 311.0,
-        "deserialization_us": 40.0,
+        "wall_us": 5219.334,
+        "total_inference_us": 1833.0,
+        "rotation_hoisting_us": 1352.0,
+        "multiply_plain_us": 384.0,
+        "deserialization_us": 35.0,
+        "serialization_us": 61.0
+      },
+      {
+        "wall_us": 5395.849,
+        "total_inference_us": 1822.0,
+        "rotation_hoisting_us": 1364.0,
+        "multiply_plain_us": 320.0,
+        "deserialization_us": 34.0,
+        "serialization_us": 103.0
+      },
+      {
+        "wall_us": 5308.271,
+        "total_inference_us": 1780.0,
+        "rotation_hoisting_us": 1294.0,
+        "multiply_plain_us": 414.0,
+        "deserialization_us": 38.0,
         "serialization_us": 32.0
+      },
+      {
+        "wall_us": 4996.325,
+        "total_inference_us": 1878.0,
+        "rotation_hoisting_us": 1479.0,
+        "multiply_plain_us": 340.0,
+        "deserialization_us": 29.0,
+        "serialization_us": 28.0
+      },
+      {
+        "wall_us": 5186.646,
+        "total_inference_us": 1809.0,
+        "rotation_hoisting_us": 1278.0,
+        "multiply_plain_us": 393.0,
+        "deserialization_us": 38.0,
+        "serialization_us": 98.0
+      },
+      {
+        "wall_us": 5666.803,
+        "total_inference_us": 2370.0,
+        "rotation_hoisting_us": 2006.0,
+        "multiply_plain_us": 311.0,
+        "deserialization_us": 29.0,
+        "serialization_us": 22.0
+      },
+      {
+        "wall_us": 5360.865,
+        "total_inference_us": 1849.0,
+        "rotation_hoisting_us": 1336.0,
+        "multiply_plain_us": 429.0,
+        "deserialization_us": 39.0,
+        "serialization_us": 44.0
       }
     ]
   }

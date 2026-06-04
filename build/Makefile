@@ -179,6 +179,19 @@ benchmark/fast:
 .PHONY : benchmark/fast
 
 #=============================================================================
+# Target rules for targets named benchmark_160
+
+# Build rule for target.
+benchmark_160: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 benchmark_160
+.PHONY : benchmark_160
+
+# fast build rule for target.
+benchmark_160/fast:
+	$(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/benchmark_160.dir/build.make vendor_server/CMakeFiles/benchmark_160.dir/build
+.PHONY : benchmark_160/fast
+
+#=============================================================================
 # Target rules for targets named vendor_server_main
 
 # Build rule for target.
@@ -203,19 +216,6 @@ vendor_server_160: cmake_check_build_system
 vendor_server_160/fast:
 	$(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_160.dir/build.make vendor_server/CMakeFiles/vendor_server_160.dir/build
 .PHONY : vendor_server_160/fast
-
-#=============================================================================
-# Target rules for targets named vendor_server_unified
-
-# Build rule for target.
-vendor_server_unified: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 vendor_server_unified
-.PHONY : vendor_server_unified
-
-# fast build rule for target.
-vendor_server_unified/fast:
-	$(MAKE) $(MAKESILENT) -f vendor_server/CMakeFiles/vendor_server_unified.dir/build.make vendor_server/CMakeFiles/vendor_server_unified.dir/build
-.PHONY : vendor_server_unified/fast
 
 #=============================================================================
 # Target rules for targets named test_he_core
@@ -308,6 +308,7 @@ help:
 	@echo "... Catch2"
 	@echo "... Catch2WithMain"
 	@echo "... benchmark"
+	@echo "... benchmark_160"
 	@echo "... ckks_smoke_test"
 	@echo "... generate_seal_keys"
 	@echo "... he_core"
@@ -316,7 +317,6 @@ help:
 	@echo "... test_he_core"
 	@echo "... vendor_server_160"
 	@echo "... vendor_server_main"
-	@echo "... vendor_server_unified"
 .PHONY : help
 
 

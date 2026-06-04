@@ -1,4 +1,6 @@
-he_core 4 6.3769
-verify_all 3 0.00858703
-catch2_he_core 4 6.41797
+he_core 9 0
+verify_all 10 0.002578
+catch2_he_core 9 0
 ---
+he_core
+catch2_he_core

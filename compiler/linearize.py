@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import warnings
 
 import numpy as np
 from scipy.special import expit
@@ -9,14 +10,16 @@ from sklearn.metrics import roc_auc_score
 
 from serialize_weights import write_model_weights_bin
 
+# Suppress convergence warnings—typical for imbalanced fraud data
+warnings.filterwarnings("ignore", message=".*max_iter.*convergence.*")
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ARTIFACTS_DIR = REPO_ROOT / "artifacts"
 
 
 def validate_and_gate(weights, bias, X_test, y_test) -> tuple[str, float]:
-    idx = np.load(ARTIFACTS_DIR / "feature_idx.npy")
-    logits = X_test[:, idx] @ weights + bias
+    logits = X_test @ weights + bias
     probs = expit(logits)
     auc = roc_auc_score(y_test, probs)
     print(f"[linearize] Depth-1 AUC: {auc:.4f}")
@@ -37,58 +40,47 @@ def main() -> int:
         f"Expected 256 features from expanded arrays, got {X_train.shape[1]}"
     )
 
-    # Step 2: fit initial model on all available features
-    lr_full = LogisticRegression(
+    # Step 2: fit on all 256 available features
+    lr = LogisticRegression(
         max_iter=2000,
         C=1.0,
-        solver="saga",
+        solver="lbfgs",
         tol=1e-4,
         random_state=42,
     )
-    lr_full.fit(X_train, y_train)
+    lr.fit(X_train, y_train)
 
-    # Step 3 + 4: coefficient extraction and top-256 selection
-    coef = lr_full.coef_[0]
-    top_idx = np.argsort(np.abs(coef))[-256:]
+    # Step 3: extract linear weights and bias
+    weights = lr.coef_[0].astype(np.float64)
+    bias = float(lr.intercept_[0])
 
-    # Step 5: refit on selected features only
-    lr_top = LogisticRegression(
-        max_iter=2000,
-        C=1.0,
-        solver="saga",
-        tol=1e-4,
-        random_state=42,
-    )
-    lr_top.fit(X_train[:, top_idx], y_train)
-
-    # Step 6: extract linear weights and bias
-    weights = lr_top.coef_[0].astype(np.float64)
-    bias = float(lr_top.intercept_[0])
-
-    # Step 7: test AUC on selected features
-    test_probs = lr_top.predict_proba(X_test[:, top_idx])[:, 1]
+    # Step 4: test AUC
+    test_probs = lr.predict_proba(X_test)[:, 1]
     auc = float(roc_auc_score(y_test, test_probs))
     print(f"[linearize] test_auc={auc:.6f}")
 
-    # Step 8..10: serialize and save artifacts
+    # Step 5: validate via alternate gate logic
+    _, gate_auc = validate_and_gate(weights, bias, X_test, y_test)
+    assert abs(gate_auc - auc) < 1e-6, f"AUC mismatch: {auc:.6f} vs {gate_auc:.6f}"
+
+    # Step 6: serialize and save artifacts
     write_model_weights_bin(weights, bias, str(ARTIFACTS_DIR / "model_weights.bin"))
     np.save(ARTIFACTS_DIR / "weights.npy", weights)
-    np.save(ARTIFACTS_DIR / "feature_idx.npy", top_idx.astype(np.int64))
 
-    # Step 11: scaler should already exist from training
+    # Step 7: scaler should already exist from training
     if not (ARTIFACTS_DIR / "scaler.pkl").exists():
         raise FileNotFoundError("Missing artifacts/scaler.pkl from train_xgboost.py")
 
-    # Step 12: verify required artifacts and binary contract size
+    # Step 8: verify required artifacts and binary contract size
     required = [
         ARTIFACTS_DIR / "model_weights.bin",
         ARTIFACTS_DIR / "weights.npy",
-        ARTIFACTS_DIR / "feature_idx.npy",
         ARTIFACTS_DIR / "scaler.pkl",
     ]
     for path in required:
         if not path.exists():
             raise FileNotFoundError(f"Missing required artifact: {path}")
+    # 256 weights × 8 bytes + 1 bias × 8 bytes + 4-byte header = 2060 bytes
     if (ARTIFACTS_DIR / "model_weights.bin").stat().st_size != 2060:
         raise RuntimeError("artifacts/model_weights.bin must be exactly 2060 bytes")
 

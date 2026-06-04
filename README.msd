@@ -4,6 +4,36 @@ PPFDaaS is a privacy-preserving payment fraud detection system built with CKKS h
 
 This README is based on the implementation handoff in PROJECT_STATE.md and the normative engineering specification in docs/spec.md (v1.1).
 
+## Demo Day Quickstart (3 Commands)
+
+Run these from repository root when you need the fastest path to a live demo.
+
+1. Build binaries:
+
+```bash
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
+```
+
+2. Ensure reproducible benchmark environment (recommended before benchmark):
+
+```bash
+echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+```
+
+3. Run demo:
+
+```bash
+source .venv/bin/activate
+python scripts/demo_e2e.py
+```
+
+Optional benchmark evidence:
+
+```bash
+python3 tests/benchmark_comparison.py
+```
+
 ## What This Repository Contains
 
 - A production-oriented Depth-1 inference path using CKKS (n=8192).
@@ -110,14 +140,141 @@ python3 tests/verify_all.py
 python3 tests/benchmark_comparison.py
 ```
 
+## Full Demo Sequence (Copy/Paste)
+
+Use this exact sequence from a clean terminal at repository root.
+
+### 0) Build Once
+
+```bash
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
+```
+
+### 1) Prepare Dataset
+
+```bash
+bash scripts/fetch_creditcard_dataset.sh
+```
+
+### 2) Generate Model + HE Artifacts
+
+```bash
+python3 compiler/train_xgboost.py
+python3 compiler/linearize.py
+python3 compiler/gen_keys_160.py
+```
+
+### 3) Run Contract/Structure Verification
+
+```bash
+python3 tests/verify_all.py
+ctest --test-dir build --output-on-failure
+```
+
+### 4) Run Performance Comparison (Auto-starts both servers)
+
+For reproducible latency-gate comparisons, set CPU governor to performance first:
+
+```bash
+echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+```
+
+Then run:
+
+```bash
+python3 tests/benchmark_comparison.py
+```
+
+Notes:
+- The benchmark now prints a CPU governor warning when not in performance mode.
+- Gate thresholds are calibrated to reference hardware; cross-machine variance is expected.
+
+Professor trace mode (full per-request pipeline trace to stderr):
+
+```bash
+TRACE=1 python3 tests/benchmark_comparison.py
+```
+
+What this adds:
+- PRE-ENCRYPT (batch shape + request UUID)
+- POST-ENCRYPT (ciphertext byte size)
+- GRPC-SEND / GRPC-RECV timestamps and request-id echo
+- timing table with 5 TimingBreakdown fields
+- POST-DECRYPT raw score + fraud probability (slot 0)
+- end-of-run aggregate trace summary (means/std, rotation share, >3000us count, min/max round-trip)
+
+Output channels:
+- Trace logs: stderr
+- Existing JSON summary and gates: stdout
+
+### 5) Run the End-to-End Encrypted Inference Demo
+
+```bash
+source .venv/bin/activate
+python scripts/demo_e2e.py
+```
+
+If the script appears stuck with no output, pull latest changes and rerun; startup readiness now uses TCP port checks instead of buffered server stdout lines.
+
+### 6) Generate Research Figures/Tables
+
+```bash
+python3 scripts/generate_research_artifacts.py
+python3 scripts/generate_ablation.py
+python3 scripts/generate_roc.py
+```
+
+### Accuracy Check (Professor-Ready)
+
+This prints dataset imbalance and model quality (ROC-AUC and PR-AUC) on the current artifacts:
+
+```bash
+python3 scripts/show_accuracy_check.py
+```
+
+### 7) Where Outputs Land
+
+- Result plots and CSV/JSON summaries: `results/`
+- Benchmark JSON: `artifacts/comparison_results.json`
+- Additional logs: `logs/`
+
+### Optional: Manual Server Run (Separate Terminal)
+
+Only needed if you want to run client calls manually against a persistent server.
+
+Terminal A:
+
+```bash
+./build/vendor_server/vendor_server_160 artifacts/model_weights.bin 50052
+```
+
+Terminal B:
+
+```bash
+python3 scripts/generate_ablation.py
+python3 scripts/demo_e2e.py
+```
+
 ## Variant Strategy (200-bit vs 160-bit)
 
 Both variants keep n=8192 and maintain 128-bit security. The reduced 160-bit variant removes one middle prime, reducing compute cost for the implemented depth while preserving required contracts.
 
-Reported benchmark summary from artifacts/comparison_results.json (project state snapshot):
-- 200-bit mean total inference: about 4872.5 us
-- 160-bit mean total inference: about 2518.6 us
-- Total latency reduction: about 48.3%
+### Fair Benchmark Results (May 28, 2026 - Corrected)
+
+**Previous measurements were not apples-to-apples** (160-bit measured only `multiply_plain` without rotations). Fair benchmarks now measure identical full inference pipelines:
+
+- **160-bit mean latency**: 4.80 ms (5-run average with full pipeline: encrypt + multiply + rescale + 8 Galois rotations)
+- **200-bit mean latency**: 7.23 ms (5-run average with full pipeline: encrypt + multiply + rescale + 8 Galois rotations)  
+- **True speedup**: **1.51x** (160-bit faster, not the previously-claimed 3.92x)
+- **Variance**: 160-bit ±4.7%, 200-bit ±2.1% (both highly reproducible)
+
+**Cost breakdown** (why only 1.51x despite 25% smaller modulus):
+- Galois rotations (8 parallel ops): ~62% of total latency
+- multiply_plain: ~14%
+- Encryption + rescale + I/O: ~24%
+
+Rotations don't scale purely with modulus size due to hardware acceleration (AVX-2 permutation). Full analysis in [BENCHMARK_RESULTS.md](BENCHMARK_RESULTS.md).
 
 ## Current Status Snapshot
 
@@ -143,6 +300,8 @@ python3 scripts/generate_research_artifacts.py
 python3 scripts/generate_ablation.py
 python3 scripts/generate_roc.py
 ```
+
+For stable benchmark comparisons across runs, prefer performance CPU governor before executing `tests/benchmark_comparison.py`.
 
 ## Artifacts and Outputs
 

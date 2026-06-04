@@ -400,4 +400,8 @@ vendor_server/CMakeFiles/he_core.dir/src/ckks_context.cpp.o: \
  /usr/local/include/SEAL-4.1/seal/relinkeys.h \
  /usr/local/include/SEAL-4.1/seal/keygenerator.h \
  /usr/local/include/SEAL-4.1/seal/randomtostd.h \
- /usr/include/c++/14/optional
+ /usr/include/c++/14/optional /usr/include/c++/14/fstream \
+ /usr/include/c++/14/bits/codecvt.h \
+ /usr/include/x86_64-linux-gnu/c++/14/bits/basic_file.h \
+ /usr/include/x86_64-linux-gnu/c++/14/bits/c++io.h \
+ /usr/include/c++/14/bits/fstream.tcc

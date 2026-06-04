@@ -20,3 +20,21 @@ seal::Ciphertext depth1_he_inference(
     return acc;
 
 }
+
+// Depth-1 HE inference for 160-bit context (identical operations, different context)
+seal::Ciphertext depth1_he_inference_160(
+        CKKSContext160& ctx,
+
+        seal::Ciphertext& ct,
+
+        const seal::Plaintext& pt_weights) {
+
+    ctx.evaluator->multiply_plain_inplace(ct, pt_weights);
+
+    ctx.evaluator->rescale_to_next_inplace(ct);
+
+    seal::Ciphertext acc;
+    hoisted_tree_sum(ct, ctx.galois_keys, *ctx.evaluator, acc, 256);
+    return acc;
+
+}

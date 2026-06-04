@@ -5,7 +5,6 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from imblearn.over_sampling import SMOTE
 from scipy.stats.mstats import winsorize
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
@@ -45,14 +44,11 @@ def main() -> int:
         stratify=y,
     )
 
-    # Step 4: SMOTE on training set only
-    smote = SMOTE(sampling_strategy=0.1, random_state=42)
-    X_train_sm, y_train = smote.fit_resample(X_train_raw, y_train_raw)
-
     # Step 5: scale
     scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train_sm)
+    X_train_scaled = scaler.fit_transform(X_train_raw)
     X_test_scaled = scaler.transform(X_test_raw)
+    y_train = y_train_raw
 
     # Step 6: winsorize
     X_train_win = np.asarray(winsorize(X_train_scaled, limits=[0.01, 0.01], axis=0), dtype=np.float64)
@@ -64,8 +60,9 @@ def main() -> int:
 
     # Expand to deterministic 256-feature input contract.
     poly = PolynomialFeatures(degree=2, interaction_only=True, include_bias=False)
-    X_train_poly = poly.fit_transform(X_train_scaled)
-    X_test_poly = poly.transform(X_test_scaled)
+    X_train_poly = poly.fit_transform(X_train_proc)
+    X_test_poly = poly.transform(X_test_proc)
+    # fixed-width input contract: 256 features for CKKS 16x256 slot layout
     X_train_expanded = X_train_poly[:, :256]
     X_test_expanded = X_test_poly[:, :256]
 

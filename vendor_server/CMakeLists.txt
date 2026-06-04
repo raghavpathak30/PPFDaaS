@@ -76,6 +76,9 @@ target_link_libraries(he_core PUBLIC
     protobuf::libprotobuf
     OpenMP::OpenMP_CXX
 )
+target_compile_definitions(he_core PUBLIC
+    PPFDAAS_REPO_ROOT="${CMAKE_SOURCE_DIR}"
+)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(he_core PUBLIC -mavx2 -O3)
@@ -100,6 +103,23 @@ target_link_libraries(ckks_smoke_test PRIVATE he_core)
 
 add_executable(benchmark src/benchmark.cpp)
 target_link_libraries(benchmark PRIVATE he_core)
+
+add_executable(benchmark_160 
+    src/benchmark_160.cpp
+    src/ckks_context_160.cpp
+    src/he_inference.cpp
+    src/rotation_hoisting.cpp
+)
+target_link_libraries(benchmark_160 PRIVATE
+    SEAL::seal
+    OpenMP::OpenMP_CXX
+)
+target_include_directories(benchmark_160 PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+target_compile_definitions(benchmark_160 PRIVATE
+    PPFDAAS_REPO_ROOT="${CMAKE_SOURCE_DIR}"
+)
 
 add_executable(vendor_server_main src/server_main.cpp)
 target_link_libraries(vendor_server_main PRIVATE he_core)
