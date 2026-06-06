@@ -1,0 +1,73 @@
+# syntax=docker/dockerfile:1
+
+# ────────────────────────────────────────────────────────────────
+# Stage 1: builder — full toolchain, SEAL from source, compile server
+# ────────────────────────────────────────────────────────────────
+FROM ubuntu:24.04 AS builder
+
+LABEL org.opencontainers.image.source=https://github.com/raghavpathak30/PPFDaaS
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Toolchain + gRPC/protobuf dev. On 24.04, apt's libgrpc++-dev ships
+# gRPCConfig.cmake + grpc_cpp_plugin, so find_package(gRPC ... CONFIG) just works.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential cmake git pkg-config ca-certificates libssl-dev \
+        libgrpc++-dev protobuf-compiler-grpc libprotobuf-dev protobuf-compiler \
+    && rm -rf /var/lib/apt/lists/*
+
+# Microsoft SEAL 4.1.2 — static, PIC, installed to /usr/local (same version your
+# client image compiles, so serialized ciphertext is wire-compatible).
+RUN git clone --depth 1 --branch v4.1.2 https://github.com/microsoft/SEAL.git /tmp/SEAL \
+    && cmake -S /tmp/SEAL -B /tmp/SEAL/build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr/local \
+        -DSEAL_BUILD_DEPS=ON \
+        -DSEAL_USE_MSGSL=OFF \
+        -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    && cmake --build /tmp/SEAL/build -j"$(nproc)" \
+    && cmake --install /tmp/SEAL/build \
+    && rm -rf /tmp/SEAL
+
+# PPFDaaS sources. The directory we point cmake -S at becomes CMAKE_SOURCE_DIR,
+# which is what bakes PPFDAAS_REPO_ROOT. We configure /app/vendor_server, so
+# PPFDAAS_REPO_ROOT == "/app/vendor_server" → galois loads from
+# /app/vendor_server/artifacts/galois_keys_160.bin at runtime. vendor_server's
+# CMake reads ../proto, so proto/ MUST sit beside vendor_server/.
+WORKDIR /app
+COPY proto/         /app/proto/
+COPY vendor_server/ /app/vendor_server/
+
+# Configure ONLY the vendor_server subtree. This skips bank_client (pybind11 /
+# Python-dev / the generate_seal_keys SEAL::seal issue) and tests entirely.
+# Catch2 is still FetchContent'd at configure time → needs github reachable here.
+RUN cmake -S /app/vendor_server -B /app/build -DCMAKE_BUILD_TYPE=Release \
+    && cmake --build /app/build --target vendor_server_160 -j"$(nproc)"
+
+# ────────────────────────────────────────────────────────────────
+# Stage 2: runtime — slim, only the shared libs the binary links
+# ────────────────────────────────────────────────────────────────
+FROM ubuntu:24.04 AS runtime
+ENV DEBIAN_FRONTEND=noninteractive
+
+# libgrpc++1.51t64 transitively pulls libgrpc, libprotobuf, the ~40 abseil libs,
+# libre2, libssl, libstdc++. libgomp1 = OpenMP runtime. SEAL is static → not needed.
+# bash is in the base image and is used by the compose healthcheck (/dev/tcp).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libgrpc++1.51t64 libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Non-root, same uid convention as your client image.
+RUN useradd --system --uid 10001 --no-create-home ppf
+
+COPY --from=builder /app/build/vendor_server_160 /usr/local/bin/vendor_server_160
+
+# WORKDIR must match the compiled PPFDAAS_REPO_ROOT so the hardcoded galois path lands
+# on the bind-mounted artifacts/.
+WORKDIR /app/vendor_server
+USER 10001
+EXPOSE 50052
+
+# weights path IS argv-overridable; galois path is NOT (it's compiled in).
+ENTRYPOINT ["vendor_server_160"]
+CMD ["/app/vendor_server/artifacts/model_weights.bin", "50052"]

@@ -1,0 +1,43 @@
+# compose.yaml — full PPFDaaS stack, one `docker compose up`
+name: ppfdaas
+
+services:
+  vendor_server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+      target: runtime
+    image: ppfdaas/vendor_server:dev
+    networks: [ppfnet]
+    ports:
+      - "50052:50052"            # host access for grpcurl/debug; inter-container doesn't need it
+    volumes:
+      - ./artifacts:/app/vendor_server/artifacts:ro   # galois_keys_160.bin + model_weights.bin
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/50052"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 20s          # keygen + galois load + warmup before it binds the port
+    restart: unless-stopped
+
+  bank_client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+      # target: <your client runtime stage name>   # omit if runtime is the LAST stage
+    image: ppfdaas/bank_client:dev
+    networks: [ppfnet]
+    environment:
+      SERVER_ADDR: "vendor_server:50052"   # embedded DNS: service name -> server (M4)
+    volumes:
+      - ./artifacts:/app/artifacts:ro      # needs the repo root in the image to be /app
+    command: ["python", "-u", "scripts/demo_e2e.py"]   # -u = unbuffered logs
+    depends_on:
+      vendor_server:
+        condition: service_healthy
+    restart: "no"                          # one-shot demo run; it prints 5 scores and exits
+
+networks:
+  ppfnet:
+    driver: bridge

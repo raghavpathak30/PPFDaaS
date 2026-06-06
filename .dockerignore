@@ -1,0 +1,17 @@
+.git
+build/
+**/build/
+.venv/
+venv/
+artifacts/
+data/
+logs/
+docs/
+**/__pycache__/
+*.pyc
+**/node_modules/
+cmake_output.txt
+ctest_output.txt
+verify_output.txt
+.cursor
+*.docx

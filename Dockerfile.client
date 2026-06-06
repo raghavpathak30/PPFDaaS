@@ -1,0 +1,76 @@
+# syntax=docker/dockerfile:1.7
+
+# ---------- Stage 1: builder (heavy, discarded) ----------
+FROM python:3.13-bookworm AS builder
+
+LABEL org.opencontainers.image.source=https://github.com/raghavpathak30/PPFDaaS
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        cmake ninja-build \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install pybind11
+
+# Microsoft SEAL, pinned to the exact release tag your keys + server use.
+RUN git clone --depth 1 --branch v4.1.2 https://github.com/microsoft/SEAL.git /tmp/SEAL \
+    && cmake -S /tmp/SEAL -B /tmp/SEAL/build -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DSEAL_BUILD_DEPS=ON -DBUILD_SHARED_LIBS=OFF \
+        -DSEAL_USE_INTEL_HEXL=OFF \
+        -DSEAL_BUILD_EXAMPLES=OFF -DSEAL_BUILD_TESTS=OFF -DSEAL_BUILD_BENCH=OFF \
+    && cmake --build /tmp/SEAL/build \
+    && cmake --install /tmp/SEAL/build \
+    && rm -rf /tmp/SEAL
+
+WORKDIR /src
+COPY . .
+
+# Build ONLY the wrapper — a minimal top-level project that add_subdirectory()'s
+# just bank_client, so we never configure vendor_server (gRPC/protobuf) or Catch2.
+RUN mkdir -p /wrap /out \
+    && printf '%s\n' \
+        'cmake_minimum_required(VERSION 3.20)' \
+        'project(ppfwrap LANGUAGES CXX)' \
+        'set(CMAKE_CXX_STANDARD 17)' \
+        'set(CMAKE_CXX_STANDARD_REQUIRED ON)' \
+        'add_subdirectory(/src/bank_client ${CMAKE_BINARY_DIR}/bank_client)' \
+        > /wrap/CMakeLists.txt \
+    && cmake -S /wrap -B /wrap/build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+        -Dpybind11_DIR="$(python -m pybind11 --cmakedir)" \
+    && cmake --build /wrap/build --target seal_wrapper seal_wrapper_160 \
+    && find /src/bank_client -maxdepth 1 -name 'seal_wrapper*.so' -exec cp {} /out/ \; \
+    && ls -la /out
+
+# ---------- Stage 2: runtime (slim, non-root) ----------
+FROM python:3.13-slim-bookworm AS runtime
+
+# libstdc++6 = the GNU C++ stdlib the .so needs. Everything else SEAL uses is
+# statically linked into the .so. Both stages are bookworm, so the .so built in
+# stage 1 matches this runtime's glibc (this is what the host-mounted .so did NOT).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libstdc++6 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd --create-home --uid 10001 appuser
+WORKDIR /app
+
+# Runtime deps. scipy is needed by bank_client.py (expit). Pin to your .venv
+# versions: pip freeze | grep -Ei 'numpy|scipy|grpcio|protobuf'
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install numpy scipy grpcio protobuf
+
+# --- Preserve the repo LAYOUT so the package imports resolve ---
+# generated/ package (the real 4 KB stubs + __init__.py, NOT the root shims)
+COPY generated/ ./generated/
+# bank_client package: the client + BOTH wrappers, .so beside bank_client.py
+COPY bank_client/bank_client.py ./bank_client/
+COPY --from=builder /out/seal_wrapper*.so ./bank_client/
+# the entrypoint
+COPY scripts/demo_e2e.py ./scripts/
+
+USER appuser
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app:/app/generated
+ENV SERVER_ADDR=vendor_server:50052
+CMD ["python", "-u", "scripts/demo_e2e.py"]
