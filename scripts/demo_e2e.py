@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import os
 import signal
 import socket
 import subprocess
@@ -46,6 +47,15 @@ def _is_port_open(host: str, port: int, timeout: float = 0.25) -> bool:
         return False
 
 
+def _wait_remote(host: str, port: int, timeout: float = 60.0) -> bool:
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if _is_port_open(host, port, timeout=1.0):
+            return True
+        time.sleep(0.5)
+    return False
+
+
 def _wait_ready(proc: subprocess.Popen, timeout: float = 20.0) -> None:
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -71,15 +81,23 @@ def _stop_server(proc: subprocess.Popen) -> None:
 
 
 def main() -> int:
-    proc = _start_server()
-    try:
+    server_addr = os.environ.get("SERVER_ADDR")   # set in the container; unset = local demo
+    proc = None
+    if server_addr:
+        host, _, port = server_addr.partition(":")
+        if not _wait_remote(host, int(port or "50052")):
+            raise TimeoutError(f"server {server_addr} not reachable")
+    else:
+        server_addr = "localhost:50052"
+        proc = _start_server()
         _wait_ready(proc)
 
+    try:
         artifacts = REPO_ROOT / "artifacts"
         x_test = np.load(artifacts / "X_test.npy")
 
         client = BankClient(
-            "localhost:50052",
+            server_addr,
             weights_path=str(artifacts / "model_weights.bin"),
             public_key_path=str(artifacts / "public_key_160.bin"),
             secret_key_path=str(artifacts / "secret_key_160.bin"),
@@ -102,7 +120,8 @@ def main() -> int:
         print("\nVendor NEVER saw plaintext data")
         return 0
     finally:
-        _stop_server(proc)
+        if proc is not None:
+            _stop_server(proc)
 
 
 if __name__ == "__main__":
