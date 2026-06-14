@@ -1,11 +1,27 @@
 from pathlib import Path
 import importlib
+import json
 import pathlib
 import re
+import socket
 import struct
+import subprocess
+import sys
+import time
+import uuid
 
 import numpy as np
 import pytest
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+PROTO_FILE = REPO_ROOT / "proto" / "inference.proto"
+SERVICE_CPP = REPO_ROOT / "vendor_server" / "src" / "inference_service.cpp"
+
+# Make `bank_client`, `generated`, etc. importable regardless of how this
+# file is invoked (pytest from repo root, or `python3 tests/test_inference.py`).
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 
 _BANK_CLIENT_AVAILABLE = importlib.util.find_spec("bank_client") is not None
@@ -17,12 +33,9 @@ _ARTIFACTS_AVAILABLE = any(
         "vendor_server/artifacts/model_weights.bin",
     ]
 )
-_RUNTIME_READY = _BANK_CLIENT_AVAILABLE and _ARTIFACTS_AVAILABLE
-
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-PROTO_FILE = REPO_ROOT / "proto" / "inference.proto"
-SERVICE_CPP = REPO_ROOT / "vendor_server" / "src" / "inference_service.cpp"
+_TEST_SET_AVAILABLE = (REPO_ROOT / "artifacts" / "X_test.npy").exists() and \
+    (REPO_ROOT / "artifacts" / "y_test.npy").exists()
+_RUNTIME_READY = _BANK_CLIENT_AVAILABLE and _ARTIFACTS_AVAILABLE and _TEST_SET_AVAILABLE
 
 
 def _read(path: Path) -> str:
@@ -163,6 +176,30 @@ def _resolve_runtime_paths() -> tuple[Path, Path]:
     return weights_npy, model_bin
 
 
+def _resolve_test_set() -> tuple[Path, Path]:
+    x_candidates = [
+        REPO_ROOT / "artifacts" / "X_test.npy",
+        REPO_ROOT / "vendor_server" / "artifacts" / "X_test.npy",
+        REPO_ROOT / "compiler" / "artifacts" / "X_test.npy",
+    ]
+    y_candidates = [
+        REPO_ROOT / "artifacts" / "y_test.npy",
+        REPO_ROOT / "vendor_server" / "artifacts" / "y_test.npy",
+        REPO_ROOT / "compiler" / "artifacts" / "y_test.npy",
+    ]
+
+    x_test = next((p for p in x_candidates if p.exists()), None)
+    y_test = next((p for p in y_candidates if p.exists()), None)
+
+    assert x_test is not None, (
+        "X_test.npy not found. Checked: " + ", ".join(str(p) for p in x_candidates)
+    )
+    assert y_test is not None, (
+        "y_test.npy not found. Checked: " + ", ".join(str(p) for p in y_candidates)
+    )
+    return x_test, y_test
+
+
 def _load_bank_client_class():
     module_candidates = [
         "bank_client.backend.bank_client",
@@ -181,77 +218,189 @@ def _load_bank_client_class():
     )
 
 
-def run_runtime_validation():
-    # 1) Create client
+# ─── Phase 0.3: end-to-end HE-vs-plaintext logit parity harness ───────────
+#
+# The previous `run_runtime_validation` compared a PLAINTEXT LOGIT
+# (`X @ w + b`) against an ENCRYPTED-PATH SIGMOID PROBABILITY
+# (`fraud_probabilities[0] = expit(decrypted_raw + bias)`) -- a
+# dimensionally-incoherent comparison that asserted nothing meaningful.
+#
+# This harness instead compares LOGIT vs LOGIT:
+#   plaintext_logit  = X @ w + b
+#   encrypted_logit  = decrypt(raw_score) + b     (raw_score = HE dot product)
+# over the FULL held-out test set, reports error statistics, writes
+# `artifacts/errors.json`, and computes ROC-AUC / PR-AUC from the
+# encrypted-path logits -- the first real accuracy number for the
+# encrypted path.
+
+_VENDOR_160 = {
+    "address": "127.0.0.1:50052",
+    "binary": REPO_ROOT / "vendor_server" / "build" / "vendor_server_160",
+    "weights_path": REPO_ROOT / "artifacts" / "model_weights.bin",
+    "public_key_path": REPO_ROOT / "artifacts" / "public_key_160.bin",
+    "secret_key_path": REPO_ROOT / "artifacts" / "secret_key_160.bin",
+    "wrapper_module": "seal_wrapper_160",
+    "grpc_max_message_length": 384 * 1024,
+}
+
+ERRORS_JSON_PATH = REPO_ROOT / "artifacts" / "errors.json"
+
+BATCH_SIZE = 16  # protocol packs 16 transactions x 256 features = 4096 slots
+
+
+def _is_port_open(host: str, port: int, timeout: float = 0.25) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+def _launch_server(cfg: dict) -> subprocess.Popen:
+    host, port = cfg["address"].split(":")
+    proc = subprocess.Popen(
+        [str(cfg["binary"]), str(cfg["weights_path"]), port],
+        cwd=str(REPO_ROOT),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    for _ in range(40):
+        if _is_port_open(host, int(port)):
+            return proc
+        if proc.poll() is not None:
+            raise RuntimeError(
+                f"server process exited early (code={proc.returncode}); "
+                f"binary={cfg['binary']}"
+            )
+        time.sleep(0.25)
+    proc.terminate()
+    raise RuntimeError(f"server did not open {cfg['address']} in time")
+
+
+def _stop_server(proc: subprocess.Popen) -> None:
+    proc.terminate()
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+
+
+def run_runtime_validation(max_samples: int | None = None) -> dict:
+    """Phase 0.3 end-to-end logit-vs-logit parity + accuracy report.
+
+    Returns the report dict (also written to `artifacts/errors.json`).
+    """
+    from generated import inference_pb2
+    from sklearn.metrics import average_precision_score, roc_auc_score
+
     BankClient = _load_bank_client_class()
-    client = BankClient("127.0.0.1:50051")
+    cfg = _VENDOR_160
 
-    # 2) Generate synthetic input X shape (1, 256), float64
-    rng = np.random.default_rng(12345)
-    X = rng.normal(size=(1, 256)).astype(np.float64)
-
-    # 5) Load weights.npy and bias from model_weights.bin
     weights_npy, model_bin = _resolve_runtime_paths()
     weights = np.load(weights_npy)
     bias = _load_bias_from_model_weights_bin(model_bin)
-
     assert weights.ndim == 1 and weights.shape[0] == 256, (
         f"weights.npy must be shape (256,), got {weights.shape}"
     )
 
-    # 3) Call inference
-    result = client.run_inference(X)
-
-    # 4) Print latency and timing fields
-    latency_ms = float(result["latency_ms"])
-    timing = result["timing_breakdown"]
-    deser = int(timing["deserialization_us"])
-    mul = int(timing["multiply_plain_us"])
-    rot = int(timing["rotation_hoisting_us"])
-    ser = int(timing["serialization_us"])
-    total = int(timing["total_inference_us"])
-
-    print(f"latency_ms={latency_ms:.3f}")
-    print(
-        "timing_us "
-        f"deserialization={deser} multiply_plain={mul} "
-        f"rotation_hoisting={rot} serialization={ser} total={total}"
+    x_test_path, y_test_path = _resolve_test_set()
+    X_test = np.load(x_test_path).astype(np.float64)
+    y_test = np.load(y_test_path)
+    assert X_test.ndim == 2 and X_test.shape[1] == 256, (
+        f"X_test.npy must be shape (N, 256), got {X_test.shape}"
     )
+    if max_samples is not None:
+        X_test = X_test[:max_samples]
+        y_test = y_test[:max_samples]
+    n_samples = X_test.shape[0]
 
-    # 6) Plaintext reference score
-    plain = float(X[0] @ weights + bias)
+    # Plaintext reference logits: X @ w + b
+    plain_logits = X_test @ weights + bias
 
-    # 7) HE output score
-    he_score = float(result["fraud_probabilities"][0])
+    host, port_s = cfg["address"].split(":")
+    port = int(port_s)
+    own_server = None
+    if not _is_port_open(host, port):
+        own_server = _launch_server(cfg)
 
-    # 8-10) Error comparison and threshold
-    error = abs(plain - he_score)
-    print(f"plain={plain:.12f} he_score={he_score:.12f} error={error:.12e}")
-    assert error < 1e-3, f"HE/plain mismatch too high: {error}"
+    try:
+        client = BankClient(
+            cfg["address"],
+            weights_path=str(cfg["weights_path"]),
+            public_key_path=str(cfg["public_key_path"]),
+            secret_key_path=str(cfg["secret_key_path"]),
+            wrapper_module=cfg["wrapper_module"],
+            grpc_max_message_length=cfg["grpc_max_message_length"],
+        )
 
-    # 11) Timing invariant
-    residual = total - (deser + mul + rot + ser)
-    assert residual <= 300, f"Timing residual too large: {residual} us"
+        # Encrypted-path logits: decrypt(raw_score) + b
+        encrypted_logits = np.empty(n_samples, dtype=np.float64)
+        n_batches = (n_samples + BATCH_SIZE - 1) // BATCH_SIZE
+        pad_buffer = np.zeros((BATCH_SIZE, 256), dtype=np.float64)
 
-    # 12) Multi-run summary (20 runs)
-    latencies = [latency_ms]
-    for _ in range(19):
-        Xr = rng.normal(size=(1, 256)).astype(np.float64)
-        rr = client.run_inference(Xr)
-        latencies.append(float(rr["latency_ms"]))
+        for b in range(n_batches):
+            lo = b * BATCH_SIZE
+            hi = min(lo + BATCH_SIZE, n_samples)
+            chunk = X_test[lo:hi]
+            if chunk.shape[0] < BATCH_SIZE:
+                buf = pad_buffer.copy()
+                buf[: chunk.shape[0]] = chunk
+            else:
+                buf = chunk
 
-    arr = np.asarray(latencies, dtype=np.float64)
-    mean_ms = float(np.mean(arr))
-    std_ms = float(np.std(arr))
-    min_ms = float(np.min(arr))
-    max_ms = float(np.max(arr))
+            ct_bytes = client._wrapper.encrypt_batch(
+                np.ascontiguousarray(buf.ravel(), dtype=np.float64))
+            req = inference_pb2.InferenceRequest(
+                ciphertext=ct_bytes,
+                request_id=str(uuid.uuid4()),
+                institution_id="PARITY_HARNESS",
+                n_transactions=BATCH_SIZE,
+            )
+            resp = client._stub.RunInference(req, timeout=5.0)
+            if resp.status != inference_pb2.InferenceStatus.OK:
+                raise RuntimeError(f"Vendor error {resp.status}: {resp.error_message}")
 
-    # 13) Print summary
+            raw = client._wrapper.decrypt_batch(resp.result_ciphertext, BATCH_SIZE)
+            encrypted_logits[lo:hi] = raw[: hi - lo] + bias
+    finally:
+        if own_server is not None:
+            _stop_server(own_server)
+
+    abs_err = np.abs(plain_logits - encrypted_logits)
+
+    report = {
+        "n_samples": int(n_samples),
+        "max_abs_error": float(np.max(abs_err)),
+        "mean_abs_error": float(np.mean(abs_err)),
+        "median_abs_error": float(np.median(abs_err)),
+        "abs_error_distribution": {
+            "p50": float(np.percentile(abs_err, 50)),
+            "p90": float(np.percentile(abs_err, 90)),
+            "p99": float(np.percentile(abs_err, 99)),
+            "p99.9": float(np.percentile(abs_err, 99.9)),
+            "min": float(np.min(abs_err)),
+            "max": float(np.max(abs_err)),
+        },
+        "roc_auc_encrypted": float(roc_auc_score(y_test, encrypted_logits)),
+        "pr_auc_encrypted": float(average_precision_score(y_test, encrypted_logits)),
+    }
+
+    ERRORS_JSON_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(ERRORS_JSON_PATH, "w") as f:
+        json.dump(report, f, indent=2)
+
     print(
-        "runtime_summary "
-        f"runs={len(latencies)} mean_ms={mean_ms:.3f} std_ms={std_ms:.3f} "
-        f"min_ms={min_ms:.3f} max_ms={max_ms:.3f}"
+        "encrypted_path_report "
+        f"n_samples={report['n_samples']} "
+        f"MAE={report['mean_abs_error']:.6e} "
+        f"MedianAE={report['median_abs_error']:.6e} "
+        f"MaxAE={report['max_abs_error']:.6e} "
+        f"ROC-AUC={report['roc_auc_encrypted']:.6f} "
+        f"PR-AUC={report['pr_auc_encrypted']:.6f}"
     )
+    print(f"errors.json written to {ERRORS_JSON_PATH}")
+
+    return report
 
 
 @pytest.mark.skipif(
@@ -259,7 +408,11 @@ def run_runtime_validation():
     reason="Runtime deps absent: BankClient not yet implemented / artifacts not generated",
 )
 def test_runtime_validation():
-    run_runtime_validation()
+    # Small slice for fast CI; the full held-out test set is run via __main__.
+    report = run_runtime_validation(max_samples=160)
+    assert report["max_abs_error"] < 1e-3, (
+        f"encrypted-path logit error too large: {report['max_abs_error']}"
+    )
 
 
 if __name__ == "__main__":
