@@ -3525,3 +3525,275 @@ The following runtime optimizations are normative performance contracts for both
 - Compliance requirement:
     - Any change that removes parallel rotation generation or preallocation behavior must be treated as a performance-contract change and requires rerunning the comparison benchmark and updating documented latency baselines.
 
+# §6 Threat Model & Trust Boundaries [PHASE 1 ADDITION]
+
+This section makes explicit what the code in vendor_server/src/inference_service_160.cpp,
+eval_context_160.{h,cpp}, provisioning_state.h, and bank_client/bank_client.py now ENFORCE,
+so that README/paper claims about the bank/vendor trust boundary describe the implemented
+system rather than an aspiration. It supersedes the implicit "one trusted admin owns
+everything via a shared artifacts/ volume" model that the pre-Phase-1 codebase actually ran
+under (galois_keys_160.bin bind-mounted into both containers from the same host directory).
+
+## §6.1 Adversary Model
+
+PPFDaaS's Phase-1 protocol assumes a **semi-honest (honest-but-curious)** adversary on
+either side of the bank/vendor boundary: both parties run the protocol as implemented, but
+each may try to extract additional information from data that legitimately passes through
+its hands. Explicitly OUT OF SCOPE for Phase 1 (not modeled, not defended against):
+
+  - An actively malicious vendor that returns adversarially-crafted ciphertexts to the bank
+    (beyond the parms_id / size checks in §6.3), or a malicious bank that submits
+    structurally-invalid Galois keys beyond what `load_and_validate_galois_keys`
+    (eval_context_160.cpp) checks.
+  - Denial-of-service, traffic-analysis, and timing side channels.
+  - Compromise of either party's host/OS (this threat model is about the PROTOCOL's
+    cryptographic and trust-boundary properties, not endpoint security).
+
+## §6.2 Key Holders & Generation
+
+`compiler/gen_keys_160.py` calls `seal_wrapper_160.generate_keys_160()` once and writes a
+single CONSISTENT triple under one SEALContext `parms_id`:
+
+  - `artifacts/secret_key_160.bin` — held ONLY by the bank. No RPC, file path, environment
+    variable, or code path in `vendor_server/` reads, accepts, or stores a secret key. This
+    is structural: `EvalContext160` (eval_context_160.h) has no `seal::SecretKey` field at
+    all.
+  - `artifacts/public_key_160.bin` — used only by the bank itself (`BankClient.__init__` →
+    `wrapper.init_seal`) to encrypt its own queries. The vendor never receives or needs it.
+  - `artifacts/galois_keys_160.bin` (~5.8 MB) — the ONLY key material that crosses the
+    bank/vendor boundary, pushed over the wire by `BankClient.provision_and_validate`
+    (bank_client/bank_client.py) via the `ProvisionGaloisKeys` RPC.
+
+**Key rotation / lifecycle**: `ProvisioningStateMachine::on_structural_result`
+(provisioning_state.h) accepts `ProvisionGaloisKeys` ONLY from `PROV_AWAITING_KEYS`. Once a
+vendor process reaches `PROV_READY` (or trips to the terminal `PROV_FAULT`), a further
+`ProvisionGaloisKeys` call is rejected with state unchanged and the message "Re-provisioning
+requires a server restart." Rotating the bank's key triple therefore requires restarting
+`vendor_server_160` (which boots back into `PROV_AWAITING_KEYS`) before re-provisioning. This
+is a deliberate consequence of keeping the state machine simple and fail-closed; it is
+recorded here as an operational constraint, not addressed further in Phase 1.
+
+## §6.3 Provisioning Protocol & Fail-Closed State Machine (§1.2b / §1.4 / §1.5)
+
+Replacing the shared `artifacts/` volume, `vendor_server_160` boots holding NO Galois keys,
+in state `PROV_AWAITING_KEYS`, and refuses `RunInference` (`ERR_NOT_PROVISIONED`) until all
+of the following succeed, driven entirely by the bank:
+
+  1. **`ProvisionGaloisKeys`** (inference_service_160.cpp) — the bank pushes
+     `galois_keys_160.bin`. `EvalContext160::load_and_validate_galois_keys` checks the byte
+     stream deserializes as `seal::GaloisKeys` under the server's `context`, that its
+     `parms_id()` matches the server's key-level `parms_id` (the keys were generated for
+     THESE encryption parameters), and that every Galois element `ROTATION_STEPS =
+     {1,2,4,8,16,32,64,128}` requires is present. Failure → `PROV_FAULT`. This rung CANNOT
+     and does not attempt to verify the keys were generated under the BANK'S secret key —
+     two different secret keys can produce structurally-valid Galois keys for the same
+     `parms_id` (Bug B).
+  2. **`CanaryCheck` / `CanaryConfirm`** (§1.2b, the behavioral rung) — the bank encrypts a
+     known constant vector (`canary_value = 0.01` on all 4096 slots), the server applies the
+     PRODUCTION `hoisted_tree_sum` rotation schedule using the just-provisioned Galois keys
+     and returns the result (still opaque to the server — it has no Decryptor). The bank
+     decrypts and checks `decoded ≈ 256 * canary_value` on all 16 lanes (the known
+     window-sum invariant). It reports the pass/fail verdict back via `CanaryConfirm`,
+     which the server treats as authoritative: `passed=true` → `PROV_READY`
+     (RunInference now permitted); `passed=false` → terminal `PROV_FAULT`. This is the
+     ONLY check that can detect "structurally valid Galois keys generated under the WRONG
+     secret key" (Bug B's ~1e18-magnitude garbage), because it is the only rung where the
+     bank's secret key participates.
+  3. **Continuous validation** (rung c, every `RunInference` call) — `ct.parms_id() ==
+     ctx_.context->first_parms_id()` is re-checked on every request;
+     `kMaxContinuousMismatches = 3` consecutive failures while `PROV_READY` trips the state
+     machine to `PROV_FAULT` for all subsequent requests until restart + re-provisioning.
+
+`PROV_FAULT` is terminal: there is no in-process recovery, no degraded mode, and no
+substitute-key fallback at any state (this is what "fail-closed" means operationally here).
+
+## §6.4 Server (Vendor) Visibility — EvalContext160's Capability Surface (§1.1)
+
+`EvalContext160` (eval_context_160.h, constructed once in
+`FraudInferenceServiceImpl160`'s constructor, inference_service_160.cpp) has:
+
+  - NO `seal::SecretKey`, NO `seal::Decryptor`, NO `seal::KeyGenerator` anywhere — not even
+    transiently during construction.
+  - NO `seal::PublicKey` / `seal::Encryptor` — the server never encrypts anything (the
+    `CanaryCheck` response is a rotation-transform of a BANK-supplied ciphertext, not a
+    fresh encryption).
+  - The capability to: encode plaintexts (`pt_weights_`, `pt_bias_`, loaded once from
+    `model_weights.bin` via `weight_loader.cpp`), and evaluate (`multiply_plain`, `rescale`,
+    rotate via bank-provisioned Galois keys). This is exactly the capability surface the
+    depth-1 inference circuit requires.
+
+A server process built this way is structurally incapable of decrypting any ciphertext it
+ever sees, regardless of what the surrounding control flow does — the TCB is defined by
+linked capabilities, not by which functions happen to be called.
+
+**What crosses the wire, by message**:
+
+  | Message | Direction | Content | Confidentiality under this model |
+  |---|---|---|---|
+  | `InferenceRequest.ciphertext` | bank → vendor | CKKS ciphertext, up to 16×256 padded feature vectors | Opaque to vendor (CPA-secure CKKS) |
+  | `InferenceRequest.n_transactions`, `.institution_id`, `.request_id` | bank → vendor | **plaintext** metadata | Visible to vendor — accepted/intentional (§6.8) |
+  | `InferenceResponse.result_ciphertext` | vendor → bank | CKKS ciphertext, dot-product+bias per transaction | Opaque to vendor (it computed but cannot decrypt its own output) |
+  | `ProvisionGaloisKeysRequest.galois_keys` | bank → vendor | `seal::GaloisKeys` (public key material) | Public by design — does not enable decryption (§6.6) |
+  | `CanaryRequest.ciphertext` / `CanaryResponse.result_ciphertext` | bank ↔ vendor | CKKS ciphertext (known constant plaintext) | Opaque to vendor |
+  | `CanaryConfirmRequest.passed`, `.message` | bank → vendor | **plaintext** 1-bit verdict + free-text | Visible to vendor — see §6.6 caveat |
+
+The vendor ALSO holds locally, never transmitted: `model_weights.bin` → `pt_weights_`,
+`bias_` → `pt_bias_` (the vendor's model IP). §6.5 addresses what this actually protects.
+
+## §6.5 Model-Disclosure Decision (§1.3, "Option A") — Input Privacy, Not Model Privacy
+
+§1.3 moved the bias term server-side: `pt_bias_` is encoded once in the constructor and
+applied via `add_plain_inplace(acc_buf_, pt_bias_)` (inference_service_160.cpp) AFTER
+`hoisted_tree_sum`, so the bank's `bank_client.py` no longer holds (or needs) a plaintext
+`bias_` constant — the prior design shipped that constant to the bank as a file, an
+unconditional, zero-cost disclosure of part of the model.
+
+**This is the limit of what "moving the bias server-side" can achieve.** The deployed
+circuit computes a CKKS-encrypted **linear** map, `result = X @ w + bias`, and returns
+`result` (still encrypted) to the SAME PARTY that supplied `X` and that holds the secret key
+needed to decrypt `result` — by design, the bank must be able to decrypt its own query
+results. Consequently, a bank that is willing to issue chosen-plaintext queries can recover
+the ENTIRE model exactly:
+
+  - Query `X = 0` (all-zero transaction) → decrypted result = `bias`.
+  - Query `X = e_i` (the i-th standard basis vector, i.e. transaction with feature i = 1,
+    all others 0) → decrypted result = `w_i + bias`.
+  - 257 such queries (1 + 256 features) recover `bias` and the full weight vector `w`
+    exactly.
+
+No amount of server-side computation closes this gap, because it is not a flaw in the
+implementation — it is inherent to "evaluate a known linear function homomorphically and
+return the encrypted result to the query-issuer, who holds the decryption key by design."
+Genuine model confidentiality against the query-issuer would require a fundamentally
+different protocol (e.g., the query-issuer never decrypts the raw linear output directly —
+2-party computation of the nonlinearity, output-perturbation/masking, query-pattern
+rate-limiting/anomaly detection, or transciphering to a different key the vendor controls)
+— **all explicitly OUT OF SCOPE for Phase 1** (transciphering is listed as out of scope in
+the Phase 1 charter; output masking is §1.6, interface-design-only).
+
+**Therefore, the honest claim this system supports is INPUT privacy** ("the vendor never
+observes the bank's plaintext transaction data, and the bank never observes the vendor's
+model weights/bias in a single response") — **NOT model privacy** ("the vendor's model is
+protected from the bank"). §1.3's change raises the cost of model extraction from "read a
+file" (zero queries) to "257 chosen-plaintext queries", which is a real improvement, but any
+README/paper language should describe the guarantee as input-privacy / data-confidentiality,
+not as protecting the vendor's IP from the bank. (A grep for "model privacy" / "model
+confidentiality" phrasing in this spec found no such claims to retract; this section exists
+so future edits do not introduce one.)
+
+## §6.6 Approximate-Decryption / IND-CPA-D Caveat (Li–Micciancio)
+
+Li & Micciancio ("On the Security of Homomorphic Encryption on Approximate Numbers", 2021)
+showed that CKKS's APPROXIMATE decryption can leak secret-key-dependent information to a
+party that controls an interactive **decryption oracle** — i.e., CKKS is IND-CPA secure but
+not necessarily IND-CPA-D (secure under a decryption oracle for adversarially-chosen
+ciphertexts).
+
+In PPFDaaS, only the bank EVER decrypts anything (§6.4: the vendor has no `Decryptor`). The
+most direct version of the Li–Micciancio attack — a malicious server that gets the client to
+decrypt server-crafted ciphertexts and leak the result back to the server — therefore has no
+channel back to the vendor for ordinary `RunInference` traffic: the bank decrypts
+`result_ciphertext` locally and never reports anything about it to the vendor.
+
+**The one place this deserves a documented caveat is the canary handshake (§6.3, rung 2)**:
+`CanaryConfirm.passed` is a 1-bit signal, OBSERVABLE BY THE VENDOR, about whether the bank's
+decryption of a server-COMPUTED ciphertext (`CanaryCheck`'s `result_ciphertext`, derived by
+rotating a bank-chosen canary plaintext using the just-provisioned Galois keys) matched an
+expected value. Structurally, this is a 1-bit decryption-oracle response. It is benign under
+the current design because:
+
+  - The Galois keys used were generated by the BANK itself (`gen_keys_160.py`'s consistent
+    triple) and merely round-tripped through the vendor — the vendor cannot choose
+    adversarial Galois keys to bias what gets decrypted.
+  - The canary plaintext (`vec[i] = 0.01` ∀i) is fixed and bank-chosen, not influenced by the
+    vendor.
+
+This is recorded as a **documented assumption for Phase 1**, not a closed gap: if a future
+phase changes the canary/validation handshake to let the vendor influence what plaintext
+gets canary-checked, or exposes any other "decrypt this and tell me pass/fail" RPC to a
+less-trusted party, the IND-CPA-D literature should be revisited before doing so.
+
+## §6.7 Transport Authentication (§1.7) — mTLS and the Honest-but-Curious Network Assumption
+
+`vendor_server_160`'s `BuildServerCredentials()` (inference_service_160.cpp) is controlled by
+three environment variables, all-or-nothing:
+
+  - All three of `PPFD_TLS_CERT` / `PPFD_TLS_KEY` / `PPFD_TLS_CA` set → mutually authenticated
+    TLS (`grpc::SslServerCredentials` with
+    `GRPC_SSL_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY`): the server presents
+    `PPFD_TLS_CERT`/`PPFD_TLS_KEY` as its identity and requires + verifies a client
+    certificate signed by `PPFD_TLS_CA`.
+  - Any one or two set (but not all three) → the server REFUSES TO START
+    (`std::runtime_error`, caught by `main()` → `exit(1)`, the existing fail-closed startup
+    path) — there is no partially-secure mode.
+  - None set (the default) → `grpc::InsecureServerCredentials()`, with a `std::cerr` warning
+    printed at startup naming the exact env vars and `scripts/generate_dev_certs.sh`.
+
+`bank_client.py`'s `BankClient.__init__` mirrors this: `use_tls=True` with
+`tls_ca_path`/`tls_cert_path`/`tls_key_path` all given builds
+`grpc.ssl_channel_credentials(root_certificates=<ca>, private_key=<client key>,
+certificate_chain=<client cert>)` for mTLS (matching the server's required-client-cert mode);
+`use_tls=True` with none given falls back to `grpc.ssl_channel_credentials()` (system roots,
+server-auth only, no client cert — the server would then reject the handshake in mTLS mode);
+`use_tls=False` (the default for all current callers — `test_inference.py`,
+`benchmark_comparison.py`, `demo_e2e.py`, etc.) is `grpc.insecure_channel`.
+`scripts/generate_dev_certs.sh` generates a dev CA + `server.crt/key` (CN=vendor_server) +
+`client.crt/key` (CN=bank_client) into `certs/` (gitignored).
+
+**The explicit assumption this threat model now states**: running with all three
+`PPFD_TLS_*` vars unset — i.e. `InsecureServerCredentials` / `insecure_channel`, no transport
+encryption or peer authentication — is acceptable ONLY when bank_client and vendor_server
+communicate over a network segment where a third party cannot passively observe or actively
+inject/modify traffic (e.g., `compose.yaml`'s private `ppfnet` bridge network for local
+dev/demo, or `localhost`). This is the system's CURRENT DEFAULT (`compose.yaml`,
+`compose.prod.yaml` both ship with `PPFD_TLS_*` unset/commented-out, and
+`demo_e2e.py`/`test_inference.py`/etc. all use `use_tls=False`), and it is a real, intentional
+deviation from "fully authenticated channel" that this document records rather than hides.
+
+**For any deployment where bank_client and vendor_server traverse a network a third party
+could observe or join** (the public internet, a shared/multi-tenant cloud VPC, etc.), mTLS
+MUST be enabled: run `scripts/generate_dev_certs.sh` (or use real org-issued certs with the
+same file names), set `PPFD_TLS_CERT`/`PPFD_TLS_KEY`/`PPFD_TLS_CA` on the vendor, and pass
+`use_tls=True` + `tls_ca_path`/`tls_cert_path`/`tls_key_path` to `BankClient`.
+`compose.prod.yaml` documents the exact env vars and volume mount, commented out, as the
+"real" mTLS-enabled path.
+
+Note that mTLS authenticates and encrypts the CHANNEL; it does not change anything in §6.1–
+§6.6 — it ensures the semi-honest peers described there are talking to EACH OTHER and not to
+(or through) a third party.
+
+## §6.8 Accepted Plaintext Metadata Leakage
+
+The following fields are sent in PLAINTEXT on every `RunInference` call and are visible to
+the vendor (and to anyone with channel access if §6.7's mTLS is not enabled):
+`n_transactions` (an integer in [1,16]), `institution_id` (a free-text string), and
+`request_id` (a UUID generated per-call by the bank, used only for response matching). These
+are considered non-sensitive under this threat model — none of them reveal transaction
+CONTENT — and are left as-is. If institution-identity or batch-size metadata become
+sensitive in a future deployment, mitigations (padding every batch to 16, moving
+`institution_id` to an out-of-band authenticated channel such as the mTLS client
+certificate's CN) are Phase-2 candidates, not implemented here.
+
+## §6.9 Out of TCB: `CKKSContext160` / `ckks_context_160.{h,cpp}` / `benchmark_160`
+
+`vendor_server/include/ckks_context_160.h` and `vendor_server/src/ckks_context_160.cpp`
+define `CKKSContext160`, which DOES hold a `seal::SecretKey`, a live `seal::Decryptor`, and
+runs a `seal::KeyGenerator` — exactly the capabilities §6.4 requires the deployed server NOT
+to have. As of this Phase, `CKKSContext160` is used ONLY by `benchmark_160`
+(vendor_server/CMakeLists.txt: `add_executable(benchmark_160 src/benchmark_160.cpp
+src/ckks_context_160.cpp ...)`, target_compile_definitions including
+`PPFDAAS_ALLOW_LOCAL_GALOIS=1`), a standalone local latency-measurement binary that
+self-encrypts/decrypts to time the circuit end-to-end and is NOT a target of
+`Dockerfile.server` (which builds only `vendor_server_160`, linked against
+`eval_context_160.cpp`/`EvalContext160`, not `ckks_context_160.cpp`).
+
+**Disposition**: `CKKSContext160`/`ckks_context_160.{h,cpp}`/`benchmark_160` are explicitly
+OUT OF the deployed TCB and were NOT redesigned in Phase 1 — they are a separate,
+non-deployed, local-benchmarking-only code path whose own header comment (added in this
+phase) now states this explicitly. They are flagged here, not removed, because removing a
+working benchmark harness is out of scope for a trust-boundary phase; if a future phase finds
+it confusing to keep a secret-key-holding `*Context160` type alongside the deployed
+`EvalContext160`, renaming/relocating `ckks_context_160.{h,cpp}` out of `vendor_server/` (so
+it cannot be accidentally linked into a deployed target) would be a reasonable Phase-2
+cleanup.
+

@@ -239,8 +239,11 @@ _VENDOR_160 = {
     "weights_path": REPO_ROOT / "artifacts" / "model_weights.bin",
     "public_key_path": REPO_ROOT / "artifacts" / "public_key_160.bin",
     "secret_key_path": REPO_ROOT / "artifacts" / "secret_key_160.bin",
+    "galois_keys_path": REPO_ROOT / "artifacts" / "galois_keys_160.bin",
     "wrapper_module": "seal_wrapper_160",
-    "grpc_max_message_length": 384 * 1024,
+    # §1.4: must be large enough for galois_keys_160.bin (~5.8 MB), pushed
+    # once via ProvisionGaloisKeys.
+    "grpc_max_message_length": 8 * 1024 * 1024,
 }
 
 ERRORS_JSON_PATH = REPO_ROOT / "artifacts" / "errors.json"
@@ -326,11 +329,11 @@ def run_runtime_validation(max_samples: int | None = None) -> dict:
     try:
         client = BankClient(
             cfg["address"],
-            weights_path=str(cfg["weights_path"]),
             public_key_path=str(cfg["public_key_path"]),
             secret_key_path=str(cfg["secret_key_path"]),
             wrapper_module=cfg["wrapper_module"],
             grpc_max_message_length=cfg["grpc_max_message_length"],
+            galois_keys_path=str(cfg["galois_keys_path"]),
         )
 
         # Encrypted-path logits: decrypt(raw_score) + b
@@ -361,7 +364,10 @@ def run_runtime_validation(max_samples: int | None = None) -> dict:
                 raise RuntimeError(f"Vendor error {resp.status}: {resp.error_message}")
 
             raw = client._wrapper.decrypt_batch(resp.result_ciphertext, BATCH_SIZE)
-            encrypted_logits[lo:hi] = raw[: hi - lo] + bias
+            # §1.3: vendor_server_160 now applies the bias term server-side
+            # (inference_service_160.cpp, add_plain_inplace(acc_buf_, pt_bias_)),
+            # so `raw` already includes it -- do not add `bias` again here.
+            encrypted_logits[lo:hi] = raw[: hi - lo]
     finally:
         if own_server is not None:
             _stop_server(own_server)

@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import signal
+import struct
 import subprocess
 import sys
 import time
@@ -52,6 +53,13 @@ TRACE_COMPONENTS = [
 ]
 
 
+def _load_bias(weights_path: Path) -> float:
+    with open(weights_path, "rb") as f:
+        f.read(4)
+        bias, = struct.unpack("<d", f.read(8))
+    return bias
+
+
 def _trace_enabled() -> bool:
     if "--trace" in sys.argv[1:]:
         return True
@@ -78,6 +86,7 @@ def _run_inference_with_trace(
     *,
     batch_idx: int,
     institution_id: str,
+    bias: float = 0.0,
 ) -> tuple[dict[str, float], float]:
     n_txns, n_feat = X.shape
     if n_feat != 256:
@@ -125,7 +134,10 @@ def _run_inference_with_trace(
 
     raw = client._wrapper.decrypt_batch(resp.result_ciphertext, n_txns)
     raw_slot0 = float(raw[0])
-    prob_slot0 = float(expit(raw_slot0 + client._bias))
+    # §1.3: vendor_server_160 now applies the bias server-side (raw already
+    # includes it); the 200-bit baseline (vendor_server_main) does not, so it
+    # is added here from model_weights.bin for that variant only.
+    prob_slot0 = float(expit(raw_slot0 + bias))
 
     td = {
         "deserialization_us": float(resp.timing.deserialization_us),
@@ -198,7 +210,6 @@ def _build_client(variant: str) -> BankClient:
     if variant == "baseline_200bit":
         return BankClient(
             BASELINE_ADDR,
-            weights_path=str(WEIGHTS_PATH),
             public_key_path=str(BASELINE_KEYS["public"]),
             secret_key_path=str(BASELINE_KEYS["secret"]),
             wrapper_module="seal_wrapper",
@@ -207,16 +218,21 @@ def _build_client(variant: str) -> BankClient:
 
     return BankClient(
         REDUCED_ADDR,
-        weights_path=str(WEIGHTS_PATH),
         public_key_path=str(REDUCED_KEYS["public"]),
         secret_key_path=str(REDUCED_KEYS["secret"]),
         wrapper_module="seal_wrapper_160",
-        grpc_max_message_length=384 * 1024,
+        # §1.4: must be large enough for galois_keys_160.bin (~5.8 MB),
+        # pushed once via ProvisionGaloisKeys.
+        grpc_max_message_length=8 * 1024 * 1024,
+        galois_keys_path=str(ARTIFACTS / "galois_keys_160.bin"),
     )
 
 
 def _collect_runs(variant: str, x_sample: np.ndarray, trace: bool = False) -> list[dict[str, float]]:
     client = _build_client(variant)
+    # §1.3: vendor_server_160 (variant != "baseline_200bit") applies bias
+    # server-side; the 200-bit baseline does not.
+    bias = _load_bias(WEIGHTS_PATH) if variant == "baseline_200bit" else 0.0
 
     for i in range(WARMUP_ROUNDS):
         resp = client.run_inference(x_sample)
@@ -232,6 +248,7 @@ def _collect_runs(variant: str, x_sample: np.ndarray, trace: bool = False) -> li
                 x_sample,
                 batch_idx=i + 1,
                 institution_id="BANK_001",
+                bias=bias,
             )
             runs.append(
                 {

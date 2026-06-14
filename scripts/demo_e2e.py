@@ -96,14 +96,20 @@ def main() -> int:
         artifacts = REPO_ROOT / "artifacts"
         x_test = np.load(artifacts / "X_test.npy")
 
+        # §1.4/§1.5: the server starts in PROV_AWAITING_KEYS and refuses
+        # RunInference (ERR_NOT_PROVISIONED) until the bank pushes Galois
+        # keys (galois_keys_path=...) and the canary handshake (§1.2b)
+        # confirms they are consistent with this bank's secret key.
+        # grpc_max_message_length must be large enough for galois_keys_160.bin
+        # (~5.8 MB), which is pushed once via ProvisionGaloisKeys.
         client = BankClient(
             server_addr,
-            weights_path=str(artifacts / "model_weights.bin"),
             public_key_path=str(artifacts / "public_key_160.bin"),
             secret_key_path=str(artifacts / "secret_key_160.bin"),
             use_tls=False,
             wrapper_module="seal_wrapper_160",
-            grpc_max_message_length=384 * 1024,
+            grpc_max_message_length=8 * 1024 * 1024,
+            galois_keys_path=str(artifacts / "galois_keys_160.bin"),
         )
 
         print("\nTX | Encrypted | Vendor Saw Plaintext | Score | Fraud? | Total us")

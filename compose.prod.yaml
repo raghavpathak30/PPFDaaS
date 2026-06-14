@@ -1,0 +1,44 @@
+services:
+  vendor_server:
+    image: ghcr.io/raghavpathak30/ppfdaas/vendor_server@sha256:d9edf5eacc13cbc398efeb2e17be39b8da2e9e886882e2d81777afd409d113d3
+    networks: [ppfnet]
+    volumes:
+      # §1.4: galois_keys_160.bin is no longer mounted -- the bank pushes it
+      # over the wire via ProvisionGaloisKeys, validated by the canary
+      # handshake (§1.2b/§1.5). Only the vendor's own model file is mounted.
+      - ./artifacts/model_weights.bin:/app/vendor_server/artifacts/model_weights.bin:ro
+      # §1.7 (mTLS) -- REQUIRED for any deployment where bank_client and
+      # vendor_server are not on a private, mutually-trusted network. Provide
+      # real certs (not scripts/generate_dev_certs.sh's dev CA) at this path,
+      # then uncomment this mount and the environment block below.
+      # - ./certs:/app/vendor_server/certs:ro
+    # environment:
+    #   §1.7 (mTLS) -- if these three are left unset (the default),
+    #   vendor_server_160 falls back to InsecureServerCredentials (the
+    #   honest-but-curious assumption documented in docs/spec.md). Do NOT set
+    #   them to empty strings -- BuildServerCredentials() treats a *set but
+    #   empty* var as "configured" and will fail closed trying to read an
+    #   empty path. For any network-exposed deployment, set all three to real
+    #   paths:
+    #   PPFD_TLS_CERT: /app/vendor_server/certs/server.crt
+    #   PPFD_TLS_KEY:  /app/vendor_server/certs/server.key
+    #   PPFD_TLS_CA:   /app/vendor_server/certs/ca.crt
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/127.0.0.1/50052"]
+      start_period: 5s            # server binds the port immediately (PROV_AWAITING_KEYS)
+      interval: 5s
+      retries: 5
+
+  bank_client:
+    image: ghcr.io/raghavpathak30/ppfdaas/bank_client@sha256:cc31bec17a681add46865b8a3f5399a7b2e3d99f2c2cbe8f7ea69302c9536473
+    depends_on:
+      vendor_server:
+        condition: service_healthy
+    environment:
+      - SERVER_ADDR=vendor_server:50052
+    networks: [ppfnet]
+    volumes:
+      - ./artifacts:/app/artifacts:ro     # adjust to your client's actual expected path
+
+networks:
+  ppfnet:

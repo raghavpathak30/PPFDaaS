@@ -12,13 +12,30 @@ services:
     ports:
       - "50052:50052"            # host access for grpcurl/debug; inter-container doesn't need it
     volumes:
-      - ./artifacts:/app/vendor_server/artifacts:ro   # galois_keys_160.bin + model_weights.bin
+      # §1.4: the vendor's OWN model file only. galois_keys_160.bin (the
+      # bank's key material) is no longer mounted at all -- the bank pushes
+      # it over the wire via ProvisionGaloisKeys, validated by the canary
+      # handshake (§1.2b/§1.5). There is no longer a shared artifacts/ trust
+      # domain between bank_client and vendor_server.
+      - ./artifacts/model_weights.bin:/app/vendor_server/artifacts/model_weights.bin:ro
+      # §1.7 (optional mTLS): uncomment to require mutually authenticated TLS.
+      # Generate dev certs first: ./scripts/generate_dev_certs.sh
+      # - ./certs:/app/vendor_server/certs:ro
+    # environment:
+    #   §1.7 (optional mTLS) -- unset (the default) means the server listens
+    #   with InsecureServerCredentials; this stack runs over the private
+    #   `ppfnet` bridge network under the honest-but-curious assumption
+    #   documented in docs/spec.md. Set all three to require mTLS:
+    #   PPFD_TLS_CERT: /app/vendor_server/certs/server.crt
+    #   PPFD_TLS_KEY:  /app/vendor_server/certs/server.key
+    #   PPFD_TLS_CA:   /app/vendor_server/certs/ca.crt
     healthcheck:
       test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/50052"]
       interval: 5s
       timeout: 3s
       retries: 5
-      start_period: 20s          # keygen + galois load + warmup before it binds the port
+      start_period: 5s           # server binds the port immediately (PROV_AWAITING_KEYS);
+                                  # no keygen/galois-load/self-encrypt warmup happens at startup
     restart: unless-stopped
 
   bank_client:
@@ -32,6 +49,10 @@ services:
       SERVER_ADDR: "vendor_server:50052"   # embedded DNS: service name -> server (M4)
     volumes:
       - ./artifacts:/app/artifacts:ro      # needs the repo root in the image to be /app
+      # §1.7 (optional mTLS): mount the same certs/ dir; demo_e2e.py would
+      # need use_tls=True + tls_ca_path/tls_cert_path/tls_key_path pointing
+      # at client.crt/client.key + ca.crt to match the server config above.
+      # - ./certs:/app/certs:ro
     command: ["python", "-u", "scripts/demo_e2e.py"]   # -u = unbuffered logs
     depends_on:
       vendor_server:

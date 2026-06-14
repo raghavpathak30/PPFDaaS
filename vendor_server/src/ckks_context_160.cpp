@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <numeric>
@@ -40,9 +41,25 @@ CKKSContext160::CKKSContext160() : params(seal::scheme_type::ckks) {
             throw std::runtime_error(std::string("CKKSContext160: failed to load galois_keys_160.bin: ") + e.what());
         }
     } else {
-        std::cerr << "[Server-160] WARNING: missing " << galois_path
-                  << "; generating local Galois keys (results may be semantically incorrect for client ciphertexts)\n";
-        keygen.create_galois_keys(std::vector<int>{1, 2, 4, 8, 16, 32, 64, 128}, galois_keys);
+        // FAIL-CLOSED. The previous behaviour fabricated local Galois keys and kept
+        // serving -- those keys do NOT match the client's, so every rotation produced
+        // semantically incorrect scores while the process exited 0 (silent-correctness
+        // failure). A fraud service must refuse to serve rather than emit garbage.
+        // Escape hatch (PPFDAAS_ALLOW_LOCAL_GALOIS=1) exists ONLY for standalone
+        // benchmarking, where score validity is irrelevant and only latency is measured.
+        const char *allow_local = std::getenv("PPFDAAS_ALLOW_LOCAL_GALOIS");
+        if (allow_local && std::string(allow_local) == "1") {
+            std::cerr << "[Server-160] WARNING: PPFDAAS_ALLOW_LOCAL_GALOIS=1 set -- generating "
+                         "local Galois keys. Scores are NOT valid for external client ciphertexts; "
+                         "use for local benchmarking only.\n";
+            keygen.create_galois_keys(std::vector<int>{1, 2, 4, 8, 16, 32, 64, 128}, galois_keys);
+        } else {
+            throw std::runtime_error(
+                "CKKSContext160: required Galois keys not found at '" + galois_path +
+                "'. Refusing to start with fabricated keys -- they produce semantically incorrect "
+                "scores for client ciphertexts. Mount the client's galois_keys_160.bin at this exact "
+                "path, or set PPFDAAS_ALLOW_LOCAL_GALOIS=1 for local benchmarking only.");
+        }
     }
 
     encoder.emplace(*context);

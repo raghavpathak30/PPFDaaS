@@ -9,6 +9,24 @@ enum InferenceStatus {
     ERR_PARAM_MISMATCH         = 3;
     ERR_TIMEOUT                = 4;
     ERR_INTERNAL               = 5;
+    ERR_NOT_PROVISIONED        = 6;  // server is not in PROV_READY (see ProvisioningState)
+}
+
+// ─── Provisioning state machine (Phase 1, §1.5) ────────────────────────────
+//
+//   PROV_INIT -> PROV_AWAITING_KEYS -> PROV_VALIDATING -> PROV_READY
+//                        \                   |                |
+//                         \------------> PROV_FAULT <---------/
+//
+// PROV_FAULT is terminal: no transition leaves PROV_FAULT. Reaching it
+// requires a process restart (and full re-provisioning) to recover -- there
+// is no auto-exit and no degraded-mode fallback.
+enum ProvisioningState {
+    PROV_INIT          = 0;
+    PROV_AWAITING_KEYS = 1;
+    PROV_VALIDATING    = 2;
+    PROV_READY         = 3;
+    PROV_FAULT         = 4;
 }
 
 message TimingBreakdown {
@@ -34,6 +52,80 @@ message InferenceResponse {
     TimingBreakdown timing = 5;
 }
 
+// ─── Provisioning protocol (Phase 1, §1.4 / §1.5) ──────────────────────────
+//
+// Replaces the shared artifacts/ volume. The bank (the only party holding the
+// secret key) pushes an evaluation-only bundle -- serialized Galois keys plus
+// the encryption parameters they were generated under -- to the vendor over
+// the same authenticated channel as inference traffic (§1.7). No bytes that
+// grant decryption are ever sent to the vendor. Relin keys are deliberately
+// never provisioned: the depth-1 linear circuit has no ciphertext x
+// ciphertext multiply.
+message ProvisionGaloisKeysRequest {
+    bytes galois_keys = 1;  // seal::GaloisKeys::save() output
+    bytes parms       = 2;  // seal::EncryptionParameters::save() output
+                             // (carried for audit/logging only -- the
+                             // server's own hardcoded parms are authoritative
+                             // and are what galois_keys is checked against)
+}
+
+message ProvisionGaloisKeysResponse {
+    ProvisioningState state = 1;
+    string message = 2;
+}
+
+// CanaryCheck: the bank encrypts a plaintext with a KNOWN value under its own
+// secret key and sends it here. The server applies the production rotation
+// schedule (hoisted_tree_sum) using the just-provisioned Galois keys and
+// returns the result ciphertext -- without being able to interpret it. Only
+// the bank, which holds the secret key, can decrypt and confirm correctness.
+// This round-trips the actual rotation operation end-to-end and is what
+// discharges §1.2b (Galois/secret-key consistency) without the secret key
+// ever leaving the bank.
+message CanaryRequest {
+    bytes ciphertext = 1;
+}
+
+message CanaryResponse {
+    ProvisioningState state = 1;
+    bytes result_ciphertext = 2;
+    string message = 3;
+}
+
+// CanaryConfirm: the bank reports whether its decryption of the CanaryCheck
+// result matched the known plaintext. This is the only way the server learns
+// whether the provisioned Galois keys are cryptographically consistent with
+// the bank's secret key -- the server itself never holds that key and cannot
+// determine this on its own.
+message CanaryConfirmRequest {
+    bool passed = 1;
+    string message = 2;
+}
+
+message CanaryConfirmResponse {
+    ProvisioningState state = 1;
+    string message = 2;
+}
+
+message ProvisioningStatusRequest {}
+
+message ProvisioningStatusResponse {
+    ProvisioningState state = 1;
+    string detail = 2;
+}
+
 service FraudInferenceService {
+    // The vendor server NEVER sees plaintext transaction data.
+    // Permitted ONLY when ProvisioningState == PROV_READY; otherwise rejected
+    // with ERR_NOT_PROVISIONED (§1.5) -- never queued, never served with
+    // substitute keys.
     rpc RunInference (InferenceRequest) returns (InferenceResponse);
+
+    // Provisioning protocol (§1.4 / §1.5). Replaces the shared artifacts/
+    // volume: the bank pushes Galois keys and verifies them via a canary
+    // rotation before the server is allowed to serve inference.
+    rpc ProvisionGaloisKeys (ProvisionGaloisKeysRequest) returns (ProvisionGaloisKeysResponse);
+    rpc CanaryCheck (CanaryRequest) returns (CanaryResponse);
+    rpc CanaryConfirm (CanaryConfirmRequest) returns (CanaryConfirmResponse);
+    rpc GetProvisioningStatus (ProvisioningStatusRequest) returns (ProvisioningStatusResponse);
 }

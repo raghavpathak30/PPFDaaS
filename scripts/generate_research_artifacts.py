@@ -46,12 +46,14 @@ def main() -> int:
 
     client = BankClient(
         "localhost:50052",
-        weights_path=str(artifacts_dir / "model_weights.bin"),
         public_key_path=str(artifacts_dir / "public_key_160.bin"),
         secret_key_path=str(artifacts_dir / "secret_key_160.bin"),
         use_tls=False,
         wrapper_module="seal_wrapper_160",
-        grpc_max_message_length=384 * 1024,
+        # §1.4: must be large enough for galois_keys_160.bin (~5.8 MB),
+        # pushed once via ProvisionGaloisKeys.
+        grpc_max_message_length=8 * 1024 * 1024,
+        galois_keys_path=str(artifacts_dir / "galois_keys_160.bin"),
     )
 
     sample = np.asarray(x_test[0], dtype=np.float64).reshape(1, 256)

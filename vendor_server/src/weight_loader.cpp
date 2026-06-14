@@ -18,6 +18,12 @@ static constexpr std::size_t  EXPECTED_SZ = 2060; // 4+8+256*8
 
 seal::Plaintext load_weights_as_plaintext(
         const std::string& path, seal::CKKSEncoder& enc, double scale) {
+    double unused_bias;
+    return load_weights_as_plaintext(path, enc, scale, unused_bias);
+}
+
+seal::Plaintext load_weights_as_plaintext(
+        const std::string& path, seal::CKKSEncoder& enc, double scale, double& bias_out) {
 
     std::ifstream f(path, std::ios::binary | std::ios::ate);
 
@@ -42,6 +48,8 @@ seal::Plaintext load_weights_as_plaintext(
 
         throw std::runtime_error("weight_loader: n=" + std::to_string(n) + " expected 256");
 
+    bias_out = bias;
+
     std::vector<double> w(n);
 
     f.read(reinterpret_cast<char*>(w.data()), n * sizeof(double));
@@ -64,7 +72,10 @@ seal::Plaintext load_weights_as_plaintext(
 
     enc.encode(tiled, scale, pt);
 
-    // NOTE: bias is NOT encoded here. Applied post-decryption in BankClient.
+    // §1.3: bias is returned via bias_out, NOT encoded into this plaintext.
+    // The caller (inference_service_160.cpp) applies it as a separate
+    // add_plain after the rotation-sum, so it lands once per lane instead of
+    // once per slot (see ctx_.params.coeff_modulus().back() comment there).
 
     return pt;
 

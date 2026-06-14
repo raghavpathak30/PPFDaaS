@@ -130,7 +130,7 @@ target_compile_definitions(vendor_server_main PRIVATE
 add_executable(vendor_server_160
     src/vendor_server_160.cpp
     src/inference_service_160.cpp
-    src/ckks_context_160.cpp
+    src/eval_context_160.cpp
 )
 target_link_libraries(vendor_server_160 PRIVATE
     he_core
