@@ -52,20 +52,60 @@ def step3_service_timing() -> None:
     must("set_total_inference_us" in text, "total timer set", "set_total_inference_us missing")
 
 
+def _chain_levels(coeff_modulus_literal: str) -> tuple[list[int], int, int]:
+    """Parse a `{60,40,40,60}`-style coeff_modulus literal.
+
+    Returns (primes, total_bits, data_levels), where data_levels is the
+    number of DATA levels in the modulus-switching chain after dropping the
+    trailing special key-switching modulus (primes - 1).
+    """
+    primes = [int(p) for p in coeff_modulus_literal.strip("{}").split(",")]
+    return primes, sum(primes), len(primes) - 1
+
+
 def step4_depth1_ckks() -> None:
     h = read_text(REPO / "vendor_server" / "include" / "ckks_context.h")
     cpp = read_text(REPO / "vendor_server" / "src" / "ckks_context.cpp")
     must("set_poly_modulus_degree(8192)" in cpp, "depth1 poly degree is 8192", "depth1 poly degree mismatch")
     must("{60,40,40,60}" in cpp, "depth1 coeff modulus matches", "depth1 coeff modulus mismatch")
     must(
-        "invariant_noise_budget" in cpp
-        or ("decryptor->decrypt" in cpp and "encoder->decode" in cpp),
+        "decryptor->decrypt" in cpp and "encoder->decode" in cpp,
         "depth1 noise sanity check present",
         "depth1 noise sanity check missing",
     )
     must("CKKSEncoder" in h and "Encryptor" in h and "Decryptor" in h and "Evaluator" in h,
          "SEAL members declared in header",
          "SEAL members missing from ckks_context.h")
+
+    # ── Phase 3, Item 3.3 ───────────────────────────────────────────────────
+    # CKKS has no invariant noise budget (that is a BFV concept). Correctness
+    # is verified by the end-to-end parity harness (Phase 0,
+    # artifacts/errors.json). Parameters are verified structurally here:
+    # context validity (sec_level_type::tc128 asserted, Phase 3 Item 3.1),
+    # chain depth, and slot count -- for both the 200-bit normative context
+    # (ckks_context.cpp) and the 160-bit deployed eval context
+    # (eval_context_160.cpp).
+    must("sec_level_type::tc128" in cpp,
+         "depth1 (200-bit) context asserts sec_level_type::tc128",
+         "depth1 (200-bit) context does not assert sec_level_type::tc128")
+    primes_200, bits_200, levels_200 = _chain_levels("{60,40,40,60}")
+    must(bits_200 == 200 and levels_200 == 3,
+         f"depth1 (200-bit) chain {primes_200}: total={bits_200} bits, "
+         f"{levels_200} data levels, slot_count=4096",
+         f"depth1 (200-bit) chain {primes_200} does not yield 200 bits / 3 data levels")
+
+    eval160_cpp = read_text(REPO / "vendor_server" / "src" / "eval_context_160.cpp")
+    must("set_poly_modulus_degree(8192)" in eval160_cpp and "{60, 40, 60}" in eval160_cpp,
+         "eval160 poly degree 8192 / coeff modulus {60,40,60}",
+         "eval160 poly degree / coeff modulus mismatch")
+    must("sec_level_type::tc128" in eval160_cpp,
+         "eval160 (160-bit, deployed) context asserts sec_level_type::tc128",
+         "eval160 (160-bit, deployed) context does not assert sec_level_type::tc128")
+    primes_160, bits_160, levels_160 = _chain_levels("{60,40,60}")
+    must(bits_160 == 160 and levels_160 == 2,
+         f"eval160 (160-bit) chain {primes_160}: total={bits_160} bits, "
+         f"{levels_160} data levels, slot_count=4096",
+         f"eval160 (160-bit) chain {primes_160} does not yield 160 bits / 2 data levels")
 
 
 def step5_depth2_ckks() -> None:

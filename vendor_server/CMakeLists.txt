@@ -70,6 +70,16 @@ target_include_directories(he_core PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
     "${GENERATED_DIR}"
 )
+# he_inference.h declares depth1_he_inference_160(CKKSContext160&, ...) (used
+# only by benchmark_160.cpp) and therefore needs the CKKSContext160 type
+# declaration. Header-only include, PUBLIC because he_inference.h is included
+# directly by other targets (e.g. benchmark.cpp): ckks_context_160.cpp (the
+# file holding the live SecretKey/Decryptor/KeyGenerator, OUT OF TCB) is
+# compiled ONLY into the benchmark_160 target below, never into he_core or any
+# binary that links it.
+target_include_directories(he_core PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/../tools/local_benchmark"
+)
 target_link_libraries(he_core PUBLIC
     SEAL::seal
     gRPC::grpc++
@@ -104,9 +114,9 @@ target_link_libraries(ckks_smoke_test PRIVATE he_core)
 add_executable(benchmark src/benchmark.cpp)
 target_link_libraries(benchmark PRIVATE he_core)
 
-add_executable(benchmark_160 
+add_executable(benchmark_160
     src/benchmark_160.cpp
-    src/ckks_context_160.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tools/local_benchmark/ckks_context_160.cpp
     src/he_inference.cpp
     src/rotation_hoisting.cpp
 )
@@ -116,6 +126,7 @@ target_link_libraries(benchmark_160 PRIVATE
 )
 target_include_directories(benchmark_160 PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../tools/local_benchmark"
 )
 target_compile_definitions(benchmark_160 PRIVATE
     PPFDAAS_REPO_ROOT="${CMAKE_SOURCE_DIR}"

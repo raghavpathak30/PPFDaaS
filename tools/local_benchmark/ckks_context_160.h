@@ -1,5 +1,10 @@
 #pragma once
 
+// OUT OF TCB. This file holds a live SecretKey, Decryptor, and KeyGenerator.
+// It is linked ONLY into the benchmark_160 standalone binary
+// (tools/local_benchmark/) for local latency measurement. It must NEVER be
+// linked into vendor_server_160 or any deployed binary. See docs/spec.md §6.
+
 #include <seal/seal.h>
 
 #include <optional>

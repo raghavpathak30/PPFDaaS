@@ -1,0 +1,75 @@
+{
+  "scale": 1099511627776.0,
+  "scale_log2": 40.0,
+  "middle_prime_bits": 40,
+  "full_dataset": {
+    "source": "artifacts/errors.json (Phase 0 parity harness, n=56962, logit-vs-logit over the full held-out test set)",
+    "n_samples": 56962,
+    "max_abs_error": 4.344353881080565e-07,
+    "mean_abs_error": 7.711101771065313e-08,
+    "median_abs_error": 6.330511626018165e-08,
+    "abs_error_distribution": {
+      "p50": 6.330511626018165e-08,
+      "p90": 1.6187945615087076e-07,
+      "p99": 2.685834879834203e-07,
+      "p99.9": 3.5575905043750035e-07,
+      "min": 9.132250511356688e-12,
+      "max": 4.344353881080565e-07
+    },
+    "noise_floor_min_abs_error": 9.132250511356688e-12,
+    "noise_ceiling_max_abs_error": 4.344353881080565e-07,
+    "scale_headroom_bits_log2_scale_over_max_ae": 61.13435503766097,
+    "max_ae_bits_below_unity": 21.13435503766097,
+    "scale_bits_consumed_reaching_max_ae": 18.86564496233903,
+    "scale_bits_remaining_headroom": 21.13435503766097
+  },
+  "representative_batch": {
+    "source": "first 16 transactions of artifacts/X_test.npy (= one 4096-slot packed ciphertext), via tools/local_benchmark/precision_probe",
+    "n_transactions": 16,
+    "bias": -8.366707513150757,
+    "q_last": 1099511480321,
+    "bias_scale": 1099511775231.0198,
+    "stage_errors_abs": {
+      "stage1_after_multiply_plain": {
+        "n": 4096,
+        "min": 2.2784531948188925e-15,
+        "max": 4.9676025515310585e-09,
+        "mean": 1.580418133650992e-10,
+        "std": 3.0375831898117824e-10,
+        "p50": 6.114652523463854e-11,
+        "p95": 6.154989904522904e-10,
+        "p99": 1.474487094064745e-09
+      },
+      "stage2_after_rescale": {
+        "n": 4096,
+        "min": 2.0016887453122578e-13,
+        "max": 7.648717033001406e-09,
+        "mean": 9.137917701821783e-10,
+        "std": 9.120641701375062e-10,
+        "p50": 6.359552838768739e-10,
+        "p95": 2.707243113714286e-09,
+        "p99": 4.108000232409645e-09
+      },
+      "stage3_after_hoisted_tree_sum": {
+        "n": 16,
+        "min": 7.658321865555706e-09,
+        "max": 3.640928587511638e-07,
+        "mean": 9.30231480837651e-08,
+        "std": 8.51458585929117e-08,
+        "p50": 8.071651247387734e-08,
+        "p95": 2.3496496812103196e-07,
+        "p99": 3.3826728062513737e-07
+      },
+      "stage4_after_add_plain_bias": {
+        "n": 16,
+        "min": 7.665670764822607e-09,
+        "max": 3.640855101849638e-07,
+        "mean": 9.302406672739849e-08,
+        "std": 8.514271373832997e-08,
+        "p50": 8.070916379665505e-08,
+        "p95": 2.349576178062307e-07,
+        "p99": 3.382599317092171e-07
+      }
+    }
+  }
+}

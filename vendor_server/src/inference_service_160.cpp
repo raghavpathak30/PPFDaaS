@@ -46,16 +46,41 @@ inline int64_t dur(A a, B b) {
 // ERR_NOT_PROVISIONED.
 class FraudInferenceServiceImpl160 final
     : public ppfdaas::FraudInferenceService::Service {
+    // ─── Thread-safety contract (Phase 2, §2.1) ──────────────────────────────
+    //
+    // After PROV_READY, RunInference is invoked concurrently by gRPC's sync
+    // thread pool against this singleton service object. Shared state and its
+    // thread-safety status:
+    //
+    //   ctx_.context      — SEALContext, read-only after construction. Thread-safe.
+    //   ctx_.evaluator    — Evaluator, stateless except memory pool allocation.
+    //                       Thread-safe when callers supply thread-local pools
+    //                       (ct.load() uses mm_force_thread_local; Evaluator ops
+    //                       allocate via the same pool). Thread-safe.
+    //   ctx_.galois_keys  — GaloisKeys, read-only after ProvisionGaloisKeys. Thread-safe.
+    //   pt_weights_       — Plaintext, read-only after construction. Thread-safe.
+    //   pt_bias_          — Plaintext, read-only after construction. Thread-safe.
+    //   sm_               — ProvisioningStateMachine. record_request_and_maybe_trip()
+    //                       called on every RunInference. Thread-safety: ALREADY
+    //                       SAFE. state_ and mismatch_count_/total_requests_ are
+    //                       std::atomic (compare_exchange_strong for the
+    //                       PROV_READY -> PROV_FAULT trip); last_message_ is
+    //                       guarded by msg_mutex_ (std::lock_guard) in every
+    //                       writer (on_structural_result, on_canary_result,
+    //                       record_request_and_maybe_trip, force_fault). No
+    //                       change required.
+    //
+    // MUTABLE PER-REQUEST STATE: acc_buf_ and ct_out_buf_ were instance members
+    // in Phase 1 and have been converted to static thread_local locals in
+    // RunInference (§2.1). canary_acc_buf_ and canary_out_buf_ are now
+    // function-local in CanaryCheck (one-shot provisioning phase, no concurrency
+    // concern, but local is correct by construction).
     EvalContext160 ctx_;
     ProvisioningStateMachine sm_;
     double bias_ = 0.0;
     seal::Plaintext pt_weights_;
     seal::Plaintext pt_bias_;
-    seal::Ciphertext acc_buf_;
-    seal::Ciphertext canary_acc_buf_;
     static constexpr std::size_t CT_BUF = 320 * 1024;
-    std::vector<char> ct_out_buf_;
-    std::vector<char> canary_out_buf_;
 
 public:
     // SINGLETON: constructed ONCE in RunVendorServer160. EvalContext160's
@@ -67,9 +92,7 @@ public:
     explicit FraudInferenceServiceImpl160(const std::string &weights_path)
         : ctx_(),
           sm_(),
-          pt_weights_(load_weights_as_plaintext(weights_path, *ctx_.encoder, ctx_.scale, bias_)),
-          ct_out_buf_(CT_BUF),
-          canary_out_buf_(CT_BUF) {
+          pt_weights_(load_weights_as_plaintext(weights_path, *ctx_.encoder, ctx_.scale, bias_)) {
         // §1.3: encode the bias once, at construction, at the EXACT scale and
         // parms_id that acc_buf_ will have after
         // multiply_plain_inplace(pt_weights_) + rescale_to_next_inplace. CKKS
@@ -167,6 +190,8 @@ public:
         }
 
         seal::Ciphertext ct;
+        seal::Ciphertext canary_acc_buf;
+        std::vector<char> canary_out_buf(CT_BUF);
         try {
             ct.load(*ctx_.context,
                     reinterpret_cast<const seal::seal_byte *>(ct_bytes.data()),
@@ -175,13 +200,13 @@ public:
                 throw std::runtime_error("canary ciphertext parms_id mismatch");
             }
 
-            hoisted_tree_sum(ct, ctx_.galois_keys, *ctx_.evaluator, canary_acc_buf_, 256);
+            hoisted_tree_sum(ct, ctx_.galois_keys, *ctx_.evaluator, canary_acc_buf, 256);
 
-            const std::size_t out_size = canary_acc_buf_.save_size(seal::compr_mode_type::none);
-            canary_acc_buf_.save(reinterpret_cast<seal::seal_byte *>(canary_out_buf_.data()),
-                                  out_size,
-                                  seal::compr_mode_type::none);
-            resp->set_result_ciphertext(canary_out_buf_.data(), out_size);
+            const std::size_t out_size = canary_acc_buf.save_size(seal::compr_mode_type::none);
+            canary_acc_buf.save(reinterpret_cast<seal::seal_byte *>(canary_out_buf.data()),
+                                 out_size,
+                                 seal::compr_mode_type::none);
+            resp->set_result_ciphertext(canary_out_buf.data(), out_size);
             resp->set_state(sm_.current_state());
             resp->set_message("canary rotation applied; awaiting CanaryConfirm from bank");
         } catch (const std::exception &e) {
@@ -294,12 +319,23 @@ public:
         }
         sm_.record_request_and_maybe_trip(true, "");
 
+        // §2.1: acc_buf_ and ct_out_buf_ were instance members in Phase 1,
+        // shared by every concurrent RunInference call against this singleton
+        // service object. Two requests racing on these buffers produced torn
+        // seal::Ciphertext writes -- silent garbage with no integrity check to
+        // catch it. static thread_local gives each gRPC worker thread its own
+        // buffer, reused across requests on that thread (matching the 200-bit
+        // normative pattern in inference_service.cpp).
+        static thread_local seal::Ciphertext tl_acc_buf;
+        static thread_local std::vector<char> tl_ct_buf;
+        if (tl_ct_buf.size() < CT_BUF) tl_ct_buf.resize(CT_BUF);
+
         try {
             ctx_.evaluator->multiply_plain_inplace(ct, pt_weights_);
             ctx_.evaluator->rescale_to_next_inplace(ct);
             auto t_mul = hrc::now();
 
-            hoisted_tree_sum(ct, ctx_.galois_keys, *ctx_.evaluator, acc_buf_, 256);
+            hoisted_tree_sum(ct, ctx_.galois_keys, *ctx_.evaluator, tl_acc_buf, 256);
             auto t_rot = hrc::now();
 
             // §1.3: add the bias term server-side, at the lane-aligned slots
@@ -308,13 +344,13 @@ public:
             // so this does not perturb the other 255 slots per lane. This is
             // the ONLY place bias enters the computation -- the bank never
             // sees it.
-            ctx_.evaluator->add_plain_inplace(acc_buf_, pt_bias_);
+            ctx_.evaluator->add_plain_inplace(tl_acc_buf, pt_bias_);
 
-            const std::size_t out_size = acc_buf_.save_size(seal::compr_mode_type::none);
-            acc_buf_.save(reinterpret_cast<seal::seal_byte *>(ct_out_buf_.data()),
-                          out_size,
-                          seal::compr_mode_type::none);
-            resp->set_result_ciphertext(ct_out_buf_.data(), out_size);
+            const std::size_t out_size = tl_acc_buf.save_size(seal::compr_mode_type::none);
+            tl_acc_buf.save(reinterpret_cast<seal::seal_byte *>(tl_ct_buf.data()),
+                            out_size,
+                            seal::compr_mode_type::none);
+            resp->set_result_ciphertext(tl_ct_buf.data(), out_size);
             resp->set_request_id(req->request_id());
             resp->set_status(ppfdaas::InferenceStatus::OK);
             auto t_end = hrc::now();
@@ -392,6 +428,18 @@ int RunVendorServer160(const std::string &weights_path, int port) {
     const std::string address = "0.0.0.0:" + std::to_string(port);
     FraudInferenceServiceImpl160 service(weights_path);
 
+    // §2.1: size gRPC's sync server thread pool from PPFD_GRPC_THREADS,
+    // matching the 200-bit normative server (inference_service.cpp). Without
+    // this, ServerBuilder's defaults (MIN_POLLERS=1, MAX_POLLERS=2) cap true
+    // concurrent RunInference dispatch at ~2 threads regardless of how many
+    // requests the bank sends -- not enough to exercise §2.1's thread-confined
+    // buffers under realistic concurrency.
+    const int pool_size = []() {
+        const char *e = std::getenv("PPFD_GRPC_THREADS");
+        const int v = e ? std::atoi(e) : 4;
+        return v > 0 ? v : 4;
+    }();
+
     grpc::ServerBuilder builder;
     builder.AddListeningPort(address, BuildServerCredentials());
     // §1.4: ProvisionGaloisKeys carries a serialized seal::GaloisKeys (~5.8 MB
@@ -400,6 +448,9 @@ int RunVendorServer160(const std::string &weights_path, int port) {
     builder.SetMaxReceiveMessageSize(8 * 1024 * 1024);
     builder.SetMaxSendMessageSize(8 * 1024 * 1024);
     builder.RegisterService(&service);
+    builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::NUM_CQS, pool_size);
+    builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::MIN_POLLERS, pool_size);
+    builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::MAX_POLLERS, pool_size);
 
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
     if (!server) {

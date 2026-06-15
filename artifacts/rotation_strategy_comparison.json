@@ -1,0 +1,73 @@
+{
+  "methodology_note": "Rows 1 and 2-4 are NOT directly comparable: row 1 is a full end-to-end gRPC measurement (Phase 3, includes (de)serialization and network-stack overhead); rows 2-4 are local-circuit-only measurements (Phase 4, encrypt..decrypt with no gRPC). Row 1 is included because it is the only existing measurement of the sequential fold under the deployed server's provisioned 8-step ROTATION_STEPS key set. Rows 2 and 3 are same-methodology (both run via vendor_server/build/benchmark_160 in this invocation) and are the primary fold-vs-BSGS comparison. Row 4 (OpenFHE) is PENDING in this checkout -- OpenFHE is not installed; see tools/openfhe_benchmark/README.md.",
+  "strategies": [
+    {
+      "name": "SEAL sequential fold (e2e gRPC, Phase 3)",
+      "source": "artifacts/comparison_results.json: summary.reduced_160bit",
+      "scope": "full gRPC round trip: deserialize, multiply_plain, rescale, hoisted_tree_sum, serialize (tests/benchmark_comparison.py)",
+      "rotations": 8,
+      "critical_path_steps": 8,
+      "galois_keys": 8,
+      "n": 100,
+      "latency_ms": {
+        "mean": 2.0261199999999997,
+        "p50": 1.8745,
+        "p95": 2.6216999999999997,
+        "p99": 2.984840000000001
+      },
+      "correctness_passed": null
+    },
+    {
+      "name": "SEAL sequential fold (local circuit, Phase 4)",
+      "source": "vendor_server/build/benchmark_160 --strategy=fold",
+      "scope": "local circuit only: encrypt, multiply_plain, rescale, hoisted_tree_sum, decrypt (no gRPC/serialization)",
+      "rotations": 8,
+      "critical_path_steps": 8,
+      "galois_keys": 8,
+      "n": 100,
+      "latency_ms": {
+        "mean": 3.94758,
+        "p50": 3.91909,
+        "p95": 4.133229999999999,
+        "p99": 4.228149999999999
+      },
+      "correctness_max_abs_error": 7.7379e-07,
+      "correctness_passed": true
+    },
+    {
+      "name": "SEAL BSGS two-layer (local circuit, Phase 4)",
+      "source": "vendor_server/build/benchmark_160 --strategy=bsgs",
+      "scope": "local circuit only: encrypt, multiply_plain, rescale, bsgs_reduction (OpenMP within each layer), decrypt (no gRPC/serialization)",
+      "rotations": 30,
+      "critical_path_steps": 2,
+      "galois_keys": 30,
+      "n": 100,
+      "latency_ms": {
+        "mean": 8.54472,
+        "p50": 8.37986,
+        "p95": 12.0516,
+        "p99": 12.534600000000001
+      },
+      "correctness_max_abs_error": 1.70308e-06,
+      "correctness_passed": true,
+      "note": "Measured mean/p99 EXCEED the sequential-fold row above despite a shorter critical path (2 vs 8): on this 20-core host with OMP_NUM_THREADS unset, OpenMP thread-spawn overhead for two 15-iteration parallel-for loops dominates, and each rotate_vector() call within a layer is still a full, independent, unhoisted rotation (\u00a77.1) -- BSGS trades fewer critical-path STEPS for MORE total rotation WORK (30 vs 8), and SEAL's public API gives no way to amortize that work via hoisting. This is itself part of the \u00a77.5 finding."
+    },
+    {
+      "name": "OpenFHE hoisted flat (Phase 4, \u00a74.3)",
+      "source": "tools/openfhe_benchmark/results/openfhe_results.json",
+      "scope": "local circuit only: encrypt, EvalMult, EvalFastRotationPrecompute + EvalFastRotation (x2 layers), decrypt",
+      "status": "PENDING",
+      "rotations": 30,
+      "critical_path_steps": 1,
+      "galois_keys": 30,
+      "latency_ms": {
+        "mean": "PENDING",
+        "p50": "PENDING",
+        "p95": "PENDING",
+        "p99": "PENDING"
+      },
+      "correctness_passed": "PENDING",
+      "note": "OpenFHE is not installed in this environment (no OpenFHEConfig.cmake or pkg-config found anywhere on the system). tools/openfhe_benchmark/ is a complete, compile-ready scaffold (CMakeLists.txt, openfhe_linear_eval.{h,cpp}, openfhe_benchmark.cpp) that has never been built or run here. See tools/openfhe_benchmark/README.md for build instructions; running ./openfhe_benchmark from this directory overwrites this file with status=MEASURED and real latency_us statistics."
+    }
+  ]
+}

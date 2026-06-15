@@ -101,12 +101,18 @@ def test_proto_request_response_contract_field_numbers_are_stable():
 def test_service_uses_spec_timing_boundaries_and_debug_invariant():
     # value-member declarations live in the header, not the .cpp
     src_h = _read(REPO_ROOT / "vendor_server" / "include" / "ckks_context.h")
-    assert "seal::CKKSEncoder encoder" in src_h or \
+    # encoder/encryptor are std::optional<seal::...> value members (constructed
+    # in-place via emplace() once the context is known), not unique_ptr/raw
+    # pointers. std::optional<T> still stores T inline (no heap indirection),
+    # so this satisfies the "value member, not unique_ptr" requirement.
+    assert "std::optional<seal::CKKSEncoder> encoder" in src_h or \
+           "seal::CKKSEncoder encoder" in src_h or \
            "CKKSEncoder encoder" in src_h, \
-        'FAIL: encoder must be value member, not unique_ptr'
-    assert "seal::Encryptor encryptor" in src_h or \
+        'FAIL: encoder must be a value member (std::optional<seal::CKKSEncoder> or plain value), not unique_ptr'
+    assert "std::optional<seal::Encryptor> encryptor" in src_h or \
+           "seal::Encryptor encryptor" in src_h or \
            "Encryptor encryptor" in src_h, \
-        'FAIL: encryptor must be value member'
+        'FAIL: encryptor must be a value member (std::optional<seal::Encryptor> or plain value)'
     assert "unique_ptr" not in src_h, \
         'FAIL: unique_ptr found in header — all SEAL objects must be value members'
 

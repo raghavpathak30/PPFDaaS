@@ -1,5 +1,103 @@
 # PPFDaaS Project Handoff — 2026-04-13
 
+## Session Update (2026-06-15) — Phase 4: Research Core, Rotation/Reduction Trade-Space (COMPLETE)
+
+Executed Phase 4 of `PPFDaaS_REMEDIATION_PLAN.md` end-to-end (pre-gate a/b, items 4.1, 4.2, 4.3, 4.4). Phases 0-3 untouched. No Phase 5 work started.
+
+### Pre-gate (a) — Fixed root `CMakeLists.txt`
+- **File changed:** `CMakeLists.txt` (repo root).
+- Was a stale full duplicate of `vendor_server/CMakeLists.txt` with source paths that never resolved from the repo root (`src/ckks_context.cpp` never existed at root; `src/ckks_context_160.cpp` was relocated to `tools/local_benchmark/` in the Phase 2 pre-gate). Replaced with a minimal wrapper: `enable_testing()` + `add_subdirectory(vendor_server)` + `add_subdirectory(tests)`. Docker builds unaffected (`Dockerfile.server` configures `vendor_server/` directly).
+- **Verified:** `python3 tests/verify_all.py` STEP 10/10 now **PASS** (was failing before this session — flagged as out-of-scope in the Phase 3 entry below).
+
+### Pre-gate (b) — Fixed `tests/test_inference.py` member assertion
+- **File changed:** `tests/test_inference.py::test_service_uses_spec_timing_boundaries_and_debug_invariant`.
+- The assertion checking for `seal::CKKSEncoder encoder`/`CKKSEncoder encoder` as a substring could never match the actual declaration `std::optional<seal::CKKSEncoder> encoder;` in `vendor_server/include/ckks_context.h` (the `<...>` breaks the substring match). Updated to accept `std::optional<seal::CKKSEncoder> encoder` / `std::optional<seal::Encryptor> encryptor` as well, with a comment noting `std::optional<T>` is still a value member (no heap indirection).
+- **Verified:** assertion now passes against the real `ckks_context.h` content.
+
+### 4.1 — BSGS two-layer reduction
+- **Files changed:** `vendor_server/include/rotation_hoisting.h`, `vendor_server/src/rotation_hoisting.cpp`.
+- Added `bsgs_reduction(ct_in, galois_keys, evaluator, ct_out, n_features=256, baby_step=16, giant_step=16)`, additive to (does not remove/modify) `hoisted_tree_sum`. Baby-step layer (j=1..15): independent rotations of the ORIGINAL ciphertext, OpenMP `parallel for`, accumulated into `baby_acc`. Giant-step layer (i=1..15): independent rotations of `baby_acc` by `i*16`, OpenMP `parallel for`, accumulated into `ct_out`. Post-condition identical to `hoisted_tree_sum`: `ct_out.slot[k*256] == sum_{j=0}^{255} ct_in.slot[k*256+j]`.
+- Added `BSGS_ROTATION_STEPS` (30-element `std::array<int,30>`, `{1..15} ∪ {16,32,...,240}`) in `rotation_hoisting.h`, separate from `EvalContext160::ROTATION_STEPS` (deployed server's 8-element fold set, unchanged). `bsgs_reduction` validates every required Galois element via `seal::util::GaloisTool(13, ...).get_elts_from_steps()` + `galois_keys.has_key(...)`, throwing `std::runtime_error` (pointing to `docs/spec.md` §4) if the deployed 8-element key set is passed in.
+- **Verified:** built cleanly (`cmake --build . --target he_core` and `--target benchmark_160`). `benchmark_160 --strategy=bsgs`: in-band parity gate against a plaintext oracle (fixed seed 42, 16 lanes x 256 features) — `correctness_max_abs_error=1.70308e-06` (tolerance 1e-3), `correctness_passed=true`, n=100.
+
+### 4.2 — Terminology fix: stop calling the fold "hoisting"
+- **Files changed:** `vendor_server/include/rotation_hoisting.h`, `vendor_server/src/rotation_hoisting.cpp`, `docs/spec.md`.
+- Added "TERMINOLOGY NOTE (Phase 4, §4.2)" comment blocks above `hoisted_tree_sum`'s declaration and definition — explains true Halevi-Shoup hoisting (shared key-switching digit decomposition/ModDown across automorphisms) is not exposed by SEAL's public API, and that `hoisted_tree_sum` is actually a sequential 8-step dependency-chain fold. **No rename** — signature and call sites in `inference_service_160.cpp` (CanaryCheck, RunInference) unchanged.
+- Added `docs/spec.md` §7 "Rotation/Reduction Strategy Taxonomy": §7.1 defines true hoisting and the SEAL API gap; §7.2 sequential fold (8 rotations/8 critical-path steps, `{1,2,4,8,16,32,64,128}`); §7.3 BSGS two-layer (30 rotations/2 critical-path steps, `BSGS_ROTATION_STEPS`); §7.4 OpenFHE hoisted flat (same 30-rotation set, genuine hoisting); §7.5 frames the systems contribution (SEAL public-API ceiling for rotation-heavy circuits). Cites Halevi & Shoup (CRYPTO 2014, "Algorithms in HElib" §3) and OpenFHE's `EvalFastRotationPrecompute`/`EvalFastRotation`. The existing §4.5 terminology note (preserved from v1.0 audit) now points readers to §7.
+
+### 4.3 — Cross-library study: OpenFHE with genuine hoisting
+- **New directory:** `tools/openfhe_benchmark/` (standalone CMake project; never added as a subdirectory of root/`vendor_server`; not part of the TCB).
+  - `CMakeLists.txt`: `find_package(OpenFHE)` -> `FATAL_ERROR` with full install + build instructions if not found.
+  - `openfhe_linear_eval.h`/`.cpp`: `build_context()` (CKKS, ring dim 8192 requested, multiplicative depth 1, scale 2^40, batch size 4096, `HEStd_128_classic`, `EvalRotateKeyGen` over `kBsgsRotationSteps` = `BSGS_ROTATION_STEPS`); `run_circuit_hoisted()` (encrypt -> `EvalMult` -> two BSGS layers, each one `EvalFastRotationPrecompute` + 15 `EvalFastRotation` -> decrypt, with in-band parity gate against a plaintext oracle).
+  - `openfhe_benchmark.cpp`: 20 warmup + 100 timed, per-stage mean/std/p50/p95/p99/min/max (encrypt, EvalMult, both precomputes, both rotation-layer totals, decrypt, end-to-end), writes `results/openfhe_results.json`.
+  - `README.md`: build/run instructions + SEAL-160-bit <-> OpenFHE parameter equivalence table (ring dim, coeff modulus chain vs depth/scaling-mod-size, scale, security level, batch size, packing, rotation set, rotation mechanism, scaling technique), including the caveat that OpenFHE's automatic parameter selection may choose a ring dimension other than 8192.
+- **OpenFHE is NOT installed in this environment** — confirmed: no `OpenFHEConfig.cmake`, no pkg-config file, anywhere on the system. The scaffold is code-complete and compile-ready (fails closed via the CMake `FATAL_ERROR` above with build instructions), but has never been built or run here. `results/openfhe_results.json` ships with `"status": "PENDING"` and an explicit `"reason"` field plus per-field `"PENDING"` placeholders matching the real-run schema; running `./openfhe_benchmark` from `tools/openfhe_benchmark/` overwrites it with `"status": "MEASURED"`.
+
+### 4.4 — Measurement comparison script
+- **New file:** `scripts/rotation_strategy_comparison.py`.
+- Reads `artifacts/comparison_results.json` (`summary.reduced_160bit`: existing Phase 3 e2e-gRPC sequential-fold measurement, mean=2.026ms, p99=2.985ms, n=100). Invokes `vendor_server/build/benchmark_160 --strategy=fold` and `--strategy=bsgs` (local-circuit-only: encrypt -> multiply_plain -> rescale -> reduction -> decrypt, no gRPC), enforcing the in-band parity gate before reporting timings (script exits non-zero if either fails). Reads `tools/openfhe_benchmark/results/openfhe_results.json` (PENDING). Writes `artifacts/rotation_strategy_comparison.json` and prints a Strategy | Rotations | Critical Path | Latency (ms) | p99 (ms) | Galois Keys table to stdout, with a `methodology_note` distinguishing the e2e-gRPC row from the local-circuit rows.
+- **Real measured results** (this run, `n=100` each):
+
+  | Strategy | Rotations | Critical Path | Latency (ms) | p99 (ms) | Galois Keys |
+  |---|---|---|---|---|---|
+  | SEAL sequential fold (e2e gRPC, Phase 3) | 8 | 8 | 2.026 | 2.985 | 8 |
+  | SEAL sequential fold (local circuit, Phase 4) | 8 | 8 | 3.948 | 4.228 | 8 |
+  | SEAL BSGS two-layer (local circuit, Phase 4) | 30 | 2 | 8.545 | 12.535 | 30 |
+  | OpenFHE hoisted flat (Phase 4, §4.3) | 30 | 1 | PENDING | PENDING | 30 |
+
+  Both `benchmark_160` runs pass the parity gate (max_abs_error 7.7e-7 fold, 1.7e-6 BSGS; tolerance 1e-3). **Finding:** BSGS's mean/p99 EXCEED the sequential fold's despite a shorter critical path (2 vs 8) — on this 20-core host with `OMP_NUM_THREADS` unset, BSGS performs more total rotation work (30 vs 8) with no way to amortize it (no hoisting in SEAL's public API, §7.1), and OpenMP thread-spawn overhead for two 15-iteration `parallel for` loops dominates the shorter dependency chain. This trade-off (fewer critical-path steps, more total unhoisted work) is itself the §7.5 finding motivating the OpenFHE comparison.
+
+### Consistency fix (within Phase 4 deliverables)
+- `vendor_server/include/rotation_hoisting.h`, `vendor_server/src/rotation_hoisting.cpp`, and `docs/spec.md` §7.3/§7.4 originally said `bsgs_reduction` performs "32 rotations" while also saying "15 baby + 15 giant" (= 30) and defining `BSGS_ROTATION_STEPS` as 30 elements — an internal arithmetic inconsistency introduced while drafting this same Phase 4 work. Corrected all occurrences to 30 (15 baby + 15 giant), matching `BSGS_ROTATION_STEPS`, the `benchmark_160` JSON output (`"rotations": 30`), and `rotation_strategy_comparison.json`.
+
+### Plan/status docs updated
+- `PPFDaaS_REMEDIATION_PLAN.md`: Phase 4 pre-gate (a)/(b) and items 4.1-4.4 marked `[x]` with evidence one-liners; "One-line status of the current repo" updated to reflect Phase 0-4 complete, Phase 5 next.
+
+### Flagged out-of-scope findings (not fixed, per phase-gate rules)
+- None newly identified beyond what Phase 4's own scope already covers. The two pre-gate items from the Phase 3 entry below are now fixed (see Pre-gate a/b above).
+
+---
+
+## Session Update (2026-06-15) — Phase 3: Parameter Justification (COMPLETE)
+
+Executed Phase 3 of `PPFDaaS_REMEDIATION_PLAN.md` end-to-end (items 3.1, 3.2, 3.3). No Phase 4 work started. Phases 0-2 untouched.
+
+### 3.1 — Explicit `sec_level_type::tc128` assertion (security-level justification)
+- **Files changed:** `vendor_server/src/eval_context_160.cpp`, `vendor_server/src/ckks_context.cpp`.
+- Both `SEALContext` constructions now pass `seal::sec_level_type::tc128` explicitly (previously relied on SEAL's implicit default), and both still `throw` if `!context->parameters_set()`.
+- Added a parameter-justification comment block above each construction, citing:
+  - HomomorphicEncryption.org Security Standard v1.1, Table 2: for N=8192 (tc128, ternary secret), the max total coeff_modulus bit count is **218 bits** (verified against SEAL's own hard-coded table, `seal::util::seal_he_std_parms_128_tc()` in `seal/util/hestdparms.h` — NOT the 109-bit/N=4096 figure that appears in some drafts).
+  - `eval_context_160.cpp` (160-bit, {60,40,60}): 160 <= 218, 58-bit margin. KEY chain = 160 bits (3 primes); dropping the special key-switching modulus leaves a 2-prime {60,40}=100-bit DATA chain at `first_parms_id`, then 1 rescale -> 1-prime {60}=60-bit at `second_parms_id` = **2 data levels**, exactly 1 consumed by this depth-1 circuit.
+  - `ckks_context.cpp` (200-bit, {60,40,40,60}): 200 <= 218, 18-bit margin. DATA chain = {60,40,40}=140 bits = **3 data levels**, of which 1 is used here (1 extra level of headroom vs. the 160-bit context — this is the spare level referenced by the Phase 5 "38-48% ablation").
+  - SEAL 4.x's actual enforcement mechanism is described precisely (verified against `seal/context.cpp`): on violation, `SEALContext::Validate` does NOT throw directly — it sets `qualifiers().parameter_error = error_type::invalid_parameters_insecure` and `parameters_set() == false`; the existing `if (!context->parameters_set()) throw` is what makes this fail-closed.
+- Both files compile cleanly (`g++ -std=c++17 -fsyntax-only`).
+
+### 3.2 — Precision analysis for the scale=2^40 choice
+- **New files:** `scripts/precision_analysis.py`, `tools/local_benchmark/precision_probe.cpp` (+ compiled binary, OUT OF TCB — builds its own SEALContext/SecretKey/Decryptor, a capability the deployed eval server must never have).
+- `precision_probe` runs the depth-1 circuit (multiply_plain -> rescale -> 8-step hoisted_tree_sum -> add_plain bias) on a representative 4096-slot batch (first 16 transactions of `artifacts/X_test.npy`), decrypting after each stage.
+- `precision_analysis.py` compares each stage's decrypted output against a plaintext oracle, pulls full-dataset stats from Phase 0's `artifacts/errors.json` (n=56,962), computes headroom metrics, prints a human-readable table, and writes `artifacts/precision_analysis.json`.
+- **Real measured results** (no estimates):
+  - Full dataset (n=56,962): MaxAE = 4.344353881080565e-07 (mean=7.711e-08, median=6.331e-08, p90=1.619e-07, p99=2.686e-07, p99.9=3.558e-07, min=9.132e-12).
+  - `log2(scale/MaxAE)` = **61.13 bits** scale headroom; MaxAE sits **21.13 bits** below 1.0 -> of the 40-bit scale, ~18.9 bits are "spent" reaching that error floor, leaving **~21.1 bits of remaining headroom** (corrects the prompt's incorrect "~19 bits" estimate).
+  - Per-stage error (representative batch): after multiply_plain mean~1.5e-10; after rescale mean~9.0e-10; after hoisted_tree_sum mean~1.3e-7 (max~1.3e-6); after add_plain bias essentially unchanged.
+- `eval_context_160.cpp` got a second comment block (below the §3.1 security comment) documenting scale=2^40 rationale (40-bit middle prime chosen to match scale for a clean rescale), the real measured numbers above, and the 40-bit-vs-30-bit scale tradeoff (sigmoid-tail distinguishability for borderline-fraud ranking).
+
+### 3.3 — Removed the BFV-only `invariant_noise_budget` check
+- **File changed:** `tests/verify_all.py`.
+- `step4_depth1_ckks()` no longer references `invariant_noise_budget` anywhere (it was a BFV-only concept, meaningless for CKKS — fully removed, not stubbed).
+- Added a new `_chain_levels()` helper that parses a `{60,40,40,60}`-style coeff_modulus literal into `(primes, total_bits, data_levels)`.
+- New CKKS-appropriate structural checks for **both** contexts: `sec_level_type::tc128` assertion present in source, total chain bits, data-level count (200-bit -> 3 levels, 160-bit -> 2 levels), and slot_count=4096. A comment explains CKKS has no invariant noise budget and that correctness is instead verified by the Phase 0 parity harness (`artifacts/errors.json`).
+- `python3 tests/verify_all.py`: STEP 4/10 is **12/12 PASS** (all new checks pass). STEP 10/10 still fails with "root CMake missing vendor_server subdir" — **pre-existing**, unrelated to Phase 3 (the working-tree root `CMakeLists.txt` is already dirty/stale from before this session, missing `add_subdirectory(vendor_server)`/`add_subdirectory(tests)`). Flagged as out-of-scope, not fixed.
+
+### Plan/status docs updated
+- `PPFDaaS_REMEDIATION_PLAN.md`: Phase 3 items 3.1/3.2/3.3 marked `[x]` with evidence one-liners; "One-line status of the current repo" updated to reflect Phase 0-3 complete, Phase 4 next.
+
+### Flagged out-of-scope findings (not fixed, per phase-gate rules)
+- **PHASE 2 ITEM:** root `CMakeLists.txt` is dirty/stale (missing `add_subdirectory(vendor_server)` and `add_subdirectory(tests)`, references an old `src/ckks_context_160.cpp` path) — causes `tests/verify_all.py` STEP 10/10 to fail. Pre-existing before this session.
+- **PHASE 1/2 ITEM:** `tests/test_inference.py::test_service_uses_spec_timing_boundaries_and_debug_invariant` fails at an assertion that `ckks_context.h` declares `seal::CKKSEncoder encoder` as a plain value member — it actually uses `std::optional<seal::CKKSEncoder>`. This fails before the test reaches its own (separate, `inference_service.cpp`-scoped) `invariant_noise_budget` reference. Pre-existing, unrelated to Phase 3.
+
+---
+
 ## Session Update (2026-05-28) — Benchmark Correction & Fair Measurement
 
 ### Issue Discovered

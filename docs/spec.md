@@ -1120,6 +1120,14 @@ The speedup comes from 8 NTT operations vs 255 \(naive\) due to fewer keys\.
 
 Catch2 gate requires ≥ 2× speedup; expected production speedup is 5–6×\.
 
+__SUPERSEDED \[PHASE 4, §7\]__: the "5–6× speedup" / "≥2× Catch2 gate" framing above is from
+the v1\.0 audit and predates Phase 0's fold correction \(the ≥2× speedup assertion was
+removed from the correctness test in Phase 0\.2 — performance assertions belong in the
+benchmark harness, not the correctness suite\)\. The precise statement of what 'hoisting'
+does and does not mean in this codebase, the three rotation/reduction strategies now under
+measurement \(sequential fold, BSGS, OpenFHE genuinely\-hoisted\), and their respective
+Galois key requirements are in §7\.
+
 __  cpp__
 
 // he\_core/src/rotation\_hoisting\.cpp  — NORMATIVE
@@ -3796,4 +3804,103 @@ it confusing to keep a secret-key-holding `*Context160` type alongside the deplo
 `EvalContext160`, renaming/relocating `ckks_context_160.{h,cpp}` out of `vendor_server/` (so
 it cannot be accidentally linked into a deployed target) would be a reasonable Phase-2
 cleanup.
+
+# §7 Rotation/Reduction Strategy Taxonomy [PHASE 4 ADDITION]
+
+Phase 0 fixed the slot-reduction fold to be *correct*; Phase 4 turns the question of *how*
+that 256-term reduction is computed into a measured research contribution. This section
+defines the terminology precisely (§7.1) and names the three strategies under measurement
+(§7.2–§7.4), so that the paper's central table (Phase 4.4,
+`scripts/rotation_strategy_comparison.py`) has an unambiguous referent for each row.
+
+## §7.1 Rotation Strategy Terminology
+
+**Halevi-Shoup rotation hoisting** (Halevi & Shoup, "Algorithms in HElib", 2014, §3; see
+also OpenFHE's `EvalFastRotation` documentation) is a specific optimization for circuits
+that apply *multiple* Galois automorphisms (rotations) to the *same* ciphertext. A
+rotation-by-key-switching consists of two phases: a "digit decomposition" / ModDown of the
+ciphertext into the key-switching basis (the dominant cost), followed by an
+automorphism + ModUp specific to each rotation amount. Hoisting computes the
+digit-decomposition ONCE per source ciphertext and shares it across all rotations applied
+to that ciphertext in a layer, reducing the dominant per-rotation cost from O(k) to
+amortized O(1) for k rotations of the same source.
+
+**SEAL's public API does not expose this.** `seal::Evaluator::rotate_vector` performs the
+full key-switch (decomposition + automorphism + ModUp) internally for every call; there is
+no public method to precompute and share the decomposition across calls. Consequently, NO
+function in this codebase that calls `rotate_vector` repeatedly — including
+`hoisted_tree_sum` and `bsgs_reduction` below — implements true hoisting, regardless of
+naming. Calling an OpenMP loop over `rotate_vector` calls "hoisting" (as earlier revisions
+of this codebase did) is a terminology error; see §4.2/§4.5 for the corrected in-code
+documentation.
+
+## §7.2 Strategy 1 — Sequential fold (SEAL, `hoisted_tree_sum`)
+
+- 8 rotations of the ACCUMULATOR (`acc = acc + rotate(acc, step)`), step doubling
+  1→128 (log2(256) = 8).
+- Critical path = 8 (each step depends on the previous step's output) — **not
+  parallelizable** and **not hoisted**.
+- Rotation set: `EvalContext160::ROTATION_STEPS` = `{1,2,4,8,16,32,64,128}` (8 Galois
+  elements). This is the ONLY rotation set the deployed server provisions and the only
+  strategy `vendor_server_160` runs.
+- File: `vendor_server/src/rotation_hoisting.cpp::hoisted_tree_sum`.
+
+## §7.3 Strategy 2 — BSGS two-layer (SEAL, `bsgs_reduction`, Phase 4.1)
+
+- 30 rotations (15 baby + 15 giant) across 2 independent layers:
+  - Layer 1 (baby steps, j=1..15): rotate the ORIGINAL ciphertext by j, independent of
+    each other.
+  - Layer 2 (giant steps, i=1..15): rotate the baby-step partial sum by i*16,
+    independent of each other.
+- Critical path = 2 — each layer's rotations are mutually independent and
+  **parallelizable** (OpenMP `parallel for` within each layer), but this is still **NOT
+  hoisted**: each `rotate_vector` call still performs its own full key-switch; OpenMP
+  parallelism here is thread-level concurrency across independent key-switches, not
+  amortized digit-decomposition.
+- More total rotations than Strategy 1 (30 vs 8) in exchange for a shorter critical path
+  — this trade-off (more work, less depth) is exactly what is measured.
+- Rotation set: `BSGS_ROTATION_STEPS` = `{1..15} ∪ {16,32,...,240}` (30 Galois elements)
+  — a strict superset of Strategy 1's 8-element set. The deployed server provisions only
+  Strategy 1's set; `bsgs_reduction` is exercised only by the benchmark binary
+  (`benchmark_160 --strategy=bsgs`), which generates its own BSGS key set locally.
+  Production deployment of Strategy 2 would require reprovisioning with
+  `BSGS_ROTATION_STEPS`.
+- File: `vendor_server/src/rotation_hoisting.cpp::bsgs_reduction`.
+
+## §7.4 Strategy 3 — Hoisted flat (OpenFHE, Phase 4.3)
+
+- Same 30-rotation BSGS rotation set (`{1..15} ∪ {16,32,...,240}`) and the same
+  depth-1 linear circuit (multiply_plain → 256-length reduction → bias add, 16-lane
+  packing, N=8192), reimplemented in OpenFHE.
+- Uses `EvalFastRotationPrecompute` to compute the digit decomposition (ModDown) of the
+  post-multiply ciphertext ONCE per layer, then `EvalFastRotation` for each of the 15
+  rotations in that layer, reusing that precomputed decomposition — this IS genuine
+  Halevi-Shoup hoisting per §7.1.
+- "Critical path" for the online phase within each layer is effectively 1 (all 15
+  `EvalFastRotation` calls in that layer share one precompute and can be summed in any
+  order); the precompute itself is an amortizable one-time cost, reported separately in
+  the benchmark. Across the 2 layers the structure mirrors Strategy 2 (baby-step layer,
+  then giant-step layer on its output).
+- Rotation set: same as Strategy 2, `{1..15} ∪ {16,32,...,240}` (30 elements).
+- Directory: `tools/openfhe_benchmark/`.
+
+## §7.5 What the comparison measures
+
+The three strategies are NOT a simple "faster is better" ranking. Strategies 1 and 2 are
+both implemented against SEAL's public API and are both, by §7.1's definition, unhoisted —
+their difference is critical-path depth (8 vs 2) traded against total rotation count (8 vs
+32). Strategy 3 isolates the effect of genuine hoisting by holding the rotation set and
+circuit fixed and changing only the library/API. If Strategy 3's online rotation cost is
+materially below Strategy 2's despite an equal rotation count, the gap is attributable to
+the ModDown amortization that SEAL's public API does not expose — i.e., an API-surface
+limitation, not an algorithmic one. This is the systems contribution: SEAL's public API
+creates a performance ceiling for rotation-heavy circuits that cannot be removed by
+algorithmic restructuring (BSGS) alone.
+
+**References:**
+- Halevi, S. and Shoup, V., "Algorithms in HElib", CRYPTO 2014, §3 (hoisting / "Smart-Vercauteren"
+  rotation batching).
+- OpenFHE documentation, `EvalFastRotationPrecompute` / `EvalFastRotation`
+  (`pke/include/scheme/ckksrns/ckksrns-leveledshe.h` and the OpenFHE "Advanced examples:
+  CKKS bootstrapping" / "Hoisting" tutorials).
 
