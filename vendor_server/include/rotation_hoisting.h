@@ -106,9 +106,31 @@ void bsgs_reduction(
 
         int giant_step);   // canonical: 16 (sqrt(256))
 
-// ─── Naive baseline (for ablation benchmark only) ─────────────────────────
-
-// Requires full GaloisKeys (steps 1..255). NEVER use in production.
+// ─── Naive baseline (for ablation benchmark only, §5.1) ────────────────────
+//
+// naive_tree_sum() implements the textbook (no-fold, no-BSGS) reduction:
+//
+//   acc = ct
+//   for step in 1..255:
+//       acc = acc + rotate(ct, step)      // rotation acts on the ORIGINAL ct
+//
+// Each of the 255 rotations is independent (all rotate the same source `ct`),
+// but the implementation issues them sequentially with no batching/hoisting,
+// matching how a developer with no knowledge of the fold/BSGS optimizations
+// would write this circuit. This is the "before" side of the §5.2
+// self-ablation comparison against hoisted_tree_sum() (8 rotations) and
+// bsgs_reduction() (30 rotations).
+//
+// GALOIS KEY REQUIREMENT: requires the full NAIVE_ROTATION_STEPS key set
+// (steps 1..255, 255 distinct Galois keys) -- by far the largest key set of
+// the three strategies. NEVER use in production; benchmark-only.
+inline constexpr std::array<int, 255> NAIVE_ROTATION_STEPS = []() {
+    std::array<int, 255> steps{};
+    for (int i = 0; i < 255; ++i) {
+        steps[i] = i + 1;
+    }
+    return steps;
+}();
 
 seal::Ciphertext naive_tree_sum(
         const seal::Ciphertext& ct,

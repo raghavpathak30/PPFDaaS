@@ -1,0 +1,29 @@
+{
+  "framing": {
+    "description": "\u00a75.7 Part A: ciphertext wire sizes for a single (4096-slot) CKKS ciphertext, measured by vendor_server/build/wire_size_probe for both modulus chains. 'standard' is the public-key encryption wire format produced by bank_client/he_wrapper/seal_wrapper*. 'seeded' is a symmetric-key (encrypt_symmetric) 'what if' comparison point -- not what the bank's public-key path produces today.",
+    "methodology": "measured",
+    "source": "vendor_server/build/wire_size_probe"
+  },
+  "chains": {
+    "160bit": {
+      "coeff_modulus": "{60,40,60}",
+      "standard_bytes": 262257,
+      "seeded_bytes": 131266,
+      "standard_zlib_bytes": 262354,
+      "standard_zstd_bytes": 263281,
+      "seeded_vs_standard_ratio": 1.99791,
+      "zlib_compression_ratio": 0.99963,
+      "zstd_compression_ratio": 0.996111
+    },
+    "200bit": {
+      "coeff_modulus": "{60,40,40,60}",
+      "standard_bytes": 393329,
+      "seeded_bytes": 196802,
+      "standard_zlib_bytes": 393466,
+      "standard_zstd_bytes": 394865,
+      "seeded_vs_standard_ratio": 1.9986,
+      "zlib_compression_ratio": 0.999652,
+      "zstd_compression_ratio": 0.99611
+    }
+  }
+}

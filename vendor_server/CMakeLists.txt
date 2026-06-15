@@ -132,6 +132,22 @@ target_compile_definitions(benchmark_160 PRIVATE
     PPFDAAS_REPO_ROOT="${CMAKE_SOURCE_DIR}"
 )
 
+add_executable(wire_size_probe
+    src/wire_size_probe.cpp
+    src/ckks_context.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tools/local_benchmark/ckks_context_160.cpp
+)
+target_link_libraries(wire_size_probe PRIVATE
+    SEAL::seal
+)
+target_include_directories(wire_size_probe PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../tools/local_benchmark"
+)
+target_compile_definitions(wire_size_probe PRIVATE
+    PPFDAAS_REPO_ROOT="${CMAKE_SOURCE_DIR}"
+)
+
 add_executable(vendor_server_main src/server_main.cpp)
 target_link_libraries(vendor_server_main PRIVATE he_core)
 target_compile_definitions(vendor_server_main PRIVATE

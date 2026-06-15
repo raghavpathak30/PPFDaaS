@@ -3500,22 +3500,47 @@ Normative contracts:
 - tests/benchmark_comparison.py — Executes side-by-side 200-bit vs 160-bit inference benchmarking, computes summary statistics, and emits artifacts/comparison_results.json.
 
 ### §5.4 Benchmark Evidence
-Normative performance baseline (from artifacts/comparison_results.json):
-- mean total_inference_us:
-    - baseline_200bit: 4872.5
-    - reduced_160bit: 2518.6
-- mean rotation_hoisting_us:
-    - baseline_200bit: 3982.9
-    - reduced_160bit: 2009.2
-- speedup percentages:
-    - total_inference_pct reduction: 48.3099025141098%
-    - rotation_hoisting_pct reduction: 49.55434482412313%
+Type 1 self-ablation (§5.7 Benchmark Framing) from artifacts/comparison_results.json
+(tests/benchmark_comparison.py, n=1000 measured iterations per variant,
+randomized real held-out inputs, 20 warmup rounds, §5.5 in-band parity gate
+passed for both variants before any timing). Both variants run the IDENTICAL
+depth-1 logistic-regression circuit and sequential-fold reduction strategy
+(hoisted_tree_sum) via the same gRPC service implementation; the only
+difference is the CKKS modulus chain (200-bit {60,40,40,60} vs 160-bit
+{60,40,60}). This is NOT a comparison against an external baseline library.
+
+- total_inference_us (latency, single request in flight, no concurrent load):
+    - baseline_200bit: mean=17932.136, median=17670.5
+    - reduced_160bit: mean=11303.425, median=10675.5
+- self-ablation reduction (160-bit vs 200-bit, same codebase/circuit/hardware):
+    - mean reduction: 36.97%
+    - median reduction: 39.59%
+- statistical significance (Mann-Whitney U, artifacts/comparison_results.json#statistical_tests):
+    - U=887378.0, p_value=1.02e-197, rank_biserial_effect_size=-0.7748
+- correctness (artifacts/privacy_cost_analysis.json#precision_max_abs_error,
+  §5.5 parity gate vs plaintext oracle): baseline_200bit max_abs_error=2.08e-07,
+  reduced_160bit max_abs_error=4.19e-11, both passed=true.
+- hardware (artifacts/comparison_results.json#hardware_manifest): 13th Gen
+  Intel(R) Core(TM) i7-13650HX, cpu_governor=powersave. SLA gates
+  (median_under_3000 etc.) are calibrated for cpu_governor=performance and
+  are non-fatal under powersave; artifacts/comparison_results.json#gates
+  records the as-measured (non-)pass state.
 - security_regression: false
+
+For reduction-STRATEGY comparison (sequential fold vs BSGS vs naive, Type 2)
+see artifacts/rotation_strategy_comparison.json and
+artifacts/execution_matrix.json. For cross-LIBRARY comparison (Type 3, SEAL
+vs OpenFHE) see tools/openfhe_benchmark/results/openfhe_results.json (status:
+PENDING -- OpenFHE is not installed in this environment).
 
 ### §5.5 Deployment Decision
 - Recommended production default: 160-bit reduced variant.
-- Rationale: benchmarked mean total_inference_us and mean rotation_hoisting_us are both reduced by approximately 48–50% with security_regression=false and unchanged n=8192/scale/Galois contracts.
-- Condition to prefer 200-bit baseline: if near-term roadmap includes Depth-1 circuit depth expansion or feature additions that require spare multiplicative levels before the next key regeneration cycle.
+- Rationale: the Type 1 self-ablation in §5.4 shows total_inference_us
+  reduced by ~37% (mean) / ~40% (median) for the IDENTICAL circuit, with
+  security_regression=false and unchanged n=8192/scale/Galois contracts. This
+  is a same-codebase modulus-chain comparison, not a claim of superiority over
+  any external library or baseline.
+- Condition to prefer 200-bit baseline: if near-term roadmap includes Depth-1 circuit depth expansion or feature additions that require spare multiplicative levels before the next key regeneration cycle. §5.8 (artifacts/privacy_cost_analysis.json) quantifies this spare-level cost directly: +6995.0us (+65.5%) median latency and +131072 bytes (+50.0%) per ciphertext for the one additional 40-bit modulus level.
 
 ### §5.6 Runtime Optimizations (Implementation Contract)
 The following runtime optimizations are normative performance contracts for both 200-bit and 160-bit Depth-1 paths. They do not change cryptographic parameters or security level, but they are required to preserve benchmarked latency behavior.
@@ -3532,6 +3557,52 @@ The following runtime optimizations are normative performance contracts for both
 
 - Compliance requirement:
     - Any change that removes parallel rotation generation or preallocation behavior must be treated as a performance-contract change and requires rerunning the comparison benchmark and updating documented latency baselines.
+
+### §5.7 Benchmark Framing [PHASE 5 ADDITION]
+
+Every performance number in this spec and in artifacts/ falls into exactly
+one of three comparison types. A number's type determines what it is and is
+not evidence for. The "~37-40% latency reduction" figure (§5.4, §5.5) is
+**Type 1 only** -- it is not, and must never be cited as, a comparison
+against an external baseline library or a different reduction strategy.
+
+- **Type 1 -- Self-ablation.** Same codebase, same binary family, same
+  circuit (depth-1 logistic regression, sequential-fold reduction
+  `hoisted_tree_sum`), same hardware; only the CKKS modulus chain differs
+  (200-bit {60,40,40,60} vs 160-bit {60,40,60}). Produced by
+  tests/benchmark_comparison.py -> artifacts/comparison_results.json. This
+  is a tuning-table result: it answers "what does dropping one spare
+  multiplicative level cost/save on this exact circuit?", not "is this
+  system fast?". §5.8's privacy-cost analysis
+  (artifacts/privacy_cost_analysis.json) uses the same 200-bit-vs-160-bit
+  pair as a proxy for the cost of one additional multiplicative level (e.g.
+  model-weight masking).
+
+- **Type 2 -- Reduction-strategy comparison.** Same codebase, same modulus
+  chain (160-bit), same hardware; the rotation/reduction strategy differs
+  (sequential fold `hoisted_tree_sum` vs two-layer BSGS `bsgs_reduction` vs
+  naive `naive_tree_sum`, §5.1). Produced by `benchmark_160 --strategy=...`
+  -> artifacts/rotation_strategy_comparison.json and
+  artifacts/execution_matrix.json (`reduction_strategy_x_modulus_chain_x_library`
+  axis). This answers "given this modulus chain, which rotation strategy is
+  fastest?".
+
+- **Type 3 -- Cross-library comparison.** A different HE library entirely
+  (OpenFHE) implementing the same depth-1 circuit, for external validation
+  that this project's numbers are not an artifact of one SEAL build/config.
+  Status: PENDING in this environment -- see
+  tools/openfhe_benchmark/results/openfhe_results.json and
+  artifacts/execution_matrix.json (`reduction_strategy_x_modulus_chain_x_library`
+  rows marked `"status": "PENDING"`, reason: OpenFHE is not installed here).
+  PENDING cells are never estimated; they are filled in only by running the
+  OpenFHE benchmark on a machine where OpenFHE is installed.
+
+Throughput-vs-latency (§5.4's `latency_scope` / artifacts/throughput_results.json)
+is an orthogonal axis to the three types above: it describes whether a
+number was measured with one request in flight (latency, all of §5.4) or
+under closed-loop concurrent load (throughput, §5.4 cross-reference,
+tests/benchmark_throughput.py). A Type 1/2/3 label and a latency/throughput
+label can both apply to the same number.
 
 # §6 Threat Model & Trust Boundaries [PHASE 1 ADDITION]
 

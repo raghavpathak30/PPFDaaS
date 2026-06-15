@@ -1,0 +1,34 @@
+{
+  "framing": {
+    "description": "\u00a75.8: privacy cost analysis. Uses the 200-bit modulus chain ({60,40,40,60}, 4 primes) vs the 160-bit chain ({60,40,60}, 3 primes) as a PROXY for the cost of ONE ADDITIONAL homomorphic multiplicative level (e.g. a model-weight masking step for model privacy). This is the same self-ablation (docs/spec.md \u00a75.7 Type 1) used by tests/benchmark_comparison.py -- same codebase/circuit/hardware, only the modulus chain differs.",
+    "methodology": "measured",
+    "sources": {
+      "latency": "artifacts/comparison_results.json#summary",
+      "bandwidth": "artifacts/wire_sizes.json#chains",
+      "precision": "fresh single-inference \u00a75.5 parity-gate run (this script)"
+    }
+  },
+  "modulus_bits": {
+    "160bit": 160,
+    "200bit": 200,
+    "delta": 40
+  },
+  "latency_us": {
+    "160bit_median": 10675.5,
+    "200bit_median": 17670.5,
+    "delta": 6995.0,
+    "pct_delta": 65.52386305091098
+  },
+  "bandwidth_bytes": {
+    "160bit_standard": 262257,
+    "200bit_standard": 393329,
+    "delta": 131072,
+    "pct_delta": 49.97845624711638
+  },
+  "precision_max_abs_error": {
+    "160bit": 4.3374463309237e-11,
+    "200bit": 1.6924312384869467e-07,
+    "delta": 1.6919974938538543e-07
+  },
+  "key_finding": "Provisioning the one additional 40-bit RNS prime that one extra homomorphic multiplicative level (e.g. a model-weight masking step for model privacy) would require -- measured via the 200-bit vs 160-bit self-ablation -- costs +6995.0us (65.5%) median latency and +131072 bytes (50.0%) per ciphertext, while max_abs_error in both chains remains within the existing noise floor (~1e-7, see artifacts/precision_analysis.json)."
+}

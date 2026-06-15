@@ -1,0 +1,226 @@
+{
+  "axes": {
+    "reduction_strategy": [
+      "fold",
+      "bsgs",
+      "naive"
+    ],
+    "modulus_chain": [
+      "160bit",
+      "200bit"
+    ],
+    "library": [
+      "SEAL",
+      "OpenFHE"
+    ],
+    "parallelism_ppfd_grpc_threads": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "batch_occupancy_lanes": [
+      1,
+      4,
+      8,
+      16
+    ]
+  },
+  "notes": [
+    "Cells in reduction_strategy x modulus_chain x library are LOCAL-CIRCUIT latencies (encrypt..decrypt, no gRPC). They do not vary with parallelism_ppfd_grpc_threads or batch_occupancy_lanes: PPFD_GRPC_THREADS only sizes vendor_server_160's gRPC sync thread pool (not used by the local-circuit benchmark binaries), and CKKS ciphertext operations cost the same regardless of how many of the 16 logical lanes hold real data (confirmed by occupancy_axis below: batch_latency_us is ~constant across lanes=1..16).",
+    "parallelism_axis and occupancy_axis are gRPC-layer measurements (reduced_160bit / fold only -- PPFD_GRPC_THREADS is wired only into inference_service_160.cpp).",
+    "library=OpenFHE is PENDING for every cell: OpenFHE is not installed in this environment (no OpenFHEConfig.cmake / pkg-config). tools/openfhe_benchmark/ is a compile-ready, never-built scaffold."
+  ],
+  "reduction_strategy_x_modulus_chain_x_library": {
+    "SEAL": {
+      "160bit": {
+        "fold": {
+          "status": "MEASURED",
+          "source": "vendor_server/build/benchmark_160 --strategy=fold (via scripts/generate_ablation.py)",
+          "scope": "local circuit only: encrypt, multiply_plain, rescale, hoisted_tree_sum, decrypt (no gRPC/serialization)",
+          "rotations": 8,
+          "critical_path_steps": 8,
+          "galois_keygen_us": 16323.2,
+          "correctness_max_abs_error": 2.80921e-06,
+          "n": 100,
+          "latency_us": {
+            "mean": 4017.65,
+            "std": 610.632,
+            "p50": 3889.27,
+            "p95": 4329.47,
+            "p99": 7813.74,
+            "min": 3735.18,
+            "max": 7870.03
+          }
+        },
+        "bsgs": {
+          "status": "MEASURED",
+          "source": "vendor_server/build/benchmark_160 --strategy=bsgs",
+          "scope": "local circuit only: encrypt, multiply_plain, rescale, bsgs_reduction (OpenMP within each layer), decrypt (no gRPC/serialization)",
+          "rotations": 30,
+          "critical_path_steps": 2,
+          "correctness_max_abs_error": 1.70308e-06,
+          "n": 100,
+          "latency_us": {
+            "mean": 8544.72,
+            "p50": 8379.86,
+            "p95": 12051.6,
+            "p99": 12534.6
+          },
+          "note": "Measured mean/p99 EXCEED the sequential-fold row above despite a shorter critical path (2 vs 8): on this 20-core host with OMP_NUM_THREADS unset, OpenMP thread-spawn overhead for two 15-iteration parallel-for loops dominates, and each rotate_vector() call within a layer is still a full, independent, unhoisted rotation (\u00a77.1) -- BSGS trades fewer critical-path STEPS for MORE total rotation WORK (30 vs 8), and SEAL's public API gives no way to amortize that work via hoisting. This is itself part of the \u00a77.5 finding."
+        },
+        "naive": {
+          "status": "MEASURED",
+          "source": "vendor_server/build/benchmark_160 --strategy=naive (via scripts/generate_ablation.py)",
+          "scope": "local circuit only: encrypt, multiply_plain, rescale, naive_tree_sum, decrypt (no gRPC/serialization)",
+          "rotations": 255,
+          "critical_path_steps": 255,
+          "galois_keygen_us": 579965,
+          "correctness_max_abs_error": 1.19417e-05,
+          "n": 100,
+          "latency_us": {
+            "mean": 121271,
+            "std": 4973.82,
+            "p50": 120489,
+            "p95": 125414,
+            "p99": 126649,
+            "min": 112274,
+            "max": 165965
+          }
+        }
+      },
+      "200bit": {
+        "fold": {
+          "status": "MEASURED",
+          "source": "vendor_server/build/benchmark (depth1_he_inference, 200-bit chain {60,40,40,60})",
+          "scope": "local circuit only: encrypt, multiply_plain, rescale, hoisted_tree_sum, decrypt (no gRPC/serialization); n=1000, no separate warmup",
+          "latency_us": {
+            "mean": 9651.11
+          }
+        },
+        "bsgs": {
+          "status": "PENDING",
+          "reason": "vendor_server/build/benchmark (200-bit local circuit) does not implement a --strategy dispatch; only depth1_he_inference (== hoisted-fold) is wired. \u00a75.1 scoped the naive-strategy addition to benchmark_160 (160-bit) only -- extending the 200-bit binary's strategy dispatch is PHASE 5 ITEM: out of scope, not fixed here."
+        },
+        "naive": {
+          "status": "PENDING",
+          "reason": "vendor_server/build/benchmark (200-bit local circuit) does not implement a --strategy dispatch; only depth1_he_inference (== hoisted-fold) is wired. \u00a75.1 scoped the naive-strategy addition to benchmark_160 (160-bit) only -- extending the 200-bit binary's strategy dispatch is PHASE 5 ITEM: out of scope, not fixed here."
+        }
+      }
+    },
+    "OpenFHE": {
+      "160bit": {
+        "fold": {
+          "status": "PENDING",
+          "reason": "OpenFHE is not installed in this environment (no OpenFHEConfig.cmake or pkg-config found anywhere on the system). tools/openfhe_benchmark/ is a complete, compile-ready scaffold (CMakeLists.txt, openfhe_linear_eval.{h,cpp}, openfhe_benchmark.cpp) that has never been built or run here. See tools/openfhe_benchmark/README.md for build instructions; running ./openfhe_benchmark from this directory overwrites this file with status=MEASURED and real latency_us statistics."
+        },
+        "bsgs": {
+          "status": "PENDING",
+          "reason": "OpenFHE is not installed in this environment (no OpenFHEConfig.cmake or pkg-config found anywhere on the system). tools/openfhe_benchmark/ is a complete, compile-ready scaffold (CMakeLists.txt, openfhe_linear_eval.{h,cpp}, openfhe_benchmark.cpp) that has never been built or run here. See tools/openfhe_benchmark/README.md for build instructions; running ./openfhe_benchmark from this directory overwrites this file with status=MEASURED and real latency_us statistics."
+        },
+        "naive": {
+          "status": "PENDING",
+          "reason": "OpenFHE is not installed in this environment (no OpenFHEConfig.cmake or pkg-config found anywhere on the system). tools/openfhe_benchmark/ is a complete, compile-ready scaffold (CMakeLists.txt, openfhe_linear_eval.{h,cpp}, openfhe_benchmark.cpp) that has never been built or run here. See tools/openfhe_benchmark/README.md for build instructions; running ./openfhe_benchmark from this directory overwrites this file with status=MEASURED and real latency_us statistics."
+        }
+      },
+      "200bit": {
+        "fold": {
+          "status": "PENDING",
+          "reason": "OpenFHE is not installed in this environment (no OpenFHEConfig.cmake or pkg-config found anywhere on the system). tools/openfhe_benchmark/ is a complete, compile-ready scaffold (CMakeLists.txt, openfhe_linear_eval.{h,cpp}, openfhe_benchmark.cpp) that has never been built or run here. See tools/openfhe_benchmark/README.md for build instructions; running ./openfhe_benchmark from this directory overwrites this file with status=MEASURED and real latency_us statistics."
+        },
+        "bsgs": {
+          "status": "PENDING",
+          "reason": "OpenFHE is not installed in this environment (no OpenFHEConfig.cmake or pkg-config found anywhere on the system). tools/openfhe_benchmark/ is a complete, compile-ready scaffold (CMakeLists.txt, openfhe_linear_eval.{h,cpp}, openfhe_benchmark.cpp) that has never been built or run here. See tools/openfhe_benchmark/README.md for build instructions; running ./openfhe_benchmark from this directory overwrites this file with status=MEASURED and real latency_us statistics."
+        },
+        "naive": {
+          "status": "PENDING",
+          "reason": "OpenFHE is not installed in this environment (no OpenFHEConfig.cmake or pkg-config found anywhere on the system). tools/openfhe_benchmark/ is a complete, compile-ready scaffold (CMakeLists.txt, openfhe_linear_eval.{h,cpp}, openfhe_benchmark.cpp) that has never been built or run here. See tools/openfhe_benchmark/README.md for build instructions; running ./openfhe_benchmark from this directory overwrites this file with status=MEASURED and real latency_us statistics."
+        }
+      }
+    }
+  },
+  "parallelism_axis": [
+    {
+      "status": "MEASURED",
+      "source": "tests/benchmark_throughput.py-style sweep (scripts/build_execution_matrix.py, \u00a75.6)",
+      "ppfd_grpc_threads": 1,
+      "n_clients": 8,
+      "lanes_per_request": 16,
+      "duration_s": 3.0216362476348877,
+      "n_requests": 343,
+      "req_per_sec": 113.51465626230653,
+      "mean_latency_ms": 65.80967898829543,
+      "p99_latency_ms": 152.4423212797773
+    },
+    {
+      "status": "MEASURED",
+      "source": "tests/benchmark_throughput.py-style sweep (scripts/build_execution_matrix.py, \u00a75.6)",
+      "ppfd_grpc_threads": 2,
+      "n_clients": 8,
+      "lanes_per_request": 16,
+      "duration_s": 3.0178287029266357,
+      "n_requests": 333,
+      "req_per_sec": 110.3442351373564,
+      "mean_latency_ms": 68.09742557657688,
+      "p99_latency_ms": 145.75119967928913
+    },
+    {
+      "status": "MEASURED",
+      "source": "artifacts/throughput_results.json: client_sweep (\u00a75.4, 30s)",
+      "ppfd_grpc_threads": 4,
+      "n_clients": 8,
+      "lanes_per_request": 16,
+      "duration_s": 30.027425050735474,
+      "n_requests": 3509,
+      "req_per_sec": 116.85983710128527,
+      "mean_latency_ms": 67.96680608976529,
+      "p99_latency_ms": 157.20826643992046
+    },
+    {
+      "status": "MEASURED",
+      "source": "tests/benchmark_throughput.py-style sweep (scripts/build_execution_matrix.py, \u00a75.6)",
+      "ppfd_grpc_threads": 8,
+      "n_clients": 8,
+      "lanes_per_request": 16,
+      "duration_s": 3.012056350708008,
+      "n_requests": 357,
+      "req_per_sec": 118.52367898631256,
+      "mean_latency_ms": 63.02156829964083,
+      "p99_latency_ms": 172.33714443958888
+    }
+  ],
+  "occupancy_axis": [
+    {
+      "status": "MEASURED",
+      "source": "artifacts/throughput_results.json: occupancy_sweep (\u00a75.4/\u00a75.7)",
+      "ppfd_grpc_threads": 4,
+      "lanes": 1,
+      "batch_latency_us": 16104.703999189951,
+      "per_tx_us": 16104.703999189951
+    },
+    {
+      "status": "MEASURED",
+      "source": "artifacts/throughput_results.json: occupancy_sweep (\u00a75.4/\u00a75.7)",
+      "ppfd_grpc_threads": 4,
+      "lanes": 4,
+      "batch_latency_us": 17875.37149994023,
+      "per_tx_us": 4468.842874985057
+    },
+    {
+      "status": "MEASURED",
+      "source": "artifacts/throughput_results.json: occupancy_sweep (\u00a75.4/\u00a75.7)",
+      "ppfd_grpc_threads": 4,
+      "lanes": 8,
+      "batch_latency_us": 16777.60400070838,
+      "per_tx_us": 2097.2005000885474
+    },
+    {
+      "status": "MEASURED",
+      "source": "artifacts/throughput_results.json: occupancy_sweep (\u00a75.4/\u00a75.7)",
+      "ppfd_grpc_threads": 4,
+      "lanes": 16,
+      "batch_latency_us": 17120.833499575383,
+      "per_tx_us": 1070.0520937234614
+    }
+  ]
+}

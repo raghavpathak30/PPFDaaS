@@ -1,232 +1,153 @@
 #!/usr/bin/env python3
+"""§5.1 / §5.2: self-ablation comparison of the naive (255-rotation, no
+hoisting/BSGS) vs hoisted (8-rotation sequential fold) reduction strategies.
+
+Both rows are produced by EXECUTING vendor_server/build/benchmark_160
+--strategy=<naive|fold> -- the SAME local CKKS circuit (encrypt,
+multiply_plain, rescale, reduction, decrypt), same codebase, same binary, same
+hardware, differing ONLY in which reduction strategy is selected. This is a
+Type 1 "self-ablation" per docs/spec.md §5.7 (Benchmark Framing), NOT a
+comparison against an external baseline library -- for strategy/library
+comparisons see artifacts/rotation_strategy_comparison.json.
+
+methodology is always "measured": prior revisions of this script fell back to
+"estimated-linear-rotation-model" (naive cost = hoisted cost * 255/8) when no
+live naive endpoint was reachable. That estimate has been removed entirely
+(§5.1): naive_tree_sum() is now a real --strategy=naive code path in
+benchmark_160, so both numbers come from executing the thing they describe.
+"""
 from __future__ import annotations
 
 import csv
 import json
 import os
-import signal
-import socket
 import subprocess
 import sys
-import time
 from pathlib import Path
-
-import numpy as np
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
-from bank_client.bank_client import BankClient
-
-
-WARMUP_ROUNDS = 20
-MEASURE_ROUNDS = 200
 HOISTED_ROTATIONS = 8
 NAIVE_ROTATIONS = 255
-DEFAULT_HOISTED_ADDR = "127.0.0.1:50052"
+
+BENCHMARK_BIN = REPO_ROOT / "vendor_server" / "build" / "benchmark_160"
 
 
-def _is_port_open(host: str, port: int, timeout: float = 0.25) -> bool:
-    try:
-        with socket.create_connection((host, port), timeout=timeout):
-            return True
-    except OSError:
-        return False
-
-
-def _parse_host_port(address: str) -> tuple[str, int]:
-    if ":" not in address:
-        raise ValueError(f"Address must be host:port, got: {address}")
-    host, port_str = address.rsplit(":", 1)
-    return host, int(port_str)
-
-
-def _launch_160_server(port: int) -> subprocess.Popen[str]:
-    server_bin = REPO_ROOT / "vendor_server" / "build" / "vendor_server_160"
-    weights_path = REPO_ROOT / "artifacts" / "model_weights.bin"
-
-    missing = [str(p) for p in (server_bin, weights_path) if not p.exists()]
-    if missing:
+def _run_benchmark(strategy: str, fast: bool) -> dict:
+    if not BENCHMARK_BIN.exists():
         raise FileNotFoundError(
-            "Cannot autostart vendor server; missing required file(s):\n"
-            + "\n".join(f"  - {m}" for m in missing)
+            f"Missing {BENCHMARK_BIN}. Build it first: "
+            "cmake --build vendor_server/build --target benchmark_160"
         )
 
-    return subprocess.Popen(
-        [str(server_bin), str(weights_path), str(port)],
+    env = dict(os.environ)
+    if fast:
+        # §5.1: --fast-ablation shrinks benchmark_160's measured-round count
+        # (n=20 instead of the compiled-in default of 100) via
+        # PPFD_BENCHMARK_ROUNDS. Does not change benchmark_160's default.
+        env["PPFD_BENCHMARK_ROUNDS"] = "20"
+
+    proc = subprocess.run(
+        [str(BENCHMARK_BIN), f"--strategy={strategy}"],
         cwd=str(REPO_ROOT),
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        capture_output=True,
         text=True,
+        env=env,
+        check=False,
     )
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"benchmark_160 --strategy={strategy} exited {proc.returncode}\n"
+            f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
+        )
 
+    json_end = proc.stdout.rindex("}") + 1
+    result = json.loads(proc.stdout[: json_end])
 
-def _wait_until_ready(host: str, port: int, timeout_s: float = 15.0) -> bool:
-    deadline = time.time() + timeout_s
-    while time.time() < deadline:
-        if _is_port_open(host, port):
-            return True
-        time.sleep(0.2)
-    return False
-
-
-def _terminate_proc(proc: subprocess.Popen[str]) -> None:
-    proc.send_signal(signal.SIGTERM)
-    try:
-        proc.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        proc.kill()
-
-
-def _stats(values: list[float]) -> dict[str, float]:
-    arr = np.array(values, dtype=np.float64)
-    return {
-        "mean": float(np.mean(arr)),
-        "std": float(np.std(arr)),
-        "p99": float(np.percentile(arr, 99)),
-    }
-
-
-def _measure_rotation_us(client: BankClient, x_test: np.ndarray) -> list[float]:
-    first = np.asarray(x_test[0], dtype=np.float64).reshape(1, 256)
-    for _ in range(WARMUP_ROUNDS):
-        client.run_inference(first)
-
-    out: list[float] = []
-    for i in range(MEASURE_ROUNDS):
-        x = np.asarray(x_test[i % x_test.shape[0]], dtype=np.float64).reshape(1, 256)
-        resp = client.run_inference(x)
-        out.append(float(resp["timing_breakdown"]["rotation_hoisting_us"]))
-    return out
-
-
-def _build_160_client() -> BankClient:
-    artifacts = REPO_ROOT / "artifacts"
-    hoisted_addr = os.environ.get("PPFD_HOISTED_ADDR", DEFAULT_HOISTED_ADDR)
-    return BankClient(
-        hoisted_addr,
-        public_key_path=str(artifacts / "public_key_160.bin"),
-        secret_key_path=str(artifacts / "secret_key_160.bin"),
-        use_tls=False,
-        wrapper_module="seal_wrapper_160",
-        # §1.4: must be large enough for galois_keys_160.bin (~5.8 MB),
-        # pushed once via ProvisionGaloisKeys.
-        grpc_max_message_length=8 * 1024 * 1024,
-        galois_keys_path=str(artifacts / "galois_keys_160.bin"),
-    )
+    if not result.get("correctness_passed"):
+        raise RuntimeError(
+            f"benchmark_160 --strategy={strategy} FAILED its in-band "
+            f"correctness gate: max_abs_error={result.get('correctness_max_abs_error')}"
+        )
+    return result
 
 
 def main() -> int:
     results_dir = REPO_ROOT / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    x_test_path = REPO_ROOT / "artifacts" / "X_test.npy"
-    if not x_test_path.exists():
-        raise FileNotFoundError(f"Missing required file: {x_test_path}")
-    x_test = np.load(x_test_path)
+    fast = "--fast-ablation" in sys.argv
 
-    managed_proc: subprocess.Popen[str] | None = None
-    try:
-        hoisted_addr = os.environ.get("PPFD_HOISTED_ADDR", DEFAULT_HOISTED_ADDR)
-        host, port = _parse_host_port(hoisted_addr)
-        autostart_enabled = os.environ.get("PPFD_ABLATION_AUTOSTART", "1") != "0"
+    hoisted = _run_benchmark("fold", fast)
+    naive = _run_benchmark("naive", fast)
 
-        if not _is_port_open(host, port):
-            if autostart_enabled and hoisted_addr == DEFAULT_HOISTED_ADDR:
-                managed_proc = _launch_160_server(port)
-                if not _wait_until_ready(host, port, timeout_s=15.0):
-                    raise RuntimeError(
-                        "Autostarted vendor_server_160, but it did not become ready within 15s."
-                    )
-                print(f"[ablation] auto-started vendor_server_160 on {hoisted_addr}")
-            else:
-                raise RuntimeError(
-                    f"Vendor server unavailable at {hoisted_addr}. "
-                    "Start it first (for example: ./vendor_server/build/vendor_server_160 artifacts/model_weights.bin 50052), "
-                    "or set PPFD_ABLATION_AUTOSTART=1 and use default PPFD_HOISTED_ADDR=127.0.0.1:50052."
-                )
+    hoisted_mean = hoisted["latency_us"]["mean"]
+    naive_mean = naive["latency_us"]["mean"]
+    ratio = naive_mean / hoisted_mean if hoisted_mean > 0 else 0.0
 
-        hoisted_client = _build_160_client()
-        hoisted_values = _measure_rotation_us(hoisted_client, x_test)
-        hoisted_stats = _stats(hoisted_values)
+    csv_path = results_dir / "ablation_hoisting.csv"
+    with csv_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            "method", "n_rotations", "critical_path",
+            "mean_latency_us", "std_latency_us", "p99_latency_us",
+        ])
+        writer.writerow([
+            "naive", naive["rotations"], naive["critical_path"],
+            f"{naive['latency_us']['mean']:.6f}",
+            f"{naive['latency_us']['std']:.6f}",
+            f"{naive['latency_us']['p99']:.6f}",
+        ])
+        writer.writerow([
+            "hoisted", hoisted["rotations"], hoisted["critical_path"],
+            f"{hoisted['latency_us']['mean']:.6f}",
+            f"{hoisted['latency_us']['std']:.6f}",
+            f"{hoisted['latency_us']['p99']:.6f}",
+        ])
 
-        naive_values: list[float]
-        methodology = "estimated"
+    details_path = results_dir / "ablation_methodology.json"
+    details_path.write_text(
+        json.dumps(
+            {
+                "methodology": "measured",
+                "source": "vendor_server/build/benchmark_160 --strategy=<naive|fold>",
+                "scope": "local CKKS circuit only: encrypt, multiply_plain, "
+                         "rescale, reduction, decrypt (no gRPC/serialization)",
+                "framing": "Type 1 self-ablation (docs/spec.md §5.7): same "
+                           "algorithm family, codebase, binary, and hardware; "
+                           "only the reduction strategy differs. NOT a "
+                           "comparison against an external baseline library.",
+                "fast_ablation": fast,
+                "measure_rounds": naive["n"],
+                "warmup_rounds": naive["warmup"],
+                "hoisted_rotations": hoisted["rotations"],
+                "naive_rotations": naive["rotations"],
+                "hoisted_critical_path": hoisted["critical_path"],
+                "naive_critical_path": naive["critical_path"],
+                "hoisted_galois_keygen_us": hoisted["galois_keygen_us"],
+                "naive_galois_keygen_us": naive["galois_keygen_us"],
+                "hoisted_correctness_max_abs_error": hoisted["correctness_max_abs_error"],
+                "naive_correctness_max_abs_error": naive["correctness_max_abs_error"],
+                "naive_latency_us": naive["latency_us"],
+                "hoisted_latency_us": hoisted["latency_us"],
+                "naive_to_hoisted_ratio": ratio,
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
 
-        naive_addr = os.environ.get("PPFD_NAIVE_ADDR")
-        if naive_addr:
-            try:
-                artifacts = REPO_ROOT / "artifacts"
-                naive_client = BankClient(
-                    naive_addr,
-                    public_key_path=str(artifacts / "public_key_160.bin"),
-                    secret_key_path=str(artifacts / "secret_key_160.bin"),
-                    use_tls=False,
-                    wrapper_module="seal_wrapper_160",
-                    # §1.4: must be large enough for galois_keys_160.bin
-                    # (~5.8 MB), pushed once via ProvisionGaloisKeys.
-                    grpc_max_message_length=8 * 1024 * 1024,
-                    galois_keys_path=str(artifacts / "galois_keys_160.bin"),
-                )
-                naive_values = _measure_rotation_us(naive_client, x_test)
-                methodology = "measured-via-endpoint"
-            except Exception:
-                naive_values = [v * (NAIVE_ROTATIONS / HOISTED_ROTATIONS) for v in hoisted_values]
-                methodology = "estimated-linear-rotation-model"
-        else:
-            # No direct naive endpoint exists in the current server API.
-            # Estimate naive cost by scaling measured hoisted rotation time by
-            # the rotation-count ratio (255 sequential / 8 hoisted rotations).
-            naive_values = [v * (NAIVE_ROTATIONS / HOISTED_ROTATIONS) for v in hoisted_values]
-            methodology = "estimated-linear-rotation-model"
-
-        naive_stats = _stats(naive_values)
-        speedup = naive_stats["mean"] / hoisted_stats["mean"] if hoisted_stats["mean"] > 0 else 0.0
-
-        csv_path = results_dir / "ablation_hoisting.csv"
-        with csv_path.open("w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(["method", "n_rotations", "mean_rotation_us", "std_rotation_us", "p99_rotation_us"])
-            writer.writerow([
-                "naive",
-                NAIVE_ROTATIONS,
-                f"{naive_stats['mean']:.6f}",
-                f"{naive_stats['std']:.6f}",
-                f"{naive_stats['p99']:.6f}",
-            ])
-            writer.writerow([
-                "hoisted",
-                HOISTED_ROTATIONS,
-                f"{hoisted_stats['mean']:.6f}",
-                f"{hoisted_stats['std']:.6f}",
-                f"{hoisted_stats['p99']:.6f}",
-            ])
-
-        details_path = results_dir / "ablation_methodology.json"
-        details_path.write_text(
-            json.dumps(
-                {
-                    "methodology": methodology,
-                    "measure_rounds": MEASURE_ROUNDS,
-                    "warmup_rounds": WARMUP_ROUNDS,
-                    "hoisted_rotations": HOISTED_ROTATIONS,
-                    "naive_rotations": NAIVE_ROTATIONS,
-                },
-                indent=2,
-            ),
-            encoding="utf-8",
-        )
-
-        print(f"[ablation] methodology: {methodology}")
-        print(f"[ablation] wrote {csv_path}")
-        print(f"[ablation] wrote {details_path}")
-        print(f"Hoisted speedup vs naive: {speedup:.2f}x")
-        return 0
-    finally:
-        if managed_proc is not None:
-            _terminate_proc(managed_proc)
+    print("[ablation] methodology: measured")
+    print(f"[ablation] wrote {csv_path}")
+    print(f"[ablation] wrote {details_path}")
+    print(
+        f"[ablation] self-ablation (160-bit local circuit): naive "
+        f"({naive['rotations']} rotations) mean={naive_mean:.2f}us vs hoisted "
+        f"({hoisted['rotations']} rotations) mean={hoisted_mean:.2f}us "
+        f"-> naive/hoisted ratio={ratio:.2f}x"
+    )
+    return 0
 
 
 if __name__ == "__main__":

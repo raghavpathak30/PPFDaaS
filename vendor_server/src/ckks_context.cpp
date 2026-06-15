@@ -66,20 +66,44 @@ CKKSContext::CKKSContext() : params(seal::scheme_type::ckks) {
         throw std::runtime_error("CKKSContext: SEAL rejected parameters (insecure or invalid)");
 
     seal::KeyGenerator keygen(*context);
-    secret_key = keygen.secret_key();
-    keygen.create_public_key(public_key);
 
-    const std::string galois_path = std::string(PPFDAAS_REPO_ROOT) + "/artifacts/galois_keys.bin";
+    // galois_keys.bin, public_key.bin and secret_key.bin are generated
+    // together as one consistent keypair by
+    // bank_client/tools/generate_seal_keys.cpp. If galois_keys.bin is
+    // present, load all three so this context's own encryptor/decryptor/
+    // galois_keys agree with each other AND with ciphertexts produced by
+    // bank clients using public_key.bin (required for RunInference's
+    // rotation step to be correct -- see remediation plan Phase 5/§5.3).
+    // Loading galois_keys.bin alone while generating a fresh, unrelated
+    // secret/public key pair would make rotation results garbage for any
+    // ciphertext (including this context's own).
+    const std::string artifacts_dir = std::string(PPFDAAS_REPO_ROOT) + "/artifacts/";
+    const std::string galois_path = artifacts_dir + "galois_keys.bin";
+    const std::string public_path = artifacts_dir + "public_key.bin";
+    const std::string secret_path = artifacts_dir + "secret_key.bin";
+
     std::ifstream galois_in(galois_path, std::ios::binary);
     if (galois_in.is_open()) {
+        std::ifstream public_in(public_path, std::ios::binary);
+        std::ifstream secret_in(secret_path, std::ios::binary);
+        if (!public_in.is_open() || !secret_in.is_open()) {
+            throw std::runtime_error(
+                "CKKSContext: " + galois_path + " is present but " + public_path +
+                " / " + secret_path + " are missing; these three files must be "
+                "generated together (see bank_client/tools/generate_seal_keys.cpp)");
+        }
         try {
+            public_key.load(*context, public_in);
+            secret_key.load(*context, secret_in);
             galois_keys.load(*context, galois_in);
         } catch (const std::exception& e) {
-            throw std::runtime_error(std::string("CKKSContext: failed to load galois_keys.bin: ") + e.what());
+            throw std::runtime_error(std::string("CKKSContext: failed to load persisted keys: ") + e.what());
         }
     } else {
         std::cerr << "[Server] WARNING: missing " << galois_path
                   << "; generating local Galois keys (results may be semantically incorrect for client ciphertexts)\n";
+        secret_key = keygen.secret_key();
+        keygen.create_public_key(public_key);
         keygen.create_galois_keys(std::vector<int>{1,2,4,8,16,32,64,128}, galois_keys);
     }
 

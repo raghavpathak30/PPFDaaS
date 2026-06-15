@@ -276,6 +276,15 @@ Both variants keep n=8192 and maintain 128-bit security. The reduced 160-bit var
 
 Rotations don't scale purely with modulus size due to hardware acceleration (AVX-2 permutation). Full analysis in [BENCHMARK_RESULTS.md](BENCHMARK_RESULTS.md).
 
+**Framing (Phase 5, docs/spec.md §5.7):** the 1.51x figure above, and the
+~37-40% total_inference_us reduction in docs/spec.md §5.4 / artifacts/comparison_results.json,
+are both **Type 1 self-ablations** -- same codebase/circuit/hardware, only the
+160-bit vs 200-bit modulus chain differs. Neither is a comparison against an
+external baseline library or a different reduction strategy; see
+docs/spec.md §5.7 for the full Type 1/2/3 definitions, and
+artifacts/rotation_strategy_comparison.json for the Type 2 (fold vs BSGS vs
+naive) strategy comparison.
+
 ## Current Status Snapshot
 
 From PROJECT_STATE.md and spec update sections:

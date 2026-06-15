@@ -25,6 +25,17 @@ constexpr int kGiantStep = 16;
 constexpr int kWarmupRounds = 20;
 constexpr int kMeasureRounds = 100;
 
+// §5.1: full 255-step naive baseline (NAIVE_ROTATION_STEPS) requires
+// generating 255 Galois keys, which is itself slow. PPFD_BENCHMARK_ROUNDS
+// lets callers (e.g. scripts/generate_ablation.py --fast-ablation) shrink the
+// measured-round count without changing the compiled-in default.
+int measure_rounds() {
+    const char *e = std::getenv("PPFD_BENCHMARK_ROUNDS");
+    if (!e) return kMeasureRounds;
+    const int v = std::atoi(e);
+    return v > 0 ? v : kMeasureRounds;
+}
+
 struct Stats {
     double mean_us = 0.0;
     double std_us = 0.0;
@@ -79,6 +90,8 @@ void run_circuit(
 
     if (strategy == "bsgs") {
         bsgs_reduction(ct, galois_keys, *ctx.evaluator, out, kFeatures, kBabyStep, kGiantStep);
+    } else if (strategy == "naive") {
+        out = naive_tree_sum(ct, galois_keys, *ctx.evaluator, kFeatures);
     } else {
         hoisted_tree_sum(ct, galois_keys, *ctx.evaluator, out, kFeatures);
     }
@@ -126,10 +139,10 @@ int main(int argc, char **argv) {
         return avg_us > 10000.0 ? 1 : 0;
     }
 
-    // ── Phase 4 measurement path: --strategy=fold|bsgs ──────────────────────
-    if (strategy != "fold" && strategy != "bsgs") {
+    // ── Phase 4/5 measurement path: --strategy=fold|bsgs|naive ───────────────
+    if (strategy != "fold" && strategy != "bsgs" && strategy != "naive") {
         std::cerr << "benchmark_160: unknown --strategy='" << strategy
-                  << "' (expected 'fold' or 'bsgs')\n";
+                  << "' (expected 'fold', 'bsgs', or 'naive')\n";
         return 2;
     }
 
@@ -137,22 +150,44 @@ int main(int argc, char **argv) {
     // BENCHMARK-ONLY operation (CKKSContext160 holds a live secret key and is
     // OUT OF TCB, see ckks_context_160.h / docs/spec.md §6.9). The deployed
     // server provisions only the fold's 8-element ROTATION_STEPS; BSGS_ROTATION_STEPS
-    // (30 elements) is generated here purely "for measurement purposes" (§4.1).
+    // (30 elements) and NAIVE_ROTATION_STEPS (255 elements, §5.1) are generated
+    // here purely "for measurement purposes" (§4.1 / §5.1).
     seal::KeyGenerator keygen(*ctx.context, ctx.secret_key);
     seal::GaloisKeys galois_keys;
     std::vector<int> steps;
     int n_rotations = 0;
     int critical_path = 0;
+    std::string critical_path_note;
     if (strategy == "bsgs") {
         steps.assign(BSGS_ROTATION_STEPS.begin(), BSGS_ROTATION_STEPS.end());
         n_rotations = (kBabyStep - 1) + (kGiantStep - 1); // 15 + 15 = 30
         critical_path = 2;
+    } else if (strategy == "naive") {
+        steps.assign(NAIVE_ROTATION_STEPS.begin(), NAIVE_ROTATION_STEPS.end());
+        n_rotations = 255;
+        // Each of the 255 rotations reads the ORIGINAL ct (independent
+        // inputs, like bsgs's layers), but naive_tree_sum() issues them in a
+        // single sequential loop with no batching -- this IS the "naive"
+        // baseline: a developer with no knowledge of fold/BSGS would write
+        // exactly this. critical_path=255 reflects the AS-IMPLEMENTED,
+        // as-measured sequential cost, not a lower bound on parallelism.
+        critical_path = 255;
+        critical_path_note =
+            "rotations are data-independent (each reads the original ct, as "
+            "in bsgs's layers) but naive_tree_sum executes them in a single "
+            "sequential loop with no hoisting/batching -- critical_path "
+            "reflects the as-implemented sequential cost";
     } else {
         steps = {1, 2, 4, 8, 16, 32, 64, 128};
         n_rotations = 8;
         critical_path = 8;
     }
+
+    const clock_type::time_point kg_t0 = clock_type::now();
     keygen.create_galois_keys(steps, galois_keys);
+    const clock_type::time_point kg_t1 = clock_type::now();
+    const double galois_keygen_us =
+        std::chrono::duration<double, std::micro>(kg_t1 - kg_t0).count();
 
     // ── Build a non-degenerate plaintext oracle: random per-slot weights and
     // features (fixed seed for reproducibility), one independent random
@@ -209,7 +244,9 @@ int main(int argc, char **argv) {
                   << " >= tolerance=" << kTolerance << "\n";
     }
 
-    // ── Timing: 20 warmup + 100 measured full-circuit runs ──────────────────
+    // ── Timing: 20 warmup + N measured full-circuit runs (N = measure_rounds(),
+    // default kMeasureRounds=100, overridable via PPFD_BENCHMARK_ROUNDS) ─────
+    const int n_measure = measure_rounds();
     for (int i = 0; i < kWarmupRounds; ++i) {
         seal::Ciphertext ct;
         ctx.encryptor->encrypt(pt_features, ct);
@@ -218,8 +255,8 @@ int main(int argc, char **argv) {
     }
 
     std::vector<double> latencies_us;
-    latencies_us.reserve(kMeasureRounds);
-    for (int i = 0; i < kMeasureRounds; ++i) {
+    latencies_us.reserve(n_measure);
+    for (int i = 0; i < n_measure; ++i) {
         seal::Ciphertext ct;
         ctx.encryptor->encrypt(pt_features, ct);
 
@@ -236,9 +273,17 @@ int main(int argc, char **argv) {
     std::cout << "{\n"
               << "  \"strategy\": \"" << strategy << "\",\n"
               << "  \"rotations\": " << n_rotations << ",\n"
-              << "  \"critical_path\": " << critical_path << ",\n"
-              << "  \"galois_keys\": " << steps.size() << ",\n"
-              << "  \"n\": " << kMeasureRounds << ",\n"
+              << "  \"critical_path\": " << critical_path << ",\n";
+    if (!critical_path_note.empty()) {
+        std::cout << "  \"critical_path_note\": \"" << critical_path_note << "\",\n";
+    }
+    std::cout << "  \"galois_keys\": " << steps.size() << ",\n"
+              // §5.1: one-time key-generation cost, reported separately from
+              // per-request latency_us below. For strategy=naive (255 keys)
+              // this dominates wall-clock time but is NOT part of any
+              // per-inference latency number.
+              << "  \"galois_keygen_us\": " << galois_keygen_us << ",\n"
+              << "  \"n\": " << n_measure << ",\n"
               << "  \"warmup\": " << kWarmupRounds << ",\n"
               << "  \"correctness_max_abs_error\": " << max_abs_error << ",\n"
               << "  \"correctness_passed\": " << (correctness_passed ? "true" : "false") << ",\n"

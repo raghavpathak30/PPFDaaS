@@ -1,0 +1,37 @@
+{
+  "framing": {
+    "description": "\u00a75.7 Part B: per-transaction amortization table, derived from the single-client batch-occupancy sweep in artifacts/throughput_results.json's 'occupancy_sweep' (vendor_server_160, hoisted_tree_sum, 160-bit chain, PPFD_GRPC_THREADS=4). amortization_factor is per_tx_us(lanes=1) / per_tx_us(lanes=N): how many times cheaper, per transaction, a batch of N is relative to a single-transaction request.",
+    "methodology": "measured",
+    "source": "artifacts/throughput_results.json#occupancy_sweep"
+  },
+  "amortization": [
+    {
+      "lanes": 1,
+      "n": 100,
+      "batch_latency_us": 16104.703999189951,
+      "per_tx_us": 16104.703999189951,
+      "amortization_factor": 1.0
+    },
+    {
+      "lanes": 4,
+      "n": 100,
+      "batch_latency_us": 17875.37149994023,
+      "per_tx_us": 4468.842874985057,
+      "amortization_factor": 3.603774947948646
+    },
+    {
+      "lanes": 8,
+      "n": 100,
+      "batch_latency_us": 16777.60400070838,
+      "per_tx_us": 2097.2005000885474,
+      "amortization_factor": 7.679143695850723
+    },
+    {
+      "lanes": 16,
+      "n": 100,
+      "batch_latency_us": 17120.833499575383,
+      "per_tx_us": 1070.0520937234614,
+      "amortization_factor": 15.050392493649907
+    }
+  ]
+}
