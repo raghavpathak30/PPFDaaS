@@ -1,9 +1,27 @@
 # Build artifacts
+build/
 vendor_server/build/
 bank_client/build/
+tools/openfhe_benchmark/build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
 *.a
 *.o
 *.so
+*.bin.d
+*.o.d
+
+# Compiled binaries (repo root and subdir)
+build/vendor_server/vendor_server_main
+build/vendor_server/vendor_server_160
+build/vendor_server/benchmark
+build/vendor_server/benchmark_160
+build/vendor_server/ckks_smoke_test
+build/vendor_server/wire_size_probe
+build/vendor_server/test_he_core
+build/Testing/
 
 # Python
 __pycache__/

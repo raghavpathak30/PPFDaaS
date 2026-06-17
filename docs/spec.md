@@ -49,7 +49,7 @@ __Implemented optimization blocks in current codebase__
 7. OPT-7 complete: cold-start gate is optional/manual, timeout-bounded,
      and skip-safe (no indefinite blocking).
 8. OPT-8 already satisfied in repository baseline (`max_iter=2000`, no `n_jobs`
-     in `compiler/linearize.py`).
+     in `compiler/train_logistic_regression.py`).
 
 __Latest measured gate results \(2026-04-14\)__
 

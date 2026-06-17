@@ -14,7 +14,7 @@ Core contract definitions are in [proto/inference.proto](../proto/inference.prot
 
 1. Raw dataset is loaded from [data/creditcard.csv](../data/creditcard.csv).
 2. Training pipeline builds processed 256-feature arrays and an XGBoost model in [compiler/train_xgboost.py](../compiler/train_xgboost.py).
-3. Linearization pipeline trains a depth-1 logistic model and serializes 2060-byte weight binary in [compiler/linearize.py](../compiler/linearize.py).
+3. LR surrogate pipeline trains a depth-1 logistic model and serializes 2060-byte weight binary in [compiler/train_logistic_regression.py](../compiler/train_logistic_regression.py).
 4. Key generation writes 160-bit HE keys in [compiler/gen_keys_160.py](../compiler/gen_keys_160.py).
 5. Vendor gRPC server starts on port 50052 via [vendor_server/src/vendor_server_160.cpp](../vendor_server/src/vendor_server_160.cpp).
 6. Bank client encrypts + sends requests with [bank_client/bank_client.py](../bank_client/bank_client.py).
@@ -32,7 +32,7 @@ Core contract definitions are in [proto/inference.proto](../proto/inference.prot
   - Expands with polynomial interactions and truncates to 256 features.
   - Trains XGBoost and saves arrays/models.
 
-- [compiler/linearize.py](../compiler/linearize.py)
+- [compiler/train_logistic_regression.py](../compiler/train_logistic_regression.py)
   - Loads 256-feature arrays.
   - Trains logistic regression.
   - Exports weights + bias.
@@ -125,7 +125,7 @@ Implemented in [compiler/train_xgboost.py](../compiler/train_xgboost.py).
 
 ### Stage B: 256 Features -> LR Weights Binary
 
-Implemented in [compiler/linearize.py](../compiler/linearize.py).
+Implemented in [compiler/train_logistic_regression.py](../compiler/train_logistic_regression.py).
 
 1. Load [artifacts/X_train.npy](../artifacts/X_train.npy) and labels.
 2. Train logistic regression on all 256 features.
@@ -187,8 +187,10 @@ Client path in [bank_client/bank_client.py](../bank_client/bank_client.py), serv
 ### Ablation Script
 
 - [scripts/generate_ablation.py](../scripts/generate_ablation.py)
-  - Measures rotation hoisting cost.
-  - Can auto-start vendor server if missing.
+  - §5.1/§5.2 self-ablation: runs `vendor_server/build/benchmark_160
+    --strategy=naive` and `--strategy=fold` (same local CKKS circuit, same
+    binary, same hardware) and compares the measured latencies. No gRPC
+    server required; `--fast-ablation` shrinks the measured-round count.
   - Writes:
     - [results/ablation_hoisting.csv](../results/ablation_hoisting.csv)
     - [results/ablation_methodology.json](../results/ablation_methodology.json)
@@ -215,7 +217,7 @@ Client path in [bank_client/bank_client.py](../bank_client/bank_client.py), serv
 1. Build binaries.
 2. Fetch dataset.
 3. Run [compiler/train_xgboost.py](../compiler/train_xgboost.py).
-4. Run [compiler/linearize.py](../compiler/linearize.py).
+4. Run [compiler/train_logistic_regression.py](../compiler/train_logistic_regression.py).
 5. Run [compiler/gen_keys_160.py](../compiler/gen_keys_160.py).
 6. Run [tests/verify_all.py](../tests/verify_all.py).
 7. Run [scripts/demo_e2e.py](../scripts/demo_e2e.py).

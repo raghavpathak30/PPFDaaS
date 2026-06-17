@@ -5,7 +5,6 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from scipy.stats.mstats import winsorize
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
@@ -50,9 +49,13 @@ def main() -> int:
     X_test_scaled = scaler.transform(X_test_raw)
     y_train = y_train_raw
 
-    # Step 6: winsorize
-    X_train_win = np.asarray(winsorize(X_train_scaled, limits=[0.01, 0.01], axis=0), dtype=np.float64)
-    X_test_win = np.asarray(winsorize(X_test_scaled, limits=[0.01, 0.01], axis=0), dtype=np.float64)
+    # Step 6: winsorize using train-set quantiles only — no leakage from test set.
+    # Compute per-column 1st/99th percentile bounds on training data, then clip
+    # both splits to those same bounds.
+    win_lower = np.percentile(X_train_scaled, 1.0, axis=0)
+    win_upper = np.percentile(X_train_scaled, 99.0, axis=0)
+    X_train_win = np.clip(X_train_scaled, win_lower, win_upper).astype(np.float64)
+    X_test_win = np.clip(X_test_scaled, win_lower, win_upper).astype(np.float64)
 
     # Step 7: clip and scale to [-1, 1]
     X_train_proc = np.clip(X_train_win, -3.0, 3.0) / 3.0

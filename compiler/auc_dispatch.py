@@ -10,9 +10,8 @@ def run_dispatch():
     COMPILER_DIR = Path(__file__).resolve().parent
     sys.path.insert(0, str(COMPILER_DIR))
 
-    print('=== AUC DISPATCH: Running Depth-1 linearization ===')
-    import linearize
-    from linearize import validate_and_gate
+    print('=== AUC DISPATCH: Running Depth-1 LR surrogate ===')
+    from train_logistic_regression import validate_and_gate
     import numpy as np
     X_test = np.load(ARTIFACTS_DIR / 'X_test.npy')
     y_test = np.load(ARTIFACTS_DIR / 'y_test.npy')
@@ -21,7 +20,7 @@ def run_dispatch():
     with open(ARTIFACTS_DIR / 'model_weights.bin', 'rb') as f:
         f.read(4)
         bias, = struct.unpack('<d', f.read(8))
-    path, auc = validate_and_gate(weights, bias, X_test, y_test)
+    _, auc = validate_and_gate(weights, bias, X_test, y_test)
 
     result = {'depth1_auc': auc, 'active_path': None, 'degree2_auc': None}
 

@@ -1,5 +1,73 @@
 # PPFDaaS Project Handoff — 2026-04-13
 
+## Session Update (2026-06-17) — Phase 6: Reproducibility / Artifact Hygiene (COMPLETE)
+
+Executed Phase 6 of `PPFDaaS_REMEDIATION_PLAN.md` end-to-end (items 6.1, 6.3, 6.4 per the original plan; items 6.1–6.5 per the Phase 6 task spec). Phases 0–5 untouched.
+
+### 6.1 — Strip build artifacts from git
+- `.gitignore` updated: added `build/` (root), `CMakeFiles/`, `*.o.d`, `*.bin.d`, compiled binary paths.
+- `git rm -r --cached build/ vendor_server/build/` removed all 739 tracked build files.
+- **Verified:** `cmake -B vendor_server/build -S vendor_server -DCMAKE_BUILD_TYPE=Release` + `cmake --build vendor_server/build --parallel` succeeds (all 10 targets). `ctest --test-dir vendor_server/build` 1/1 PASS (`he_core`, 1.30 s).
+
+### 6.2 — Fix README.msd → README.md
+- `git mv README.msd README.md`.
+- Removed dangling `bank_client/frontend` FastAPI line from "Core Stack."
+- Updated all `compiler/linearize.py` references → `compiler/train_logistic_regression.py`.
+- Corrected `ctest --test-dir build` → `ctest --test-dir vendor_server/build` (tests are in the vendor_server subdir build, not root).
+
+### 6.3 — Add LICENSE
+- `LICENSE` (MIT, 2026 Raghav Pathak) added at repo root.
+
+### 6.4 — One-command figure/artifact regeneration
+- **New file:** `scripts/reproduce_all.py` — 13-step ordered pipeline:
+  1. `train_xgboost.py` + `train_logistic_regression.py`
+  2. `gen_keys_160.py` (key generation)
+  3. `tests/verify_all.py`
+  4. `ctest --test-dir vendor_server/build`
+  5. `tests/benchmark_comparison.py` → `artifacts/comparison_results.json`
+  6. `tests/benchmark_throughput.py` → `artifacts/throughput_results.json`
+  7. `scripts/rotation_strategy_comparison.py` → `artifacts/rotation_strategy_comparison.json`
+  8. `scripts/measure_wire_size.py` → `artifacts/wire_sizes.json`
+  9. `scripts/generate_amortization_table.py` → `artifacts/amortization_table.json`
+  10. `scripts/privacy_cost_analysis.py` → `artifacts/privacy_cost_analysis.json`
+  11. `scripts/generate_ablation.py` → `artifacts/ablation_methodology.json`
+  12. `scripts/build_execution_matrix.py` → `artifacts/execution_matrix.json`
+  13. `scripts/generate_research_artifacts.py` → `results/`
+  - `--dry-run`: prints full plan + estimated wall times, exits 0.
+  - `--from N`: resume from step N.
+  - Server auto-start/stop: steps 5–7, 10–13 start `vendor_server_160` + `vendor_server_main`, stop when switching to non-server steps.
+  - Output validation: checks file existence + JSON parse for every `*.json` output.
+  - **Verified:** `python3 scripts/reproduce_all.py --dry-run` exits 0.
+- **New file:** `Makefile` at repo root — `make reproduce` / `make dry-run` / `make build` / `make test` / `make clean`.
+
+### 6.5 — Fix linearize.py naming / methodology honesty
+- `compiler/linearize.py` renamed → `compiler/train_logistic_regression.py` via `git mv`.
+- Module-level docstring added: "This script does NOT linearize XGBoost; it trains an independent surrogate LogisticRegression on the same train split."
+- Now writes `artifacts/linearization_cost.json`: `{xgb_test_auc, lr_test_auc, linearization_cost_auc, methodology}`.
+- **Winsorization leakage fixed:** `compiler/train_xgboost.py` previously called `scipy.stats.mstats.winsorize(X_test_scaled, limits=[0.01,0.01])` — this used test-set quantiles. Replaced with `np.percentile(X_train_scaled, 1.0/99.0, axis=0)` + `np.clip(...)` applied to both splits from train-set bounds only. `scipy.stats.mstats` import removed.
+- `compiler/auc_dispatch.py` updated to `from train_logistic_regression import validate_and_gate`.
+- All file references updated: `README.md`, `docs/code_and_data_flow.md`, `docs/spec.md`.
+
+### Files changed this session
+- `.gitignore` — extended build-artifact coverage
+- `build/` (739 files) — untracked from git
+- `vendor_server/build/` (same) — untracked from git
+- `README.msd` → `README.md` (git mv + edits)
+- `LICENSE` (new)
+- `Makefile` (new)
+- `scripts/reproduce_all.py` (new)
+- `compiler/linearize.py` → `compiler/train_logistic_regression.py` (git mv + rewrite)
+- `compiler/train_xgboost.py` — winsorization leakage fix
+- `compiler/auc_dispatch.py` — import updated
+- `docs/code_and_data_flow.md` — references updated
+- `docs/spec.md` — reference updated
+- `PPFDaaS_REMEDIATION_PLAN.md` — Phase 6 items marked [x] with evidence
+
+### Verdict
+Phase 6 complete. `git status` shows no tracked build artifacts; `ls README.md LICENSE` succeeds; `python3 scripts/reproduce_all.py --dry-run` exits 0 and prints the full 13-step plan; winsorization leakage fixed and linearize.py renamed with honest methodology documentation.
+
+---
+
 ## Session Update (2026-06-15) — Phase 0/1/2 Verification (COMPLETE)
 
 Verified Phase 0 (correctness), Phase 1 (trust boundary), and Phase 2 (concurrency) of `PPFDaaS_REMEDIATION_PLAN.md` by running the actual gates (not just trusting the plan's `[x]` markers). Found and fixed one regression introduced by this session's own Phase 5 §5.3 fix along the way. No Phase 3+ work touched.

@@ -1,2 +1,0 @@
-/usr/bin/ar qc libhe_core.a CMakeFiles/he_core.dir/generated/inference.pb.cc.o CMakeFiles/he_core.dir/generated/inference.grpc.pb.cc.o CMakeFiles/he_core.dir/src/ckks_context.cpp.o CMakeFiles/he_core.dir/src/inference_service.cpp.o CMakeFiles/he_core.dir/src/weight_loader.cpp.o CMakeFiles/he_core.dir/src/rotation_hoisting.cpp.o CMakeFiles/he_core.dir/src/he_inference.cpp.o CMakeFiles/he_core.dir/src/ckks_context_depth2.cpp.o CMakeFiles/he_core.dir/src/weight_loader_degree2.cpp.o CMakeFiles/he_core.dir/src/rotation_hoisting_degree2.cpp.o
-/usr/bin/ranlib libhe_core.a
