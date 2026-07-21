@@ -1,0 +1,19 @@
+{
+  "cipher": "HERA-16",
+  "status": "MEASURED",
+  "n_features": 256,
+  "n_lanes": 1,
+  "n_rounds": 100,
+  "methodology": "plaintext path: HERA-16 stream cipher, client CPU only, no HE evaluation",
+  "online_encrypt_mean_ms": 0.5075799999999999,
+  "online_encrypt_median_ms": 0.433,
+  "online_encrypt_p99_ms": 0.983,
+  "online_encrypt_std_ms": 0.17126086418093306,
+  "upload_symmetric_bytes": 1052,
+  "upload_ckks_standard_bytes": 262257,
+  "upload_ratio_vs_ckks_standard": 249.29372623574145,
+  "key_expansion_mean_ms": 0.06070999999999998,
+  "online_transcipher_time_ms": "PENDING",
+  "repacking_time_ms": "PENDING",
+  "pending_reason": "PENDING: Standard Lattigo v6.2.0 does not include the KAIST ckks_fv FV-\u003eCKKS scheme bridge. The online transcipher time (BFV evaluation of HERA inside vendor_server) and repacking time (StC + CKKS modular reduction) cannot be measured until the KAIST fork (github.com/B-R-P/lattigo-ckks-fv or CHES-2025 SoK extension) is integrated. All plaintext-path columns above are MEASURED."
+}

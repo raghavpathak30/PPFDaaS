@@ -1,0 +1,1216 @@
+{
+  "framing": {
+    "description": "Phase 7 \u00a77.4 break-even map: for each (circuit_depth \u00d7 batch_occupancy \u00d7 uplink_bandwidth), computes the CKKS end-to-end latency (MEASURED) and the HHE end-to-end latency (PARTIAL: upload+encrypt MEASURED, server transcipher PENDING). 'hhe_upload_headroom_ms' = how many ms of server transcipher budget HHE has before CKKS wins on total latency.",
+    "axes": {
+      "circuit_depth": [
+        1,
+        2,
+        3
+      ],
+      "batch_occupancy_lanes": [
+        1,
+        4,
+        8,
+        16
+      ],
+      "uplink_bandwidth_kbps": [
+        1000,
+        10000,
+        100000
+      ]
+    },
+    "ckks_side_methodology": "MEASURED from artifacts/throughput_results.json + wire_sizes.json",
+    "hhe_side_methodology": "online_encrypt_ms MEASURED (tools/transciphering/results/); upload_bytes_symmetric COMPUTED (HERA-16 formula: n_features*lanes*4+28); online_transcipher_ms PENDING (KAIST ckks_fv scheme bridge); repacking_ms PENDING",
+    "pending_reason": "online_transcipher_ms and repacking_ms require BenchmarkRtFHera80as (KAIST-CryptLab/RtF-Transciphering, ckks_fv) on >=128 GiB RAM. The 15GB-RAM host OOM-killed the lightest benchmark (BenchmarkRtFHera80s, exit 137) before the online phase. RAM anchor: ~60 GB for HERA 80-bit cipher security [CONFIRMED-SOURCE: arXiv:2409.06422v1 §II]; minimum safe tier is r7i.4xlarge (128 GiB), not r7i.2xlarge (64 GiB) which has no margin. Literature fallbacks are exhausted: (1) RtF Table 5 (eprint 2020/1335) returns HTTP 403 on all accessible mirrors -- a dead end, not a future fetch. (2) Presto (arXiv 2507.00367) §V measures CLIENT-SIDE HERA stream-key generation on bank's edge device/FPGA, NOT server-side HE evaluation or HalfBoot latency; the 3-5x hardware speedup cited in prior analysis is not recoverable as server-side transcipher time. Cloud harness scaffolded at scripts/cloud_transcipher_bench/ for r7i.4xlarge -- prepped, not executed. See RESEARCH_FINDINGS_v3.md §B for full epistemics."
+  },
+  "cells": [
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 13.2747,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2111.8307,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 8.416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.2747,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2089.1324,
+        "note": "HHE upload+encrypt saves 2089.13 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 2089.13 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 13.2747,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 223.5803,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 0.8416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.2747,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 208.4564,
+        "note": "HHE upload+encrypt saves 208.46 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 208.46 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 13.2747,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 34.7552,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 0.08416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.2747,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 20.3888,
+        "note": "HHE upload+encrypt saves 20.39 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 20.39 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 13.2436,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2111.7996,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 32.992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.2436,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2063.0272,
+        "note": "HHE upload+encrypt saves 2063.03 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 2063.03 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 13.2436,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 223.5492,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 3.2992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.2436,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 204.4696,
+        "note": "HHE upload+encrypt saves 204.47 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 204.47 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 13.2436,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 34.7242,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 0.32992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.2436,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 18.6139,
+        "note": "HHE upload+encrypt saves 18.61 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 18.61 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 13.4533,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2112.0093,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 65.76,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.4533,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2028.6449,
+        "note": "HHE upload+encrypt saves 2028.64 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 2028.64 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 13.4533,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 223.7589,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 6.576,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.4533,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 199.5785,
+        "note": "HHE upload+encrypt saves 199.58 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 199.58 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 13.4533,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 34.9339,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 0.6576,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.4533,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 16.6719,
+        "note": "HHE upload+encrypt saves 16.67 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 16.67 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 13.3263,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2111.8823,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 131.296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.3263,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 1959.3246,
+        "note": "HHE upload+encrypt saves 1959.32 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 1959.32 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 13.3263,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 223.6319,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 13.1296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.3263,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 189.2406,
+        "note": "HHE upload+encrypt saves 189.24 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 189.24 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 13.3263,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 34.8069,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 1.31296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.3263,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 12.2322,
+        "note": "HHE upload+encrypt saves 12.23 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 12.23 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 18.5845,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2117.1405,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 8.416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.5845,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2089.1324,
+        "note": "HHE upload+encrypt saves 2089.13 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 2089.13 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 18.5845,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 228.8901,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 0.8416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.5845,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 208.4564,
+        "note": "HHE upload+encrypt saves 208.46 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 208.46 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 18.5845,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 40.0651,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 0.08416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.5845,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 20.3888,
+        "note": "HHE upload+encrypt saves 20.39 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 20.39 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 18.5411,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2117.0971,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 32.992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.5411,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2063.0272,
+        "note": "HHE upload+encrypt saves 2063.03 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 2063.03 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 18.5411,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 228.8467,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 3.2992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.5411,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 204.4696,
+        "note": "HHE upload+encrypt saves 204.47 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 204.47 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 18.5411,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 40.0216,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 0.32992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.5411,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 18.6139,
+        "note": "HHE upload+encrypt saves 18.61 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 18.61 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 18.8346,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2117.3906,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 65.76,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.8346,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2028.6449,
+        "note": "HHE upload+encrypt saves 2028.64 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 2028.64 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 18.8346,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 229.1402,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 6.576,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.8346,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 199.5785,
+        "note": "HHE upload+encrypt saves 199.58 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 199.58 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 18.8346,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 40.3152,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 0.6576,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.8346,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 16.6719,
+        "note": "HHE upload+encrypt saves 16.67 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 16.67 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 18.6568,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2117.2128,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 131.296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.6568,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 1959.3246,
+        "note": "HHE upload+encrypt saves 1959.32 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 1959.32 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 18.6568,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 228.9624,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 13.1296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.6568,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 189.2406,
+        "note": "HHE upload+encrypt saves 189.24 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 189.24 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 18.6568,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 40.1374,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 1.31296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.6568,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 12.2322,
+        "note": "HHE upload+encrypt saves 12.23 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 12.23 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 23.8944,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2122.4504,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 8.416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.8944,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2089.1324,
+        "note": "HHE upload+encrypt saves 2089.13 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 2089.13 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 23.8944,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 234.2,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 0.8416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.8944,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 208.4564,
+        "note": "HHE upload+encrypt saves 208.46 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 208.46 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 23.8944,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 45.375,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 0.08416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.8944,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 20.3888,
+        "note": "HHE upload+encrypt saves 20.39 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 20.39 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 23.8385,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2122.3945,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 32.992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.8385,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2063.0272,
+        "note": "HHE upload+encrypt saves 2063.03 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 2063.03 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 23.8385,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 234.1441,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 3.2992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.8385,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 204.4696,
+        "note": "HHE upload+encrypt saves 204.47 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 204.47 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 23.8385,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 45.3191,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 0.32992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.8385,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 18.6139,
+        "note": "HHE upload+encrypt saves 18.61 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 18.61 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 24.216,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2122.772,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 65.76,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 24.216,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2028.6449,
+        "note": "HHE upload+encrypt saves 2028.64 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 2028.64 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 24.216,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 234.5216,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 6.576,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 24.216,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 199.5785,
+        "note": "HHE upload+encrypt saves 199.58 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 199.58 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 24.216,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 45.6965,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 0.6576,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 24.216,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 16.6719,
+        "note": "HHE upload+encrypt saves 16.67 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 16.67 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 23.9873,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2122.5433,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 131.296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.9873,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 1959.3246,
+        "note": "HHE upload+encrypt saves 1959.32 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 1959.32 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 23.9873,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 234.2929,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 13.1296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.9873,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 189.2406,
+        "note": "HHE upload+encrypt saves 189.24 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 189.24 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 23.9873,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 45.4679,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 1.31296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.9873,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 12.2322,
+        "note": "HHE upload+encrypt saves 12.23 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 12.23 ms for HHE to win end-to-end."
+      }
+    }
+  ]
+}
