@@ -1,0 +1,6 @@
+{
+  "xgb_test_auc": 0.9834562306914887,
+  "lr_test_auc": 0.9793983927279408,
+  "linearization_cost_auc": 0.004057837963547861,
+  "methodology": "XGBoost used for dataset validation only; LR is an independent surrogate trained on the same split for CKKS depth-1 inference. linearization_cost_auc = xgb_test_auc - lr_test_auc."
+}
