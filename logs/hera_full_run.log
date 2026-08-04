@@ -1,0 +1,4 @@
+=== RUN   TestRSSCheckpointHeraCrypt
+--- PASS: TestRSSCheckpointHeraCrypt (73.71s)
+PASS
+ok  	github.com/ldsec/lattigo/v2/ckks_fv	73.981s

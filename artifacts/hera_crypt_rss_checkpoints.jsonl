@@ -1,0 +1,11 @@
+{"heap_alloc_kb":362,"label":"test_start","timestamp":"2026-08-04T14:34:07.254973542+05:30","vm_hwm_kb":5108}
+{"heap_alloc_kb":543,"label":"after_params","timestamp":"2026-08-04T14:34:07.256226584+05:30","vm_hwm_kb":5628}
+{"heap_alloc_kb":115628,"label":"after_keypair","timestamp":"2026-08-04T14:34:07.387550458+05:30","vm_hwm_kb":79288}
+{"heap_alloc_kb":1350689,"label":"after_encoder_encryptor","timestamp":"2026-08-04T14:34:07.977625431+05:30","vm_hwm_kb":833468}
+{"heap_alloc_kb":4398045,"label":"after_stc_precompute","timestamp":"2026-08-04T14:34:14.282147799+05:30","vm_hwm_kb":3883660}
+{"heap_alloc_kb":8360167,"label":"after_key_material","timestamp":"2026-08-04T14:34:29.296615879+05:30","vm_hwm_kb":7883612}
+{"heap_alloc_kb":10146645,"label":"after_evaluator","timestamp":"2026-08-04T14:34:29.612867582+05:30","vm_hwm_kb":8276612}
+{"heap_alloc_kb":10146656,"label":"after_nonces","timestamp":"2026-08-04T14:34:29.792378902+05:30","vm_hwm_kb":8276616}
+{"heap_alloc_kb":13784891,"label":"after_enckey","timestamp":"2026-08-04T14:34:36.092652404+05:30","vm_hwm_kb":8793716}
+{"heap_alloc_kb":13784902,"label":"entry","timestamp":"2026-08-04T14:34:36.135102173+05:30","vm_hwm_kb":8793716}
+{"heap_alloc_kb":14399360,"label":"round_0","timestamp":"2026-08-04T14:34:38.083911661+05:30","vm_hwm_kb":8976116}
