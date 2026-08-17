@@ -9,7 +9,7 @@ arm of PPFDaaS. This is NOT part of the TCB — it is a research-tool, like
 | Component | Status |
 |---|---|
 | `cipher/backend.go` — CipherBackend interface | COMPLETE |
-| `cipher/hera.go` — HERA-16, m=16, r=4, t=2^26 | COMPLETE |
+| `cipher/hera.go` — HERA-16, m=16, r=5, t=2^26 | COMPLETE |
 | `bench/main.go` — client CPU + upload-size benchmark | COMPLETE |
 | `results/hera_bench_lane{1,4,8,16}.json` — per-lane benchmarks (n=100) | MEASURED |
 
@@ -40,11 +40,32 @@ mark PENDING with a concrete reason"), this was not retried with a larger
 config or repeated, to avoid further destabilizing the shared host. The
 clone was removed (`third_party/RtF-Transciphering`, not committed).
 
+**2026-07-27 update — build and code-path correctness now confirmed; only RAM
+remains PENDING:**
+
+This session vendored a pinned, reproducible checkout
+(`third_party/fetch_rtf.sh`, commit `105fc73115b56f1d6ff357029c7682b19a6d8510`)
+and ran two diagnostics that were not previously separated:
+
+1. **Build/link: CLEAN.** `go vet ./...` and `go test -c -run '^$' .` in
+   `ckks_fv/` both succeeded with **zero source changes**, on Go 1.25.0
+   against the fork's `go 1.13` directive (no `replace` lines, no toolchain
+   pin needed). The "dependency/API breakage" framing does not apply — see
+   `third_party/BUILD_NOTES.md`.
+2. **Functional correctness: PASS at toy scale.** A reduced, deliberately
+   insecure toy parameter set (`LogN=10` instead of 16; every modulus reused
+   verbatim from `RtFHeraParams[3]` since 1024 divides 65536 and NTT-validity
+   is preserved) was run end-to-end — HERA-in-BFV transcipher → HalfBoot →
+   FV→CKKS repack → a CKKS eval — and **passed** (max abs error 2.1e-05,
+   peak RSS ~275 MB). This is a correctness proof only, not a security or
+   performance claim. See `tools/transciphering/toy_correctness/README.md`.
+
 **Concrete reason it remains PENDING:**
 
-1. **RAM (primary blocker):** OOM-killed (exit 137) running the lightest
-   available RtF+HERA benchmark in a 15 GB-RAM environment; the online phase
-   was never reached. RAM anchor: ~60 GB for HERA at 80-bit cipher security
+1. **RAM (sole remaining blocker):** the *real* (secure, LogN=16) parameters
+   OOM-killed (exit 137) running the lightest available RtF+HERA benchmark
+   in a 15 GB-RAM environment; the online phase was never reached. RAM
+   anchor: ~60 GB for HERA at 80-bit cipher security
    [CONFIRMED-SOURCE: arXiv:2409.06422v1 §II]. Minimum safe tier: r7i.4xlarge
    (128 GiB) — r7i.2xlarge (64 GiB) has no margin. Cloud harness scaffolded
    at `scripts/cloud_transcipher_bench/` — not yet executed.
@@ -71,7 +92,7 @@ Until re-attempted successfully, the following columns in
 | Parameter | Value | Rationale |
 |---|---|---|
 | State size m | 16 | Original HERA-16 spec |
-| Rounds r | 4 | Original; no attack reduces this |
+| Rounds r | 5 | Matches RtFHeraParams[3] ("128as"), the HE-side 128-bit target; original HERA-16 spec used r=4 |
 | Plaintext modulus t | 2^26 | Conservative post-analysis choice |
 | Key size | 256 bits (32 bytes) | AES-256 compatible RNG |
 | Nonce size | 128 bits (16 bytes) | |
@@ -80,18 +101,45 @@ Until re-attempted successfully, the following columns in
 **Attack record note (§7.2):**
 - Rubato: broken for ≥25% of modulus choices (Grassi et al., CRYPTO 2023) — 5/6 family members below claimed security. Not used.
 - Elisabeth-4: broken (Cosseron et al.). Not used.
-- HERA: round-key collision weaknesses found; current parameters (m=16, r=4, t=2^26) remain secure.
+- HERA: round-key collision weaknesses found; current parameters (m=16, r=5, t=2^26) remain secure.
 
 ## Key measured numbers (from `results/`)
 
+**Updated this session: HeraRounds changed 4 -> 5** to match `RtFHeraParams[3]`
+("128as"). Timings below are re-measured at r=5
+(`results/hera_bench_lane{1,16}_r5.json`); upload sizes are unchanged, as
+expected — output length never depended on round count. The pre-fix r=4
+numbers are kept in `results/hera_bench_lane{1,4,8,16}.json` and in
+`PROJECT_STATE.md` for the record.
+
 For a realistic batch (lanes=16, features=256 per transaction):
 - Online upload size: **16,412 bytes** (vs 262,257 bytes CKKS standard = **16× smaller**)
-- Client encrypt time: **~7 ms** (mean, plaintext path, n=100)
-- Key expansion: **~0.05 ms** (amortized offline, plaintext path)
+- Client encrypt time: **~17.5 ms** (mean, plaintext path, n=200, r=5)
+- Key expansion: **~0.06 ms** (amortized offline, plaintext path)
 
 For a single transaction (lanes=1, features=256):
 - Online upload size: **1,052 bytes** (vs 262,257 bytes = **249× smaller**)
-- Client encrypt time: **~0.53 ms** (mean, n=100)
+- Client encrypt time: **~1.10 ms** (mean, n=200, r=5)
+
+**Same-session client CPU comparison vs plain CKKS:** re-running the
+plain-CKKS client encode+encrypt benchmark (`scripts/e2e_latency_breakdown.py`,
+160-bit chain) back to back with the HERA numbers above gives **~9.0×**
+cheaper client CPU for HERA-16 single-record encrypt (1.10 ms) vs plain-CKKS
+single-record encode+encrypt (~9.8-10.5 ms). This ratio held within ~5%
+across two runs taken under different desktop load (Chrome open vs closed,
+same powersave governor) — the ratio is more stable than either absolute
+number; see `PROJECT_STATE.md` for both runs and why. Do not compare either
+of these timings to the `2,933 µs` figure that appears in
+`docs/RtF_Transciphering_Progress_v3.pptx` slide 3 — that number is from a
+different day and is not comparable.
+
+**Caveat:** the round-constant table (`heraRC` in `cipher/hera.go`) only had
+4 published rows (Cho et al. Table 3). Round 5's row is an explicitly-flagged
+unsourced placeholder, adequate for timing but not for correctness — see the
+comment in `cipher/hera.go` for what's needed before this cipher's output can
+be trusted. Separately, this module's round-constant scheme (fixed table) and
+ckks_fv's (nonce-derived via SHAKE256) don't match regardless of round count
+— consistent with the "HE-evaluation path PENDING" status above.
 
 ## Build / run
 

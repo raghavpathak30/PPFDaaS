@@ -13,7 +13,10 @@ import (
 //
 // Post-attack parameter set (safe as of 2026):
 //   - State size m = 16
-//   - Rounds r = 4
+//   - Rounds r = 5 (matches RtFHeraParams[3] "128as", the HE-side 128-bit
+//     target in third_party/RtF-Transciphering/ckks_fv/rtf_params.go — see
+//     rss_checkpoint_driver_test.go for the confirming source comment. The
+//     original HERA-16 spec used r=4; this module now matches the server.)
 //   - Plaintext modulus t = 2^26 (26-bit; chosen conservatively to stay within
 //     the safe range identified by the algebraic cryptanalysis)
 //   - Key: 256-bit (32 bytes) AES-compatible for the round-key derivation RNG
@@ -25,9 +28,20 @@ import (
 // IMPORTANT: This is the PLAINTEXT path. The HE-evaluation path (evaluate
 // HERA inside BFV, then convert to CKKS via StC + modular reduction) is
 // PENDING the KAIST ckks_fv scheme bridge. See README.md "PENDING: RtF".
+//
+// KNOWN GAP — round-constant generation does not match ckks_fv: this module
+// uses a FIXED public table (heraRC below) for the MixColumns round
+// constants, indexed only by round number. The HE-side reference
+// (ckks_fv/fv_hera.go, mfvHera.init) derives round constants per-nonce from
+// a SHAKE256 XOF via rejection sampling — a completely different, nonce-
+// dependent scheme. Even at matching round counts, this module's keystream
+// will not equal ckks_fv's hera.Crypt output for any shared nonce. This is
+// consistent with the "HE-evaluation path PENDING" note above (no live
+// interop exists yet) but is a distinct, additional gap worth closing before
+// this module is anything more than a standalone timing/bandwidth benchmark.
 const (
 	HeraStateSize = 16 // m
-	HeraRounds    = 4  // r
+	HeraRounds    = 5  // r
 	HeraModBits   = 26 // log2(t)
 	HeraModulus   = uint64(1) << HeraModBits // t = 2^26
 
@@ -36,16 +50,26 @@ const (
 )
 
 // heraRoundConstants is a fixed matrix used in the HERA MixColumns step.
-// Values from Table 3 of Cho et al. 2021, reduced mod t.
-// Only the first 4×16 = 64 entries are needed (4 rounds × state size).
+// Rows 0-3: values from Table 3 of Cho et al. 2021, reduced mod t.
+//
+// Row 4 (5th round) is an UNSOURCED PLACEHOLDER, not from Table 3 — Cho et
+// al.'s published table was not available while making this change. It is
+// non-zero and in the same small-integer range as rows 0-3 purely so that
+// heraMixColumns doesn't degenerate to an all-zero output for round 5 (which
+// a Go zero-value fill would otherwise silently produce). It is adequate for
+// wall-clock timing benchmarks — bench/main.go times the arithmetic shape,
+// not output correctness — but MUST be replaced with real Table-3 values (or
+// this module's round-constant scheme reconciled with ckks_fv's per the gap
+// noted above) before any output of this cipher is treated as correct.
 var heraRC = [HeraRounds][HeraStateSize]uint64{
 	{17, 15, 5, 8, 1, 4, 2, 21, 17, 13, 9, 3, 14, 7, 11, 19},
 	{6, 12, 10, 20, 18, 16, 22, 2, 9, 7, 14, 3, 5, 11, 4, 8},
 	{19, 11, 7, 14, 3, 5, 21, 17, 13, 9, 22, 16, 18, 2, 10, 12},
 	{8, 4, 11, 5, 3, 14, 13, 9, 16, 18, 22, 2, 17, 21, 7, 19},
+	{3, 20, 6, 16, 12, 1, 9, 18, 5, 22, 8, 15, 2, 19, 7, 14}, // PLACEHOLDER — see comment above
 }
 
-// HERA16 is the HERA stream cipher with m=16, r=4, t=2^26.
+// HERA16 is the HERA stream cipher with m=16, r=5, t=2^26.
 type HERA16 struct{}
 
 // NewHERA16 returns a new HERA-16 backend.
