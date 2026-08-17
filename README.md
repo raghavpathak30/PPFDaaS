@@ -77,14 +77,16 @@ and adversary-model detail: `docs/spec.md` §6.2–§6.3.
 - Two CKKS parameter variants at n=8192/tc128 (128-bit security): a 200-bit baseline
   (`{60,40,40,60}`) and a 160-bit reduced/deployed variant (`{60,40,60}`) — see "CKKS
   Parameters" below.
-- A Degree-2 fallback path (n=16384), fully implemented, automatically selected by an AUC
-  gate when the Depth-1 model doesn't clear an accuracy bar.
+- A Degree-2 fallback path (n=16384), specified and scaffolded but currently **broken** — the
+  bank-side feature expansion crashes before producing weights (see "Degree-2 Fallback"
+  below) — automatically selected by an AUC gate when the Depth-1 model doesn't clear an
+  accuracy bar.
 - Three named, measured rotation/reduction strategies (SEAL sequential fold, SEAL BSGS
   two-layer, and cross-library hoisting comparisons via OpenFHE and Lattigo) —
   `docs/spec.md` §7.
 - A research arm for HHE/transciphering (HERA-16 symmetric cipher as a CKKS
-  upload-bandwidth reducer) — client side measured, server side pending on hardware. See
-  "Transciphering / Hybrid HE (HHE) Arm" below and `docs/spec.md` §8.
+  upload-bandwidth reducer) — client side measured, server side reference-path-validated but
+  not yet integrated. See "Transciphering / Hybrid HE (HHE) Arm" below and `docs/spec.md` §8.
 - End-to-end plumbing across C++, Python, Go, gRPC/protobuf, with an honest-measurement
   discipline: every timing run is parity-gated against a plaintext oracle
   (`scripts/parity_gate.py`) before being trusted, and every artifact is reproducible via
@@ -143,7 +145,7 @@ does. After the fold, `acc.slot[k*256]` holds transaction `k`'s dot product for 
 the bias is added server-side as a `add_plain_inplace` afterward (§6.5) and the client applies
 `sigmoid`.
 
-### Degree-2 Fallback (Implemented, Not Just Spec'd)
+### Degree-2 Fallback (Specified, Currently Broken)
 
 Selected automatically by `compiler/auc_dispatch.py` when the Depth-1 LR's AUC falls below
 0.92 (borderline retry zone: [0.92, 0.94); primary path: ≥ 0.94). It is a **separate CKKS
@@ -160,9 +162,14 @@ context and binary**, not a config flag:
   not from a deeper HE circuit, so no relinearization keys are needed here either.
 - AUC gate: ≥ 0.96 required to accept the fallback weights
   (`compiler/serialize_degree2_weights.py`, `artifacts/degree2_weights.bin`, 4108 bytes).
+- **Broken:** `compiler/degree2_linearizer.py`'s `build_degree2_features` computes
+  `N_FEATURES_D2 - N_TOP_LINEAR - N_INTERACT = 512 - 256 - 496 = -240`, an invalid negative
+  `np.zeros()` dimension. Calling `linearize_degree2(...)` raises `ValueError` immediately,
+  before any weights are fit. Only the CKKS-context construction and the
+  weight-serialization round-trip (`serialize_degree2_weights.py`) have actually been run;
+  the feature-expansion step itself has never successfully executed.
 - On the current dataset/pipeline, Depth-1 AUC is 0.979 (`artifacts/dispatch_result.json`) —
-  the primary path is active and the fallback has not been exercised end-to-end in
-  production, only built and unit-tested.
+  the primary path is active, so this crash has never been hit in production.
 
 ## Proto Contract (`proto/inference.proto`)
 
@@ -271,34 +278,55 @@ unchanged (§8.1).
 **Client side: complete and measured** (`tools/transciphering/`, standalone Go module,
 explicitly not part of the deployed TCB — same status as `tools/openfhe_benchmark/`):
 
-- `cipher/hera.go` / `cipher/backend.go` — HERA-16 stream cipher (m=16, r=4, t=2^26,
+- `cipher/hera.go` / `cipher/backend.go` — HERA-16 stream cipher (m=16, r=5, t=2^26,
   128-bit security under current algebraic analysis; Rubato and Elisabeth-4 were
   considered and rejected as broken, see `docs/spec.md` §8.8).
-- Measured (`tools/transciphering/results/hera_bench_lane*.json`, n=100): client encrypt
-  ~0.53 ms for a single transaction, ~7 ms for a 16-lane batch.
+- Measured (`tools/transciphering/results/hera_bench_lane{1,16}_r5.json`, n=200): client
+  encrypt ~1.10 ms for a single transaction, ~17.5 ms for a 16-lane batch. **Caveat:**
+  measured under the `powersave` CPU governor on battery power; treat these absolute values
+  as provisional and not comparable across sessions — this host has produced 2,933 / 4,182 /
+  9,843 µs for the identical plain-CKKS operation across three different sessions, so only
+  same-session paired ratios are defensible here, not cross-session absolute deltas. The only
+  defensible round-count comparison is same-machine, same-session: the unmodified r=4 code
+  rebuilt and re-run on this host on the same day measured ~0.93 ms, giving an r=4-to-r=5
+  ratio of ~1.18-1.2x, consistent with the round-count arithmetic
+  (`docs/SESSION_LOG.md` 2026-08-06b).
 - Upload size: as low as **1,052 bytes** for a single transaction vs 262,257 bytes for
   standard CKKS (**~249x smaller**); 16,412 bytes vs 262,257 bytes at full 16-lane occupancy
   (**~16x smaller**). Full ladder: `artifacts/bandwidth_ladder.json`.
 
-**Server side: pending, on hardware, not on missing code.** The remaining step —
-homomorphic HERA evaluation inside BFV followed by an FV→CKKS repacking (StC + modular
-reduction) so the existing CKKS inference circuit runs unmodified — requires
-KAIST-CryptLab's `ckks_fv` (`RtF-Transciphering`) scheme bridge; standard Lattigo v6.2.0 does
-not include this module. The lightest available benchmark
-(`BenchmarkRtFHera80s`) OOM-killed this repo's 15 GB-RAM dev host (exit 137) before reaching
-the online transcipher phase — an independent literature source anchors the requirement at
-~60 GB RAM for HERA at 80-bit cipher security. A cloud runbook is scaffolded at
-`scripts/cloud_transcipher_bench/` (target: AWS `r7i.4xlarge`, 128 GiB,
-`BenchmarkRtFHera80as`) but its README states explicitly **it has not been run** and should
-not be executed without an explicit go-ahead — this is a cost/scheduling decision, not a
-blocked task.
+**Server side: reference path validated at proof-of-concept scale, not yet integrated into
+`vendor_server`.** The remaining step — homomorphic HERA evaluation inside BFV followed by an
+FV→CKKS repacking (StC + modular reduction) so the existing CKKS inference circuit runs
+unmodified — uses KAIST-CryptLab's `ckks_fv` (`RtF-Transciphering`) scheme bridge. This is
+**not** missing or blocked code: it is vendored and pinned at commit
+`105fc73115b56f1d6ff357029c7682b19a6d8510` under `third_party/` (gitignored checkout,
+reproducible via `third_party/fetch_rtf.sh`, toolchain documented in
+`third_party/BUILD_NOTES.md`), and builds clean under Go 1.25 with zero source changes
+(`go vet ./...`, `go test -c` both exit 0 in `ckks_fv/`).
 
-**Consequently**, `artifacts/hhe_breakeven.json`'s `online_transcipher_ms` and
-`repacking_ms` fields remain `"PENDING"` and every cell's overall status is `"PARTIAL"` —
-**there is no end-to-end HHE-vs-CKKS latency verdict yet**. Two literature fallbacks were
-checked and both dead-ended (RtF Table 5 is unreachable — HTTP 403 on every accessible
-mirror; Presto measures client-side stream-key generation on bank hardware, not server-side
-HE evaluation) — see `docs/spec.md` §8.3 for the full trail.
+Two results now exist for this reference path:
+- **Toy correctness: PASS.** A `LogN 16 → 10` toy copy of `RtFHeraParams[3]` ("128as"), all
+  moduli reused, ran the full server-side path end-to-end (HERA-in-BFV transcipher →
+  HalfBoot → FV→CKKS repack → CKKS eval → decrypt). Max abs error 2.1e-5 against a 5e-2
+  tolerance. Caveat: the CKKS stage evaluated a trivial `2x+1` circuit, not the fraud model.
+- **Full-scale: CONFIRMED-RAN.** `hera.Crypt` completed at the real secure LogN 16 / "128as"
+  params on this 15 GB dev host: 73.7 s total, peak RSS 9.54 GB, zero swap, under
+  `GOMEMLIMIT=11GiB GOGC=50`. This supersedes the previously-cited ~60 GB literature anchor
+  for HERA at 80-bit security, which was never itself measured end-to-end.
+
+**The real blocker is integration work, not hardware.** Neither result above is yet wired
+into `vendor_server`, and `artifacts/hhe_breakeven.json`'s `online_transcipher_ms` and
+`repacking_ms` fields remain `"PENDING"` — **there is no end-to-end HHE-vs-CKKS latency
+verdict yet**. Remaining open items: batched-reduction correctness at 256-slot blocks
+(everything above is single-block); the toy harness still runs `2x+1`, not the real fraud
+circuit; and `scripts/cloud_transcipher_bench/run_benchmark.sh`'s ~90 GB preflight gate is
+~9.4x the measured full-scale peak and needs revising. A cloud runbook remains scaffolded at
+`scripts/cloud_transcipher_bench/`, but running it is no longer a prerequisite — the
+full-scale path already completes locally in 74 s. Two literature fallbacks were also
+checked for an external server-side number and both dead-ended (RtF Table 5 is unreachable —
+HTTP 403 on every accessible mirror; Presto measures client-side stream-key generation on
+bank hardware, not server-side HE evaluation) — see `docs/spec.md` §8.3 for the full trail.
 
 **The honest framing of this arm's current contribution is bandwidth reduction, not
 latency.** §8.10 additionally shows the CPU-time motivation for HHE is regime-dependent, not
@@ -367,9 +395,17 @@ python3 tests/benchmark_comparison.py
   - `tools/openfhe_benchmark/` — OpenFHE hoisted-flat comparison, §7.4/§7.5
   - `tools/lattigo_benchmark/` — Lattigo hoisted-BSGS comparison, §7.5.2
   - `tools/transciphering/` — HHE/HERA-16 client-side arm, §8
-  - `scripts/cloud_transcipher_bench/` — scaffolded, not-yet-run cloud runbook for the
-    server-side transcipher benchmark
+  - `scripts/cloud_transcipher_bench/` — scaffolded cloud runbook for the server-side
+    transcipher benchmark (no longer a prerequisite; the full-scale path completes locally)
   - `tools/local_benchmark/` — secret-key-holding 160-bit benchmark context
+- Vendored reference implementations (gitignored checkouts, not part of the deployed TCB):
+  - `third_party/openfhe-development/` — vendored OpenFHE checkout, §7.5.1
+  - `third_party/RtF-Transciphering/` — vendored KAIST `ckks_fv` bridge, pinned via
+    `third_party/fetch_rtf.sh` (toolchain notes: `third_party/BUILD_NOTES.md`), §8
+- Docs / state tracking:
+  - `docs/spec.md` — full technical spec
+  - `docs/SESSION_LOG.md` — dated session-by-session history
+  - `PROJECT_STATE.md` — current state summary (start here)
 
 ## Build
 
@@ -547,9 +583,10 @@ paper or presentation, check `AUDIT.md` and the artifact's own `status` /
 
 ## Unverified / TODO
 
-- The Degree-2 fallback path is built and unit-gated (AUC ≥ 0.96) but has not been exercised
-  through a live end-to-end gRPC demo in this repository state (the current dataset's Depth-1
-  AUC of 0.979 keeps the primary path active).
+- The Degree-2 fallback path is broken, not just unexercised: `compiler/degree2_linearizer.py`
+  raises a negative-dimension `ValueError` before producing any features (see "Degree-2
+  Fallback" above). Fixing that crash is a precondition for ever running it through a live
+  end-to-end gRPC demo — this is not merely a "hasn't been tried yet" item.
 - `tools/openfhe_benchmark/`'s `fold`/`naive` cells and the full
   `reduction_strategy x modulus_chain x library` execution matrix beyond what's listed above
   remain PENDING — OpenFHE is not installed in this environment.
