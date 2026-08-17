@@ -1,0 +1,61 @@
+{
+  "framing": {
+    "description": "Architecture-matched \u00a75.8 privacy-cost re-measurement (this session). Both binaries are local-circuit-only (encrypt..decrypt, no gRPC), share vendor_server/include/rotation_hoisting.h, and differ ONLY in ctx.params.coeff_modulus: 200-bit {60,40,40,60} (vendor_server/build/benchmark, CKKSContext) vs 160-bit {60,40,60} (vendor_server/build/benchmark_160, CKKSContext160). strategy=fold is the deployed reduction strategy. Both are OUT OF TCB (hold a live secret key for self-timing only); see ckks_context.h / ckks_context_160.h.",
+    "supersedes": "artifacts/privacy_cost_analysis.json's latency_us field, which measured vendor_server_main (200-bit, legacy decrypt-capable CKKSContext-in-RPC-service) vs vendor_server_160 (160-bit, eval-only EvalContext160) -- a different-server-architecture confound documented in AUDIT.md. That file's bandwidth_bytes and precision_max_abs_error fields are NOT superseded (they are functions of the modulus chain, not the binary, and remain valid).",
+    "methodology": "measured",
+    "cpu_governor": "performance",
+    "governor_caveat": null
+  },
+  "strategy": "fold",
+  "200bit": {
+    "n": 1000,
+    "mean_us": 13726.261100000002,
+    "std_us": 120.12130892056581,
+    "median_us": 13708.349999999999,
+    "iqr_us": {
+      "q1": 13683.650000000001,
+      "q3": 13742.55,
+      "iqr": 58.89999999999782
+    },
+    "bootstrap_ci95_mean_us": {
+      "lo": 13719.190812499999,
+      "hi": 13734.265632499999,
+      "n_resamples": 10000
+    },
+    "p95_us": 13860.31,
+    "p99_us": 14114.491,
+    "min_us": 13579.8,
+    "max_us": 15548.4,
+    "correctness_max_abs_error": 3.39071e-07
+  },
+  "160bit": {
+    "n": 1000,
+    "mean_us": 6980.46417,
+    "std_us": 124.35828819548419,
+    "median_us": 6945.085,
+    "iqr_us": {
+      "q1": 6930.6575,
+      "q3": 6964.995,
+      "iqr": 34.337499999999636
+    },
+    "bootstrap_ci95_mean_us": {
+      "lo": 6972.729678000001,
+      "hi": 6988.3246819999995,
+      "n_resamples": 10000
+    },
+    "p95_us": 7354.736,
+    "p99_us": 7411.221699999999,
+    "min_us": 6877.3,
+    "max_us": 7683.94,
+    "correctness_max_abs_error": 9.80666e-07
+  },
+  "delta": {
+    "median_us": 6763.2649999999985,
+    "pct_delta_vs_160bit_median": 97.38203348123167,
+    "mann_whitney_u": 1000000.0,
+    "mann_whitney_p_value": 0.0,
+    "significant_at_p05": true
+  },
+  "key_finding": "Architecture-matched (same codebase, same rotation_hoisting.cpp, same strategy=fold, differ only in coeff_modulus): one additional 40-bit RNS prime (200-bit vs 160-bit chain) costs +6763.3us (97.4%) median latency (Mann-Whitney p=0.00e+00), measured under cpu_governor='performance'. This supersedes the deployed-binary delta, which mixed this cost with an unrelated server-architecture difference -- see artifacts/privacy_cost_analysis.json's 'deployed_cross_architecture_e2e_delta_DEPRECATED' field for that figure, kept for transparency, not for citation.",
+  "timestamp_utc": "2026-06-28T19:59:58.993923+00:00"
+}

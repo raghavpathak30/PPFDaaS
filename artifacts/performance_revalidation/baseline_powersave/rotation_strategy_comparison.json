@@ -1,0 +1,76 @@
+{
+  "methodology_note": "Rows 1 and 2-4 are NOT directly comparable: row 1 is a full end-to-end gRPC measurement (Phase 3, includes (de)serialization and network-stack overhead); rows 2-4 are local-circuit-only measurements (Phase 4, encrypt..decrypt with no gRPC). Row 1 is included because it is the only existing measurement of the sequential fold under the deployed server's provisioned 8-step ROTATION_STEPS key set. Rows 2 and 3 are same-methodology (both run via vendor_server/build/benchmark_160 in this invocation) and are the primary fold-vs-BSGS comparison. Row 4 (OpenFHE) is PENDING in this checkout -- OpenFHE is not installed; see tools/openfhe_benchmark/README.md.",
+  "strategies": [
+    {
+      "name": "SEAL sequential fold (e2e gRPC, Phase 3)",
+      "source": "artifacts/comparison_results.json: summary.reduced_160bit",
+      "scope": "full gRPC round trip: deserialize, multiply_plain, rescale, hoisted_tree_sum, serialize (tests/benchmark_comparison.py)",
+      "rotations": 8,
+      "critical_path_steps": 8,
+      "galois_keys": 8,
+      "n": 1000,
+      "latency_ms": {
+        "mean": 11.303424999999999,
+        "p50": 10.6755,
+        "p95": 16.59454999999999,
+        "p99": 22.04277
+      },
+      "correctness_passed": null
+    },
+    {
+      "name": "SEAL sequential fold (local circuit, Phase 4)",
+      "source": "vendor_server/build/benchmark_160 --strategy=fold",
+      "scope": "local circuit only: encrypt, multiply_plain, rescale, hoisted_tree_sum, decrypt (no gRPC/serialization)",
+      "rotations": 8,
+      "critical_path_steps": 8,
+      "galois_keys": 8,
+      "n": 100,
+      "latency_ms": {
+        "mean": 4.05716,
+        "p50": 4.06372,
+        "p95": 4.32524,
+        "p99": 4.44326
+      },
+      "correctness_max_abs_error": 1.95637e-07,
+      "correctness_passed": true
+    },
+    {
+      "name": "SEAL BSGS two-layer (local circuit, Phase 4)",
+      "source": "vendor_server/build/benchmark_160 --strategy=bsgs",
+      "scope": "local circuit only: encrypt, multiply_plain, rescale, bsgs_reduction (OpenMP within each layer), decrypt (no gRPC/serialization)",
+      "rotations": 30,
+      "critical_path_steps": 2,
+      "galois_keys": 30,
+      "n": 100,
+      "latency_ms": {
+        "mean": 6.4853000000000005,
+        "p50": 6.5283999999999995,
+        "p95": 10.0716,
+        "p99": 11.030899999999999
+      },
+      "correctness_max_abs_error": 4.32969e-06,
+      "correctness_passed": true,
+      "note": "Measured mean/p99 EXCEED the sequential-fold row above despite a shorter critical path (2 vs 8): on this 20-core host with OMP_NUM_THREADS unset, OpenMP thread-spawn overhead for two 15-iteration parallel-for loops dominates, and each rotate_vector() call within a layer is still a full, independent, unhoisted rotation (\u00a77.1) -- BSGS trades fewer critical-path STEPS for MORE total rotation WORK (30 vs 8), and SEAL's public API gives no way to amortize that work via hoisting. This is itself part of the \u00a77.5 finding."
+    },
+    {
+      "name": "OpenFHE hoisted flat (Phase 4, \u00a74.3)",
+      "source": "tools/openfhe_benchmark/results/openfhe_results.json",
+      "scope": "local circuit only: encrypt, EvalMult, EvalFastRotationPrecompute + EvalFastRotation (x2 layers), decrypt",
+      "status": "MEASURED",
+      "rotations": 30,
+      "critical_path_steps": 1,
+      "galois_keys": 30,
+      "n": 100,
+      "latency_ms": {
+        "mean": 176.062,
+        "p50": 181.818,
+        "p95": 244.916,
+        "p99": 279.884
+      },
+      "correctness_max_abs_error": 1.07132e-07,
+      "correctness_passed": true,
+      "ring_dim": 16384,
+      "note": "'rotations'=30 and 'critical_path_steps'=2 mirror the SEAL BSGS row's structure (same BSGS_ROTATION_STEPS set, two layers), but each layer's 15 EvalFastRotation calls reuse ONE EvalFastRotationPrecompute -- the digit-decomposition sharing that defines genuine hoisting (\u00a77.1) and that SEAL's public API cannot express. CAVEAT (read before citing this row against the SEAL rows above): OpenFHE's own parameter generator REJECTS ring_dim=8192 (SEAL's value, both BSGS and fold rows above) as non-HEStd_128_classic-compliant at depth=1/scaling_mod=40 bits and auto-selects ring_dim=16384 instead -- 2x SEAL's ring. This single absolute-latency table is therefore NOT an equal-ring-dimension comparison; the equal-rotation-count, unequal-ring-dimension result is that SEAL BSGS (N=8192) measured faster than OpenFHE hoisted-flat (N=16384) on this host under powersave -- i.e. this run does NOT support a \u00a77.5 claim that genuine hoisting beats SEAL's public-API ceiling once ring dimension is held equal, because ring dimension could not be held equal here. See docs/spec.md \u00a77.5 for the full discussion and what would be needed to test the hoisting claim at matched ring dimension."
+    }
+  ]
+}

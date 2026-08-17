@@ -1,0 +1,10 @@
+{
+  "governor_at_run_start": "performance",
+  "taskset_cpus": "0,2,4,6,8,10",
+  "run_started_at_utc": "2026-06-28T19:30:00+00:00",
+  "allow_non_performance_override": false,
+  "note": "manually promoted: script crashed AFTER writing valid data, on its own SLA assert (median_under_3000/p99_under_6000 both failed for real, see gates field in the data itself) -- not a governor-drift or measurement problem. Re-confirmed on corrected 6-physical-core taskset, same failure mode.",
+  "cpu_governor": "performance",
+  "turbo_disabled": true,
+  "stamped_at_utc": "2026-06-28T20:46:10.986742+00:00"
+}

@@ -1,0 +1,1216 @@
+{
+  "framing": {
+    "description": "Phase 7 \u00a77.4 break-even map: for each (circuit_depth \u00d7 batch_occupancy \u00d7 uplink_bandwidth), computes the CKKS end-to-end latency (MEASURED) and the HHE end-to-end latency (PARTIAL: upload+encrypt MEASURED, server transcipher PENDING). 'hhe_upload_headroom_ms' = how many ms of server transcipher budget HHE has before CKKS wins on total latency.",
+    "axes": {
+      "circuit_depth": [
+        1,
+        2,
+        3
+      ],
+      "batch_occupancy_lanes": [
+        1,
+        4,
+        8,
+        16
+      ],
+      "uplink_bandwidth_kbps": [
+        1000,
+        10000,
+        100000
+      ]
+    },
+    "ckks_side_methodology": "MEASURED from artifacts/throughput_results.json + wire_sizes.json",
+    "hhe_side_methodology": "online_encrypt_ms MEASURED (tools/transciphering/results/); upload_bytes_symmetric COMPUTED (HERA-16 formula: n_features*lanes*4+28); online_transcipher_ms PENDING (KAIST ckks_fv scheme bridge); repacking_ms PENDING",
+    "pending_reason": "Standard Lattigo v6.2.0 does not include the ckks_fv FV->CKKS scheme bridge, but KAIST-CryptLab's own reference implementation (github.com/KAIST-CryptLab/RtF-Transciphering, package ckks_fv) does, and IS real/runnable. It was cloned and its lightest benchmark (BenchmarkRtFHera80s, 4 slots, 80-bit security, run 2026-06-20) was attempted in this session's environment and OOM-killed (exit 137) before producing a number -- this 15GB-RAM host could not run even the lightest RtF+HERA configuration. online_transcipher_ms and repacking_ms remain PENDING for a RAM-resource reason, not a code-availability reason; re-attempt on a machine with substantially more RAM. See tools/transciphering/README.md."
+  },
+  "cells": [
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 16.1047,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2114.6607,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 8.416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 16.1047,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2089.1324,
+        "note": "HHE upload+encrypt saves 2089.13 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 2089.13 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 16.1047,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 226.4103,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 0.8416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 16.1047,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 208.4564,
+        "note": "HHE upload+encrypt saves 208.46 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 208.46 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 16.1047,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 37.5853,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 0.08416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 16.1047,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 20.3888,
+        "note": "HHE upload+encrypt saves 20.39 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 20.39 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 17.8754,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2116.4314,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 32.992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 17.8754,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2063.0272,
+        "note": "HHE upload+encrypt saves 2063.03 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 2063.03 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 17.8754,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 228.181,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 3.2992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 17.8754,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 204.4696,
+        "note": "HHE upload+encrypt saves 204.47 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 204.47 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 17.8754,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 39.3559,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 0.32992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 17.8754,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 18.6139,
+        "note": "HHE upload+encrypt saves 18.61 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 18.61 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 16.7776,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2115.3336,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 65.76,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 16.7776,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2028.6449,
+        "note": "HHE upload+encrypt saves 2028.64 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 2028.64 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 16.7776,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 227.0832,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 6.576,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 16.7776,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 199.5785,
+        "note": "HHE upload+encrypt saves 199.58 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 199.58 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 16.7776,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 38.2582,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 0.6576,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 16.7776,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 16.6719,
+        "note": "HHE upload+encrypt saves 16.67 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 16.67 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 17.1208,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2115.6768,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 131.296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 17.1208,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 1959.3246,
+        "note": "HHE upload+encrypt saves 1959.32 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 1959.32 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 17.1208,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 227.4264,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 13.1296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 17.1208,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 189.2406,
+        "note": "HHE upload+encrypt saves 189.24 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 189.24 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 17.1208,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 38.6014,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 1.31296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 17.1208,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 12.2322,
+        "note": "HHE upload+encrypt saves 12.23 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 12.23 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 22.5466,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2121.1026,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 8.416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 22.5466,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2089.1324,
+        "note": "HHE upload+encrypt saves 2089.13 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 2089.13 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 22.5466,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 232.8522,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 0.8416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 22.5466,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 208.4564,
+        "note": "HHE upload+encrypt saves 208.46 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 208.46 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 22.5466,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 44.0271,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 0.08416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 22.5466,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 20.3888,
+        "note": "HHE upload+encrypt saves 20.39 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 20.39 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 25.0255,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2123.5815,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 32.992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 25.0255,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2063.0272,
+        "note": "HHE upload+encrypt saves 2063.03 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 2063.03 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 25.0255,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 235.3311,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 3.2992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 25.0255,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 204.4696,
+        "note": "HHE upload+encrypt saves 204.47 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 204.47 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 25.0255,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 46.5061,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 0.32992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 25.0255,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 18.6139,
+        "note": "HHE upload+encrypt saves 18.61 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 18.61 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 23.4886,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2122.0446,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 65.76,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.4886,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2028.6449,
+        "note": "HHE upload+encrypt saves 2028.64 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 2028.64 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 23.4886,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 233.7942,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 6.576,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.4886,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 199.5785,
+        "note": "HHE upload+encrypt saves 199.58 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 199.58 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 23.4886,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 44.9692,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 0.6576,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.4886,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 16.6719,
+        "note": "HHE upload+encrypt saves 16.67 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 16.67 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 23.9692,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2122.5252,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 131.296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.9692,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 1959.3246,
+        "note": "HHE upload+encrypt saves 1959.32 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 1959.32 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 23.9692,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 234.2748,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 13.1296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.9692,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 189.2406,
+        "note": "HHE upload+encrypt saves 189.24 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 189.24 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 23.9692,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 45.4497,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 1.31296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.9692,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 12.2322,
+        "note": "HHE upload+encrypt saves 12.23 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 12.23 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 28.9885,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2127.5445,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 8.416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 28.9885,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2089.1324,
+        "note": "HHE upload+encrypt saves 2089.13 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 2089.13 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 28.9885,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 239.2941,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 0.8416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 28.9885,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 208.4564,
+        "note": "HHE upload+encrypt saves 208.46 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 208.46 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 28.9885,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 50.469,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 0.08416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 28.9885,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 20.3888,
+        "note": "HHE upload+encrypt saves 20.39 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 20.39 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 32.1757,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2130.7317,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 32.992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 32.1757,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2063.0272,
+        "note": "HHE upload+encrypt saves 2063.03 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 2063.03 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 32.1757,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 242.4813,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 3.2992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 32.1757,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 204.4696,
+        "note": "HHE upload+encrypt saves 204.47 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 204.47 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 32.1757,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 53.6562,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 0.32992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 32.1757,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 18.6139,
+        "note": "HHE upload+encrypt saves 18.61 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 18.61 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 30.1997,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2128.7557,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 65.76,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 30.1997,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2028.6449,
+        "note": "HHE upload+encrypt saves 2028.64 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 2028.64 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 30.1997,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 240.5053,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 6.576,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 30.1997,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 199.5785,
+        "note": "HHE upload+encrypt saves 199.58 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 199.58 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 30.1997,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 51.6802,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 0.6576,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 30.1997,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 16.6719,
+        "note": "HHE upload+encrypt saves 16.67 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 16.67 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 30.8175,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2129.3735,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 131.296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 30.8175,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 1959.3246,
+        "note": "HHE upload+encrypt saves 1959.32 ms vs CKKS upload at 1000 kbps \u2014 server transcipher+repack must cost < 1959.32 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 30.8175,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 241.1231,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 13.1296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 30.8175,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 189.2406,
+        "note": "HHE upload+encrypt saves 189.24 ms vs CKKS upload at 10000 kbps \u2014 server transcipher+repack must cost < 189.24 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 30.8175,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 52.2981,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 1.31296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 30.8175,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require the KAIST ckks_fv FV->CKKS scheme bridge (not in Lattigo v6.2.0). All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 12.2322,
+        "note": "HHE upload+encrypt saves 12.23 ms vs CKKS upload at 100000 kbps \u2014 server transcipher+repack must cost < 12.23 ms for HHE to win end-to-end."
+      }
+    }
+  ]
+}

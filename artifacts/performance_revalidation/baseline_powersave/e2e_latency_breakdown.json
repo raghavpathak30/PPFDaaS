@@ -1,0 +1,199 @@
+{
+  "framing": {
+    "description": "Phase 4 (this session): full bank's-perspective end-to-end latency -- client encode+encrypt -> serialize -> gRPC upload -> server deserialize+multiply_plain+rotation_hoisting+serialize -> gRPC download -> client deserialize+decrypt+sigmoid. Single request in flight, no concurrent load (see artifacts/throughput_results.json for that). n=1000 measured + 20 warmup per chain, in-band parity-gated before any timed sample.",
+    "cpu_governor": "powersave",
+    "governor_caveat": "PENDING under 'performance' governor -- no root in this environment, see AUDIT.md Phase 1. Reported under 'powersave'; not final.",
+    "note_on_grpc_roundtrip": "grpc_roundtrip_us is upload+server+download combined (Python's grpc API does not expose separate upload-complete/download-start timestamps for a unary call). network_and_grpc_overhead_us = grpc_roundtrip_us - server's own total_inference_us is the client-observable residual: network + gRPC framing + server-side (de)serialization of the request/response messages themselves (distinct from the server's internal deserialization_us/serialization_us stages, which time SEAL ciphertext (de)serialization, not protobuf/gRPC framing)."
+  },
+  "200bit": {
+    "correctness_max_abs_error": 1.347425321318596e-07,
+    "client_stage_us": {
+      "encode_encrypt_us": {
+        "mean_us": 3328.8065849992563,
+        "median_us": 3008.412000781391,
+        "p95_us": 5041.767448528844,
+        "p99_us": 6739.793401611678,
+        "min_us": 2602.790998935234,
+        "max_us": 9720.691999973496
+      },
+      "grpc_roundtrip_us": {
+        "mean_us": 11395.54092304388,
+        "median_us": 10197.01199766132,
+        "p95_us": 17786.858849649434,
+        "p99_us": 21651.74424131692,
+        "min_us": 8224.404999054968,
+        "max_us": 42139.70300043002
+      },
+      "network_and_grpc_overhead_us": {
+        "mean_us": 1136.2779230438819,
+        "median_us": 1125.716499180533,
+        "p95_us": 1437.7268023886602,
+        "p99_us": 1572.3783810385548,
+        "min_us": 636.0249975768384,
+        "max_us": 1741.2110014071222
+      },
+      "decode_decrypt_us": {
+        "mean_us": 631.7148400230508,
+        "median_us": 571.0879995604046,
+        "p95_us": 960.8785478121715,
+        "p99_us": 1273.0529098189436,
+        "min_us": 477.61999667272903,
+        "max_us": 1762.0449980313424
+      },
+      "sigmoid_us": {
+        "mean_us": 11.62696793107898,
+        "median_us": 11.275998986093327,
+        "p95_us": 15.900850848993286,
+        "p99_us": 27.485019018058665,
+        "min_us": 5.442001565825194,
+        "max_us": 104.29000030853786
+      },
+      "client_wall_total_us": {
+        "mean_us": 15443.651678993774,
+        "median_us": 14063.275501030148,
+        "p95_us": 22851.613798957256,
+        "p99_us": 27196.58912032173,
+        "min_us": 11446.93899914273,
+        "max_us": 51088.00000016345
+      }
+    },
+    "server_stage_us": {
+      "deserialization_us": {
+        "mean_us": 85.999,
+        "median_us": 74.0,
+        "p95_us": 145.0,
+        "p99_us": 176.05999999999995,
+        "min_us": 32.0,
+        "max_us": 207.0
+      },
+      "multiply_plain_us": {
+        "mean_us": 769.112,
+        "median_us": 634.5,
+        "p95_us": 1347.3499999999997,
+        "p99_us": 1752.1599999999999,
+        "min_us": 446.0,
+        "max_us": 2336.0
+      },
+      "rotation_hoisting_us": {
+        "mean_us": 9325.783,
+        "median_us": 8159.5,
+        "p95_us": 14964.899999999996,
+        "p99_us": 18376.15,
+        "min_us": 6895.0,
+        "max_us": 37905.0
+      },
+      "serialization_us": {
+        "mean_us": 76.863,
+        "median_us": 75.0,
+        "p95_us": 104.0,
+        "p99_us": 158.07999999999993,
+        "min_us": 50.0,
+        "max_us": 221.0
+      },
+      "total_inference_us": {
+        "mean_us": 10259.263,
+        "median_us": 9037.5,
+        "p95_us": 16399.199999999997,
+        "p99_us": 20437.12,
+        "min_us": 7446.0,
+        "max_us": 40566.0
+      }
+    }
+  },
+  "160bit": {
+    "correctness_max_abs_error": 1.0020505898569038e-10,
+    "client_stage_us": {
+      "encode_encrypt_us": {
+        "mean_us": 3493.704212003649,
+        "median_us": 2933.2390004128683,
+        "p95_us": 6229.315802011113,
+        "p99_us": 8019.4816926450585,
+        "min_us": 2141.0589979495853,
+        "max_us": 10720.907001086744
+      },
+      "grpc_roundtrip_us": {
+        "mean_us": 8738.034154943305,
+        "median_us": 7814.24599881575,
+        "p95_us": 15124.478801044459,
+        "p99_us": 17813.74901191157,
+        "min_us": 4742.775996419368,
+        "max_us": 22703.765996993752
+      },
+      "network_and_grpc_overhead_us": {
+        "mean_us": 1129.449154943307,
+        "median_us": 1096.5349984895438,
+        "p95_us": 1539.5351005298899,
+        "p99_us": 1718.812496826346,
+        "min_us": 634.3890023420099,
+        "max_us": 2115.1759999657515
+      },
+      "decode_decrypt_us": {
+        "mean_us": 408.19047203694936,
+        "median_us": 349.3484982755035,
+        "p95_us": 714.520249312045,
+        "p99_us": 977.4500673665895,
+        "min_us": 221.50000222609378,
+        "max_us": 1463.3930004492868
+      },
+      "sigmoid_us": {
+        "mean_us": 12.575920904055238,
+        "median_us": 11.730500773410313,
+        "p95_us": 16.751799921621565,
+        "p99_us": 26.02955257316349,
+        "min_us": 3.7140016502235085,
+        "max_us": 211.78599854465574
+      },
+      "client_wall_total_us": {
+        "mean_us": 12723.056500020903,
+        "median_us": 11382.650498489966,
+        "p95_us": 21389.979801824662,
+        "p99_us": 25211.425900160975,
+        "min_us": 7312.828001886373,
+        "max_us": 31228.197000018554
+      }
+    },
+    "server_stage_us": {
+      "deserialization_us": {
+        "mean_us": 84.12,
+        "median_us": 80.0,
+        "p95_us": 133.0,
+        "p99_us": 162.01,
+        "min_us": 31.0,
+        "max_us": 338.0
+      },
+      "multiply_plain_us": {
+        "mean_us": 783.315,
+        "median_us": 681.0,
+        "p95_us": 1366.099999999999,
+        "p99_us": 1669.4699999999996,
+        "min_us": 314.0,
+        "max_us": 2076.0
+      },
+      "rotation_hoisting_us": {
+        "mean_us": 6689.105,
+        "median_us": 5899.5,
+        "p95_us": 12255.749999999998,
+        "p99_us": 14772.55,
+        "min_us": 3509.0,
+        "max_us": 18530.0
+      },
+      "serialization_us": {
+        "mean_us": 50.534,
+        "median_us": 46.0,
+        "p95_us": 83.0,
+        "p99_us": 103.01999999999998,
+        "min_us": 26.0,
+        "max_us": 359.0
+      },
+      "total_inference_us": {
+        "mean_us": 7608.585,
+        "median_us": 6763.0,
+        "p95_us": 13658.65,
+        "p99_us": 16367.189999999999,
+        "min_us": 3906.0,
+        "max_us": 20828.0
+      }
+    }
+  },
+  "timestamp_utc": "2026-06-19T19:28:25.335980+00:00"
+}

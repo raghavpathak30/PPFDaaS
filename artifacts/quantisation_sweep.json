@@ -1,0 +1,373 @@
+{
+  "methodology": "Per-feature uniform quantisation over the observed [min,max] range (union of X_train and X_test), rounded to 2^bits-1 levels, then de-quantised back to float. Scored with the existing float-precision LR surrogate (artifacts/weights.npy). No retraining, no weight quantisation.",
+  "float_baseline": {
+    "auc": 0.9793983927279408,
+    "auprc": 0.8238348513573129
+  },
+  "test_set_class_balance": {
+    "n_fraud": 98,
+    "n_total": 56962,
+    "fraud_frac": 0.0017204452090867595
+  },
+  "operating_points": {
+    "max_f1": {
+      "threshold": 0.3927595235806759,
+      "f1": 0.8099999999999999,
+      "precision": 0.7941176470588235,
+      "recall": 0.826530612244898,
+      "source": "computed from float baseline precision_recall_curve (argmax F1)"
+    },
+    "recall_90": {
+      "threshold": 0.0015787648370186795,
+      "recall": 0.9081632653061225,
+      "precision": 0.08256029684601113,
+      "source": "computed from float baseline precision_recall_curve (highest threshold with recall>=0.90)"
+    },
+    "recall_95": {
+      "threshold": 0.0004377901930811912,
+      "recall": 0.9591836734693877,
+      "precision": 0.016140109890109892,
+      "source": "computed from float baseline precision_recall_curve (highest threshold with recall>=0.95)"
+    },
+    "note": "No fixed operating threshold exists in the repo (checked docs/spec.md, bank_client/bank_client.py, vendor_server/src/inference_service_160.cpp). The 0.94/0.92 constants in compiler/auc_dispatch.py gate AUC-based path selection, not per-sample classification. These three thresholds are derived from the float baseline and none is authoritative."
+  },
+  "degradation_tolerance": 0.005,
+  "note": "logit_delta_max_abs / logit_delta_p999_abs are the metrics that degrade smoothly with bit depth and reflect margin; flips_by_operating_point is the metric that matters more than AUC for production risk, because it is broken out by class -- fraud_missed_by_quantisation (a fraud case the float model caught that quantisation causes to be missed) is the consequential direction, not the aggregate flip count.",
+  "results": [
+    {
+      "bits": 10,
+      "auc": 0.979394624338199,
+      "auprc": 0.8238551273728696,
+      "auc_degradation": 3.768389741809486e-06,
+      "auprc_degradation": -2.0276015556652816e-05,
+      "logit_delta_max_abs": 0.008465106053185067,
+      "logit_delta_p999_abs": 0.006449299723794224,
+      "flips_by_operating_point": {
+        "max_f1": {
+          "threshold": 0.3927595235806759,
+          "fraud_missed_by_quantisation": 0,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.0,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 0
+        },
+        "recall_90": {
+          "threshold": 0.0015787648370186795,
+          "fraud_missed_by_quantisation": 0,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.0,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 1,
+          "legit_flagged_by_quantisation_frac_of_legit": 1.758581879572313e-05,
+          "legit_cleared_by_quantisation": 1,
+          "total_flips": 2
+        },
+        "recall_95": {
+          "threshold": 0.0004377901930811912,
+          "fraud_missed_by_quantisation": 0,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.0,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 4,
+          "legit_flagged_by_quantisation_frac_of_legit": 7.034327518289252e-05,
+          "legit_cleared_by_quantisation": 7,
+          "total_flips": 11
+        }
+      }
+    },
+    {
+      "bits": 12,
+      "auc": 0.9793949832324601,
+      "auprc": 0.8238365181929499,
+      "auc_degradation": 3.4094954807217803e-06,
+      "auprc_degradation": -1.6668356369597959e-06,
+      "logit_delta_max_abs": 0.0021569356741855117,
+      "logit_delta_p999_abs": 0.0016116942511937764,
+      "flips_by_operating_point": {
+        "max_f1": {
+          "threshold": 0.3927595235806759,
+          "fraud_missed_by_quantisation": 1,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.01020408163265306,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 1
+        },
+        "recall_90": {
+          "threshold": 0.0015787648370186795,
+          "fraud_missed_by_quantisation": 1,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.01020408163265306,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 2,
+          "total_flips": 3
+        },
+        "recall_95": {
+          "threshold": 0.0004377901930811912,
+          "fraud_missed_by_quantisation": 1,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.01020408163265306,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 5,
+          "total_flips": 6
+        }
+      }
+    },
+    {
+      "bits": 14,
+      "auc": 0.979397136598027,
+      "auprc": 0.8238347578344661,
+      "auc_degradation": 1.2561299138624804e-06,
+      "auprc_degradation": 9.352284680019807e-08,
+      "logit_delta_max_abs": 0.0005325943000542566,
+      "logit_delta_p999_abs": 0.00039571022516211976,
+      "flips_by_operating_point": {
+        "max_f1": {
+          "threshold": 0.3927595235806759,
+          "fraud_missed_by_quantisation": 1,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.01020408163265306,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 1
+        },
+        "recall_90": {
+          "threshold": 0.0015787648370186795,
+          "fraud_missed_by_quantisation": 1,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.01020408163265306,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 1,
+          "total_flips": 2
+        },
+        "recall_95": {
+          "threshold": 0.0004377901930811912,
+          "fraud_missed_by_quantisation": 0,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.0,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 1,
+          "legit_flagged_by_quantisation_frac_of_legit": 1.758581879572313e-05,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 1
+        }
+      }
+    },
+    {
+      "bits": 16,
+      "auc": 0.9793985721750715,
+      "auprc": 0.8238349203355397,
+      "auc_degradation": -1.794471307103862e-07,
+      "auprc_degradation": -6.897822679707843e-08,
+      "logit_delta_max_abs": 0.00012635969821239712,
+      "logit_delta_p999_abs": 9.88513980536755e-05,
+      "flips_by_operating_point": {
+        "max_f1": {
+          "threshold": 0.3927595235806759,
+          "fraud_missed_by_quantisation": 1,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.01020408163265306,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 1
+        },
+        "recall_90": {
+          "threshold": 0.0015787648370186795,
+          "fraud_missed_by_quantisation": 0,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.0,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 0
+        },
+        "recall_95": {
+          "threshold": 0.0004377901930811912,
+          "fraud_missed_by_quantisation": 0,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.0,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 0
+        }
+      }
+    },
+    {
+      "bits": 18,
+      "auc": 0.979398751622202,
+      "auprc": 0.8238348952333566,
+      "auc_degradation": -3.588942611987278e-07,
+      "auprc_degradation": -4.3876043687163246e-08,
+      "logit_delta_max_abs": 3.194885685964266e-05,
+      "logit_delta_p999_abs": 2.4691387602758105e-05,
+      "flips_by_operating_point": {
+        "max_f1": {
+          "threshold": 0.3927595235806759,
+          "fraud_missed_by_quantisation": 1,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.01020408163265306,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 1
+        },
+        "recall_90": {
+          "threshold": 0.0015787648370186795,
+          "fraud_missed_by_quantisation": 0,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.0,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 0
+        },
+        "recall_95": {
+          "threshold": 0.0004377901930811912,
+          "fraud_missed_by_quantisation": 0,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.0,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 0
+        }
+      }
+    },
+    {
+      "bits": 20,
+      "auc": 0.9793985721750714,
+      "auprc": 0.8238348933976531,
+      "auc_degradation": -1.794471305993639e-07,
+      "auprc_degradation": -4.2040340209048566e-08,
+      "logit_delta_max_abs": 7.500962970752312e-06,
+      "logit_delta_p999_abs": 6.118452647802658e-06,
+      "flips_by_operating_point": {
+        "max_f1": {
+          "threshold": 0.3927595235806759,
+          "fraud_missed_by_quantisation": 1,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.01020408163265306,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 1
+        },
+        "recall_90": {
+          "threshold": 0.0015787648370186795,
+          "fraud_missed_by_quantisation": 1,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.01020408163265306,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 1
+        },
+        "recall_95": {
+          "threshold": 0.0004377901930811912,
+          "fraud_missed_by_quantisation": 0,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.0,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 0
+        }
+      }
+    },
+    {
+      "bits": 24,
+      "auc": 0.9793983927279408,
+      "auprc": 0.8238348513573129,
+      "auc_degradation": 0.0,
+      "auprc_degradation": 0.0,
+      "logit_delta_max_abs": 5.149267474635622e-07,
+      "logit_delta_p999_abs": 3.875516948337345e-07,
+      "flips_by_operating_point": {
+        "max_f1": {
+          "threshold": 0.3927595235806759,
+          "fraud_missed_by_quantisation": 0,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.0,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 0
+        },
+        "recall_90": {
+          "threshold": 0.0015787648370186795,
+          "fraud_missed_by_quantisation": 0,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.0,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 0
+        },
+        "recall_95": {
+          "threshold": 0.0004377901930811912,
+          "fraud_missed_by_quantisation": 0,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.0,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 0
+        }
+      }
+    },
+    {
+      "bits": 26,
+      "auc": 0.9793983927279408,
+      "auprc": 0.8238348513573129,
+      "auc_degradation": 0.0,
+      "auprc_degradation": 0.0,
+      "logit_delta_max_abs": 1.329702978836167e-07,
+      "logit_delta_p999_abs": 9.762321005268898e-08,
+      "flips_by_operating_point": {
+        "max_f1": {
+          "threshold": 0.3927595235806759,
+          "fraud_missed_by_quantisation": 1,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.01020408163265306,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 1
+        },
+        "recall_90": {
+          "threshold": 0.0015787648370186795,
+          "fraud_missed_by_quantisation": 1,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.01020408163265306,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 1
+        },
+        "recall_95": {
+          "threshold": 0.0004377901930811912,
+          "fraud_missed_by_quantisation": 1,
+          "fraud_missed_by_quantisation_frac_of_fraud": 0.01020408163265306,
+          "fraud_gained_by_quantisation": 0,
+          "legit_flagged_by_quantisation": 0,
+          "legit_flagged_by_quantisation_frac_of_legit": 0.0,
+          "legit_cleared_by_quantisation": 0,
+          "total_flips": 1
+        }
+      }
+    }
+  ],
+  "verdict_lowest_bits_within_tolerance": 10,
+  "headroom_vs_plaintext_modulus": {
+    "plaintext_modulus_bits": 26,
+    "sufficient_bits": 10,
+    "margin_bits": 16,
+    "basis": "sufficient_bits is the lowest tested bit depth with AUC degradation < 0.005 absolute vs. the float baseline (the same criterion as verdict_lowest_bits_within_tolerance below). margin_bits = 26 - sufficient_bits is how much of t=2^26's headroom is unused by feature precision alone, before any accumulation cost."
+  }
+}

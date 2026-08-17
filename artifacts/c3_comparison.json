@@ -1,0 +1,98 @@
+{
+  "snapshot": "performance",
+  "is_plumbing_only": false,
+  "table_a_single_request": [
+    {
+      "chain": "160bit",
+      "client_encode_encrypt_median_us": 4181.8,
+      "server_total_inference_median_us": 7578.5,
+      "client_minus_server_us": -3396.7,
+      "client_over_server_ratio": 0.552,
+      "which_is_larger": "server"
+    },
+    {
+      "chain": "200bit",
+      "client_encode_encrypt_median_us": 5224.5,
+      "server_total_inference_median_us": 14927.0,
+      "client_minus_server_us": -9702.5,
+      "client_over_server_ratio": 0.35,
+      "which_is_larger": "server"
+    }
+  ],
+  "table_b_amortized_occupancy": [
+    {
+      "lanes": 1,
+      "client_encrypt_us_fixed_per_request": 4181.8,
+      "server_amortized_per_tx_us": 13274.7,
+      "amortization_factor_server": 1.0,
+      "client_over_server_ratio": 0.315,
+      "which_is_larger": "server"
+    },
+    {
+      "lanes": 4,
+      "client_encrypt_us_fixed_per_request": 4181.8,
+      "server_amortized_per_tx_us": 3310.9,
+      "amortization_factor_server": 4.009377792193454,
+      "client_over_server_ratio": 1.263,
+      "which_is_larger": "client"
+    },
+    {
+      "lanes": 8,
+      "client_encrypt_us_fixed_per_request": 4181.8,
+      "server_amortized_per_tx_us": 1681.7,
+      "amortization_factor_server": 7.8937769236103605,
+      "client_over_server_ratio": 2.487,
+      "which_is_larger": "client"
+    },
+    {
+      "lanes": 16,
+      "client_encrypt_us_fixed_per_request": 4181.8,
+      "server_amortized_per_tx_us": 832.9,
+      "amortization_factor_server": 15.93802689229196,
+      "client_over_server_ratio": 5.021,
+      "which_is_larger": "client"
+    }
+  ],
+  "table_c_lane_for_lane_hera": [
+    {
+      "lanes": 1,
+      "ckks_encrypt_median_us": 4181.8,
+      "hera_encrypt_median_us": 258.0,
+      "ckks_minus_hera_us": 3923.8,
+      "ckks_over_hera_ratio": 16.209,
+      "which_is_larger": "ckks",
+      "hera_upload_bytes": 1052,
+      "ckks_upload_bytes": 262257
+    },
+    {
+      "lanes": 4,
+      "ckks_encrypt_median_us": 4181.8,
+      "hera_encrypt_median_us": 1198.0,
+      "ckks_minus_hera_us": 2983.8,
+      "ckks_over_hera_ratio": 3.491,
+      "which_is_larger": "ckks",
+      "hera_upload_bytes": 4124,
+      "ckks_upload_bytes": 262257
+    },
+    {
+      "lanes": 8,
+      "ckks_encrypt_median_us": 4181.8,
+      "hera_encrypt_median_us": 2427.0,
+      "ckks_minus_hera_us": 1754.8,
+      "ckks_over_hera_ratio": 1.723,
+      "which_is_larger": "ckks",
+      "hera_upload_bytes": 8220,
+      "ckks_upload_bytes": 262257
+    },
+    {
+      "lanes": 16,
+      "ckks_encrypt_median_us": 4181.8,
+      "hera_encrypt_median_us": 4821.0,
+      "ckks_minus_hera_us": -639.2,
+      "ckks_over_hera_ratio": 0.867,
+      "which_is_larger": "hera",
+      "hera_upload_bytes": 16412,
+      "ckks_upload_bytes": 262257
+    }
+  ]
+}

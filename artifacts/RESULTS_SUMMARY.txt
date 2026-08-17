@@ -1,0 +1,2601 @@
+====================================================================================================
+PPFDaaS -- COMBINED RESULTS SUMMARY (all artifacts/*.json in one file)
+Generated: 2026-07-21T14:46:57.543650+00:00
+Source of truth is the individual JSON files under artifacts/ -- this file is a
+read-only, human-friendly concatenation for sharing/context, not itself an artifact
+a script writes to. Large raw per-iteration sample arrays (comparison_results.json's
+raw_results) are omitted here for size; see the original file for those.
+====================================================================================================
+
+----------------------------------------------------------------------------------------------------
+FILE: artifacts/linearization_cost.json
+WHAT: Linearization cost: independent LR surrogate vs XGBoost ceiling AUC (this session's run).
+----------------------------------------------------------------------------------------------------
+{
+  "xgb_test_auc": 0.9834562306914887,
+  "lr_test_auc": 0.9793983927279408,
+  "linearization_cost_auc": 0.004057837963547861,
+  "methodology": "XGBoost used for dataset validation only; LR is an independent surrogate trained on the same split for CKKS depth-1 inference. linearization_cost_auc = xgb_test_auc - lr_test_auc."
+}
+
+----------------------------------------------------------------------------------------------------
+FILE: artifacts/dispatch_result.json
+WHAT: Last compiler/auc_dispatch.py run: which path (depth1/degree2) was selected and why.
+----------------------------------------------------------------------------------------------------
+{
+  "depth1_auc": 0.9791116362132922,
+  "active_path": "depth1",
+  "degree2_auc": null
+}
+
+----------------------------------------------------------------------------------------------------
+FILE: artifacts/comparison_results.json
+WHAT: Type 1 self-ablation: 200-bit vs 160-bit CKKS, same circuit/hardware (raw per-iteration samples omitted below for size; n=1000/arm, see summary/gates).
+----------------------------------------------------------------------------------------------------
+{
+  "framing": {
+    "type": "self-ablation (Type 1, docs/spec.md §5.7)",
+    "description": "baseline_200bit and reduced_160bit run the IDENTICAL depth-1 logistic-regression circuit and sequential-fold reduction strategy (hoisted_tree_sum) via the same gRPC service implementation; the only difference is the CKKS modulus chain (200-bit {60,40,40,60} vs 160-bit {60,40,60}), both at sec_level_type::tc128. This is NOT a comparison against an external baseline library -- see artifacts/rotation_strategy_comparison.json for strategy/library comparisons.",
+    "latency_scope": "§5.4: single request in flight (no concurrent load). For throughput under concurrent load, see tests/benchmark_throughput.py and artifacts/throughput_results.json."
+  },
+  "hardware_manifest": {
+    "timestamp_utc": "2026-06-28T19:56:33.789163+00:00",
+    "python_version": "3.13.5 (main, Jun 25 2025, 18:55:22) [GCC 14.2.0]",
+    "platform": "linux",
+    "cpu_model": "13th Gen Intel(R) Core(TM) i7-13650HX",
+    "cpu_cores_logical": 20,
+    "cpu_governor": "performance",
+    "ram_total_kb": 15987292,
+    "seal_version": "4.1.2",
+    "cmake_build_type": "Release",
+    "cxx_compiler": "/bin/c++",
+    "cxx_flags_release": "-O3 -DNDEBUG",
+    "psutil_available": false,
+    "psutil_note": "psutil not available, partial manifest"
+  },
+  "summary": {
+    "baseline_200bit": {
+      "n": 1000,
+      "mean_us": 14877.607,
+      "std_us": 294.4947139610489,
+      "median_us": 14972.0,
+      "p50_us": 14972.0,
+      "iqr_us": {
+        "q1": 14827.25,
+        "q3": 15046.0,
+        "iqr": 218.75
+      },
+      "bootstrap_ci95_mean_us": {
+        "lo": 14859.475925,
+        "hi": 14895.43225,
+        "n_resamples": 10000
+      },
+      "p95_us": 15141.2,
+      "p99_us": 15236.05,
+      "min_us": 13810.0,
+      "max_us": 16099.0,
+      "wall_us": {
+        "mean": 22490.690216,
+        "median": 22595.0835,
+        "p95": 22943.11335,
+        "p99": 23110.55583
+      }
+    },
+    "reduced_160bit": {
+      "n": 1000,
+      "mean_us": 7538.088,
+      "std_us": 316.2362317255883,
+      "median_us": 7563.5,
+      "p50_us": 7563.5,
+      "iqr_us": {
+        "q1": 7470.75,
+        "q3": 7608.25,
+        "iqr": 137.5
+      },
+      "bootstrap_ci95_mean_us": {
+        "lo": 7520.308775,
+        "hi": 7559.384925,
+        "n_resamples": 10000
+      },
+      "p95_us": 7694.1,
+      "p99_us": 7785.04,
+      "min_us": 7035.0,
+      "max_us": 13469.0,
+      "wall_us": {
+        "mean": 13379.260065000002,
+        "median": 13390.488000000001,
+        "p95": 13727.4921,
+        "p99": 13960.26846
+      }
+    }
+  },
+  "statistical_tests": {
+    "total_inference_us": {
+      "baseline_200bit_vs_reduced_160bit": {
+        "a": "baseline_200bit",
+        "b": "reduced_160bit",
+        "n_a": 1000,
+        "n_b": 1000,
+        "U": 1000000.0,
+        "p_value": 0.0,
+        "rank_biserial_effect_size": -1.0
+      }
+    }
+  },
+  "gates": {
+    "median_under_3000": false,
+    "p99_under_6000": false,
+    "iqr_under_1000": true,
+    "pass_rate_10000": 0.997,
+    "all_passed": false
+  }
+}
+
+----------------------------------------------------------------------------------------------------
+FILE: artifacts/rotation_strategy_comparison.json
+WHAT: Type 2: rotation/reduction strategy comparison (sequential fold vs BSGS vs naive), 160-bit.
+----------------------------------------------------------------------------------------------------
+{
+  "methodology_note": "Rows 1 and 2-4 are NOT directly comparable: row 1 is a full end-to-end gRPC measurement (Phase 3, includes (de)serialization and network-stack overhead); rows 2-4 are local-circuit-only measurements (Phase 4, encrypt..decrypt with no gRPC). Row 1 is included because it is the only existing measurement of the sequential fold under the deployed server's provisioned 8-step ROTATION_STEPS key set. Rows 2 and 3 are same-methodology (both run via vendor_server/build/benchmark_160 in this invocation) and are the primary fold-vs-BSGS comparison. Row 4 (OpenFHE) is PENDING in this checkout -- OpenFHE is not installed; see tools/openfhe_benchmark/README.md.",
+  "strategies": [
+    {
+      "name": "SEAL sequential fold (e2e gRPC, Phase 3)",
+      "source": "artifacts/comparison_results.json: summary.reduced_160bit",
+      "scope": "full gRPC round trip: deserialize, multiply_plain, rescale, hoisted_tree_sum, serialize (tests/benchmark_comparison.py)",
+      "rotations": 8,
+      "critical_path_steps": 8,
+      "galois_keys": 8,
+      "n": 1000,
+      "latency_ms": {
+        "mean": 7.538088,
+        "p50": 7.5635,
+        "p95": 7.694100000000001,
+        "p99": 7.78504
+      },
+      "correctness_passed": null
+    },
+    {
+      "name": "SEAL sequential fold (local circuit, Phase 4)",
+      "source": "vendor_server/build/benchmark_160 --strategy=fold",
+      "scope": "local circuit only: encrypt, multiply_plain, rescale, hoisted_tree_sum, decrypt (no gRPC/serialization)",
+      "rotations": 8,
+      "critical_path_steps": 8,
+      "galois_keys": 8,
+      "n": 100,
+      "latency_ms": {
+        "mean": 6.95976,
+        "p50": 6.95476,
+        "p95": 7.0066999999999995,
+        "p99": 7.183260000000001
+      },
+      "correctness_max_abs_error": 6.62698e-07,
+      "correctness_passed": true
+    },
+    {
+      "name": "SEAL BSGS two-layer (local circuit, Phase 4)",
+      "source": "vendor_server/build/benchmark_160 --strategy=bsgs",
+      "scope": "local circuit only: encrypt, multiply_plain, rescale, bsgs_reduction (OpenMP within each layer), decrypt (no gRPC/serialization)",
+      "rotations": 30,
+      "critical_path_steps": 2,
+      "galois_keys": 30,
+      "n": 100,
+      "latency_ms": {
+        "mean": 6.96459,
+        "p50": 6.6414,
+        "p95": 8.657620000000001,
+        "p99": 9.09438
+      },
+      "correctness_max_abs_error": 4.0455e-07,
+      "correctness_passed": true,
+      "note": "Measured mean/p99 EXCEED the sequential-fold row above despite a shorter critical path (2 vs 8): on this 20-core host with OMP_NUM_THREADS unset, OpenMP thread-spawn overhead for two 15-iteration parallel-for loops dominates, and each rotate_vector() call within a layer is still a full, independent, unhoisted rotation (§7.1) -- BSGS trades fewer critical-path STEPS for MORE total rotation WORK (30 vs 8), and SEAL's public API gives no way to amortize that work via hoisting. This is itself part of the §7.5 finding."
+    },
+    {
+      "name": "OpenFHE hoisted flat (Phase 4, §4.3)",
+      "source": "tools/openfhe_benchmark/results/openfhe_results.json",
+      "scope": "local circuit only: encrypt, EvalMult, EvalFastRotationPrecompute + EvalFastRotation (x2 layers), decrypt",
+      "status": "MEASURED",
+      "rotations": 30,
+      "critical_path_steps": 1,
+      "galois_keys": 30,
+      "n": 100,
+      "latency_ms": {
+        "mean": 176.062,
+        "p50": 181.818,
+        "p95": 244.916,
+        "p99": 279.884
+      },
+      "correctness_max_abs_error": 1.07132e-07,
+      "correctness_passed": true,
+      "ring_dim": 16384,
+      "note": "'rotations'=30 and 'critical_path_steps'=2 mirror the SEAL BSGS row's structure (same BSGS_ROTATION_STEPS set, two layers), but each layer's 15 EvalFastRotation calls reuse ONE EvalFastRotationPrecompute -- the digit-decomposition sharing that defines genuine hoisting (§7.1) and that SEAL's public API cannot express. CAVEAT (read before citing this row against the SEAL rows above): OpenFHE's own parameter generator REJECTS ring_dim=8192 (SEAL's value, both BSGS and fold rows above) as non-HEStd_128_classic-compliant at depth=1/scaling_mod=40 bits and auto-selects ring_dim=16384 instead -- 2x SEAL's ring. This single absolute-latency table is therefore NOT an equal-ring-dimension comparison; the equal-rotation-count, unequal-ring-dimension result is that SEAL BSGS (N=8192) measured faster than OpenFHE hoisted-flat (N=16384) on this host under powersave -- i.e. this run does NOT support a §7.5 claim that genuine hoisting beats SEAL's public-API ceiling once ring dimension is held equal, because ring dimension could not be held equal here. See docs/spec.md §7.5 for the full discussion and what would be needed to test the hoisting claim at matched ring dimension."
+    }
+  ]
+}
+
+----------------------------------------------------------------------------------------------------
+FILE: artifacts/execution_matrix.json
+WHAT: Full execution matrix combining variant x strategy x precision cells.
+----------------------------------------------------------------------------------------------------
+{
+  "axes": {
+    "reduction_strategy": [
+      "fold",
+      "bsgs",
+      "naive"
+    ],
+    "modulus_chain": [
+      "160bit",
+      "200bit"
+    ],
+    "library": [
+      "SEAL",
+      "OpenFHE",
+      "Lattigo"
+    ],
+    "parallelism_ppfd_grpc_threads": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "batch_occupancy_lanes": [
+      1,
+      4,
+      8,
+      16
+    ]
+  },
+  "notes": [
+    "Cells in reduction_strategy x modulus_chain x library are LOCAL-CIRCUIT latencies (encrypt..decrypt, no gRPC). They do not vary with parallelism_ppfd_grpc_threads or batch_occupancy_lanes: PPFD_GRPC_THREADS only sizes vendor_server_160's gRPC sync thread pool (not used by the local-circuit benchmark binaries), and CKKS ciphertext operations cost the same regardless of how many of the 16 logical lanes hold real data (confirmed by occupancy_axis below: batch_latency_us is ~constant across lanes=1..16).",
+    "parallelism_axis and occupancy_axis are gRPC-layer measurements (reduced_160bit / fold only -- PPFD_GRPC_THREADS is wired only into inference_service_160.cpp).",
+    "library=OpenFHE: only the 'bsgs' cells are MEASURED (the only circuit tools/openfhe_benchmark/ implements, hoisted_flat over the 30-rotation BSGS_ROTATION_STEPS set); 'fold' and 'naive' OpenFHE cells remain PENDING (unimplemented, not uninstalled). The measured OpenFHE cell used ring_dim=16384 (OpenFHE's own parameter generator rejected SEAL's ring_dim=8192 as non-HEStd_128_classic-compliant at this depth/scaling-mod-size) -- it is NOT an equal-ring-dimension comparison against the SEAL cells in the same row. See the OpenFHE cell's own 'note' field and docs/spec.md §7.5."
+  ],
+  "reduction_strategy_x_modulus_chain_x_library": {
+    "SEAL": {
+      "160bit": {
+        "fold": {
+          "status": "MEASURED",
+          "source": "vendor_server/build/benchmark_160 --strategy=fold (via scripts/generate_ablation.py)",
+          "scope": "local circuit only: encrypt, multiply_plain, rescale, hoisted_tree_sum, decrypt (no gRPC/serialization)",
+          "rotations": 8,
+          "critical_path_steps": 8,
+          "galois_keygen_us": 30136,
+          "correctness_max_abs_error": 1.98121e-07,
+          "n": 100,
+          "latency_us": {
+            "mean": 7044.02,
+            "std": 193.69,
+            "p50": 6948.54,
+            "p95": 7409.57,
+            "p99": 7588.87,
+            "min": 6885.89,
+            "max": 7723.72
+          }
+        },
+        "bsgs": {
+          "status": "MEASURED",
+          "source": "vendor_server/build/benchmark_160 --strategy=bsgs",
+          "scope": "local circuit only: encrypt, multiply_plain, rescale, bsgs_reduction (OpenMP within each layer), decrypt (no gRPC/serialization)",
+          "rotations": 30,
+          "critical_path_steps": 2,
+          "correctness_max_abs_error": 4.0455e-07,
+          "n": 100,
+          "latency_us": {
+            "mean": 6964.59,
+            "p50": 6641.4,
+            "p95": 8657.62,
+            "p99": 9094.38
+          },
+          "note": "Measured mean/p99 EXCEED the sequential-fold row above despite a shorter critical path (2 vs 8): on this 20-core host with OMP_NUM_THREADS unset, OpenMP thread-spawn overhead for two 15-iteration parallel-for loops dominates, and each rotate_vector() call within a layer is still a full, independent, unhoisted rotation (§7.1) -- BSGS trades fewer critical-path STEPS for MORE total rotation WORK (30 vs 8), and SEAL's public API gives no way to amortize that work via hoisting. This is itself part of the §7.5 finding."
+        },
+        "naive": {
+          "status": "MEASURED",
+          "source": "vendor_server/build/benchmark_160 --strategy=naive (via scripts/generate_ablation.py)",
+          "scope": "local circuit only: encrypt, multiply_plain, rescale, naive_tree_sum, decrypt (no gRPC/serialization)",
+          "rotations": 255,
+          "critical_path_steps": 255,
+          "galois_keygen_us": 968619,
+          "correctness_max_abs_error": 8.32245e-06,
+          "n": 100,
+          "latency_us": {
+            "mean": 205394,
+            "std": 1074.1,
+            "p50": 205321,
+            "p95": 205785,
+            "p99": 206230,
+            "min": 204569,
+            "max": 215557
+          }
+        }
+      },
+      "200bit": {
+        "fold": {
+          "status": "PENDING",
+          "reason": "benchmark exited 1: avg_us=17672.1 avg_ms=17.6721"
+        },
+        "bsgs": {
+          "status": "PENDING",
+          "reason": "vendor_server/build/benchmark (200-bit local circuit) does not implement a --strategy dispatch; only depth1_he_inference (== hoisted-fold) is wired. §5.1 scoped the naive-strategy addition to benchmark_160 (160-bit) only -- extending the 200-bit binary's strategy dispatch is PHASE 5 ITEM: out of scope, not fixed here."
+        },
+        "naive": {
+          "status": "PENDING",
+          "reason": "vendor_server/build/benchmark (200-bit local circuit) does not implement a --strategy dispatch; only depth1_he_inference (== hoisted-fold) is wired. §5.1 scoped the naive-strategy addition to benchmark_160 (160-bit) only -- extending the 200-bit binary's strategy dispatch is PHASE 5 ITEM: out of scope, not fixed here."
+        }
+      }
+    },
+    "OpenFHE": {
+      "160bit": {
+        "fold": {
+          "status": "PENDING",
+          "reason": "tools/openfhe_benchmark/ implements only the hoisted_flat circuit over the 30-rotation BSGS_ROTATION_STEPS set; no OpenFHE fold (8-rotation) or naive (255-rotation) circuit exists."
+        },
+        "bsgs": {
+          "status": "MEASURED",
+          "source": "tools/openfhe_benchmark/results/openfhe_results.json",
+          "scope": "local circuit only: encrypt, EvalMult, EvalFastRotationPrecompute + EvalFastRotation (x2 layers), decrypt",
+          "rotations": 30,
+          "critical_path_steps": 1,
+          "ring_dim": 16384,
+          "correctness_max_abs_error": 1.07132e-07,
+          "n": 100,
+          "latency_us": {
+            "mean": 176062,
+            "std": 45972,
+            "p50": 181818,
+            "p95": 244916,
+            "p99": 279884,
+            "min": 64907.9,
+            "max": 283285
+          },
+          "note": "CAVEAT: ring_dim=16384 -- OpenFHE's own parameter generator rejects SEAL's ring_dim=8192 as non-HEStd_128_classic-compliant at this depth/scaling-mod-size and auto-selects a larger ring instead. This cell is therefore NOT comparable to the SEAL cells in this same row at equal ring dimension -- see docs/spec.md §7.5 and rotation_strategy_comparison.json. Filed under both 160bit/200bit because OpenFHE's parameter generator is not addressed by a named modulus-chain choice the way SEAL's is; it is the same single measured data point in both places."
+        },
+        "naive": {
+          "status": "PENDING",
+          "reason": "tools/openfhe_benchmark/ implements only the hoisted_flat circuit over the 30-rotation BSGS_ROTATION_STEPS set; no OpenFHE fold (8-rotation) or naive (255-rotation) circuit exists."
+        }
+      },
+      "200bit": {
+        "fold": {
+          "status": "PENDING",
+          "reason": "tools/openfhe_benchmark/ implements only the hoisted_flat circuit over the 30-rotation BSGS_ROTATION_STEPS set; no OpenFHE fold (8-rotation) or naive (255-rotation) circuit exists."
+        },
+        "bsgs": {
+          "status": "MEASURED",
+          "source": "tools/openfhe_benchmark/results/openfhe_results.json",
+          "scope": "local circuit only: encrypt, EvalMult, EvalFastRotationPrecompute + EvalFastRotation (x2 layers), decrypt",
+          "rotations": 30,
+          "critical_path_steps": 1,
+          "ring_dim": 16384,
+          "correctness_max_abs_error": 1.07132e-07,
+          "n": 100,
+          "latency_us": {
+            "mean": 176062,
+            "std": 45972,
+            "p50": 181818,
+            "p95": 244916,
+            "p99": 279884,
+            "min": 64907.9,
+            "max": 283285
+          },
+          "note": "CAVEAT: ring_dim=16384 -- OpenFHE's own parameter generator rejects SEAL's ring_dim=8192 as non-HEStd_128_classic-compliant at this depth/scaling-mod-size and auto-selects a larger ring instead. This cell is therefore NOT comparable to the SEAL cells in this same row at equal ring dimension -- see docs/spec.md §7.5 and rotation_strategy_comparison.json. Filed under both 160bit/200bit because OpenFHE's parameter generator is not addressed by a named modulus-chain choice the way SEAL's is; it is the same single measured data point in both places."
+        },
+        "naive": {
+          "status": "PENDING",
+          "reason": "tools/openfhe_benchmark/ implements only the hoisted_flat circuit over the 30-rotation BSGS_ROTATION_STEPS set; no OpenFHE fold (8-rotation) or naive (255-rotation) circuit exists."
+        }
+      }
+    },
+    "Lattigo": {
+      "160bit": {
+        "fold": {
+          "status": "PENDING",
+          "reason": "tools/lattigo_benchmark/ implements only the hoisted BSGS circuit; no Lattigo fold (8-rotation) circuit exists."
+        },
+        "bsgs": {
+          "status": "MEASURED",
+          "source": "tools/lattigo_benchmark/results/lattigo_results.json",
+          "scope": "circuit_only: eval_mult + hoisted_baby + accumulate_baby + hoisted_giant + accumulate_giant (no encrypt, no decrypt — matches SEAL benchmark_160.cpp:263-274 timer boundary)",
+          "library": "Lattigo",
+          "library_version": "v6.2.0",
+          "hoisting": true,
+          "hoisting_api": "RotateHoistedNew (Halevi-Shoup: one ModDown precompute per source ciphertext per layer, reused across all 15 rotations in that layer)",
+          "thread_count": 1,
+          "gomaxprocs": 1,
+          "ring_dim": 8192,
+          "logqp": 218,
+          "logq": [
+            60,
+            60,
+            40
+          ],
+          "logp": [
+            58
+          ],
+          "rotations": 30,
+          "critical_path_steps": 2,
+          "galois_keys": 30,
+          "correctness_max_abs_error": 1.6272973795139478e-06,
+          "correctness_passed": true,
+          "n": 100,
+          "warmup": 20,
+          "cpu_governor": "performance",
+          "no_turbo": "1",
+          "taskset": "0,2,4,6,8,10",
+          "latency_us": {
+            "circuit_only": {
+              "mean": 34704.32,
+              "std": 866.4,
+              "p50": 34969.36,
+              "p95": 35952.27,
+              "p99": 36111.65,
+              "min": 33209.48,
+              "max": 36249.4
+            }
+          },
+          "timing_boundary_note": "SEAL benchmark_160 --strategy=bsgs timer starts AFTER encrypt() and covers only multiply_plain+rescale+bsgs_reduction (confirmed benchmark_160.cpp:263-274). circuit_only = eval_mult+hoisted_baby+accumulate_baby+hoisted_giant+accumulate_giant, excluding encrypt and decrypt. latency_us.total (42,864µs mean) must NOT be compared against SEAL.",
+          "thread_count_note": "SEAL §7.5.1 used taskset -c 0,2,4,6,8,10 with OMP_NUM_THREADS unset (6-core OMP). This Lattigo run uses the same taskset with GOMAXPROCS=1 (single-threaded). Apples-to-apples thread-count comparison: see SEAL bsgs OMP_NUM_THREADS=1 auxiliary measurement in docs/spec.md §7.5.2.",
+          "factor_decomposition_note": "4.98× slower than SEAL 6-core OMP mean (34,704÷6,965). Decomposes: 3.72× OMP parallelism (SEAL 6-core÷SEAL 1-thread: 25,921÷6,965) × 1.34× net implementation delta (Lattigo 1-thread÷SEAL 1-thread: 34,704÷25,921). Factor 2 is a NET — includes hoisting benefit against Go-vs-C++/AVX2 language confound; not separately measured.",
+          "note": "Matched ring: N=8192, LogQP=218 = SEAL's tc128 ceiling (hestdparms.h). Lattigo imposes no standards-table gate at this ring size; OpenFHE's parameter generator rejects N=8192 for this depth/security combination (see §7.5.1 caveat). This is the corrected §7.5 comparison that resolves the ring-dimension confound."
+        },
+        "naive": {
+          "status": "PENDING",
+          "reason": "tools/lattigo_benchmark/ implements only the hoisted BSGS circuit; no Lattigo naive (255-rotation) circuit exists."
+        }
+      }
+    }
+  },
+  "parallelism_axis": [
+    {
+      "status": "MEASURED",
+      "source": "tests/benchmark_throughput.py-style sweep (scripts/build_execution_matrix.py, §5.6)",
+      "ppfd_grpc_threads": 1,
+      "n_clients": 8,
+      "lanes_per_request": 16,
+      "duration_s": 3.0094001293182373,
+      "n_requests": 576,
+      "req_per_sec": 191.40027090066272,
+      "mean_latency_ms": 39.4459069531384,
+      "p99_latency_ms": 177.14769200119918
+    },
+    {
+      "status": "MEASURED",
+      "source": "tests/benchmark_throughput.py-style sweep (scripts/build_execution_matrix.py, §5.6)",
+      "ppfd_grpc_threads": 2,
+      "n_clients": 8,
+      "lanes_per_request": 16,
+      "duration_s": 3.0115323066711426,
+      "n_requests": 579,
+      "req_per_sec": 192.26092933401375,
+      "mean_latency_ms": 39.52609539379293,
+      "p99_latency_ms": 145.31218384065141
+    },
+    {
+      "status": "MEASURED",
+      "source": "artifacts/throughput_results.json: client_sweep (§5.4, 30s)",
+      "ppfd_grpc_threads": 4,
+      "n_clients": 8,
+      "lanes_per_request": 16,
+      "duration_s": 30.010366201400757,
+      "n_requests": 5967,
+      "req_per_sec": 198.8312958247569,
+      "mean_latency_ms": 40.029392916701916,
+      "p99_latency_ms": 151.57982186108717
+    },
+    {
+      "status": "MEASURED",
+      "source": "tests/benchmark_throughput.py-style sweep (scripts/build_execution_matrix.py, §5.6)",
+      "ppfd_grpc_threads": 8,
+      "n_clients": 8,
+      "lanes_per_request": 16,
+      "duration_s": 3.009671449661255,
+      "n_requests": 577,
+      "req_per_sec": 191.715278445075,
+      "mean_latency_ms": 39.661777634327976,
+      "p99_latency_ms": 131.71827467958798
+    }
+  ],
+  "occupancy_axis": [
+    {
+      "status": "MEASURED",
+      "source": "artifacts/throughput_results.json: occupancy_sweep (§5.4/§5.7)",
+      "ppfd_grpc_threads": 4,
+      "lanes": 1,
+      "batch_latency_us": 13274.678502057213,
+      "per_tx_us": 13274.678502057213
+    },
+    {
+      "status": "MEASURED",
+      "source": "artifacts/throughput_results.json: occupancy_sweep (§5.4/§5.7)",
+      "ppfd_grpc_threads": 4,
+      "lanes": 4,
+      "batch_latency_us": 13243.629500721,
+      "per_tx_us": 3310.90737518025
+    },
+    {
+      "status": "MEASURED",
+      "source": "artifacts/throughput_results.json: occupancy_sweep (§5.4/§5.7)",
+      "ppfd_grpc_threads": 4,
+      "lanes": 8,
+      "batch_latency_us": 13453.309999022167,
+      "per_tx_us": 1681.663749877771
+    },
+    {
+      "status": "MEASURED",
+      "source": "artifacts/throughput_results.json: occupancy_sweep (§5.4/§5.7)",
+      "ppfd_grpc_threads": 4,
+      "lanes": 16,
+      "batch_latency_us": 13326.295498700347,
+      "per_tx_us": 832.8934686687717
+    }
+  ]
+}
+
+----------------------------------------------------------------------------------------------------
+FILE: artifacts/privacy_cost_analysis.json
+WHAT: Privacy cost in modulus bits: precision/error headroom, 160-bit vs 200-bit.
+----------------------------------------------------------------------------------------------------
+{
+  "framing": {
+    "description": "§5.8: privacy cost analysis. Uses the 200-bit modulus chain ({60,40,40,60}, 4 primes) vs the 160-bit chain ({60,40,60}, 3 primes) as a PROXY for the cost of ONE ADDITIONAL homomorphic multiplicative level (e.g. a model-weight masking step for model privacy). This is the same self-ablation (docs/spec.md §5.7 Type 1) used by tests/benchmark_comparison.py -- same codebase/circuit/hardware, only the modulus chain differs. As of this session the HEADLINE latency number is the architecture-matched local-circuit pair (see matched_pair_latency_us below / artifacts/privacy_cost_matched_pair.json), not deployed_cross_architecture_e2e_delta_DEPRECATED (see AUDIT.md for why that figure conflates the modulus-chain cost with a server-architecture difference).",
+    "methodology": "measured",
+    "sources": {
+      "latency": "artifacts/privacy_cost_matched_pair.json (headline); artifacts/comparison_results.json#summary (deprecated, deployed-binary)",
+      "bandwidth": "artifacts/wire_sizes.json#chains",
+      "precision": "fresh single-inference §5.5 parity-gate run (this script)"
+    }
+  },
+  "modulus_bits": {
+    "160bit": 160,
+    "200bit": 200,
+    "delta": 40
+  },
+  "matched_pair_latency_us": {
+    "160bit_median": 6945.085,
+    "200bit_median": 13708.349999999999,
+    "delta": 6763.2649999999985,
+    "pct_delta": 97.38203348123167,
+    "mann_whitney_p_value": 0.0,
+    "cpu_governor": "performance",
+    "source": "artifacts/privacy_cost_matched_pair.json"
+  },
+  "deployed_cross_architecture_e2e_delta_DEPRECATED": {
+    "160bit_median": 7563.5,
+    "200bit_median": 14972.0,
+    "delta": 7408.5,
+    "pct_delta": 97.950684207047,
+    "deprecation_note": "CONFOUNDED -- do not cite as the privacy-cost-per-level number. Measures vendor_server_main (200-bit, legacy decrypt-capable CKKSContext-in-RPC-service) vs vendor_server_160 (160-bit, eval-only EvalContext160): the delta mixes the modulus-chain cost with an unrelated server-architecture/RPC-service-implementation difference. Kept for transparency only -- see AUDIT.md."
+  },
+  "bandwidth_bytes": {
+    "160bit_standard": 262257,
+    "200bit_standard": 393329,
+    "delta": 131072,
+    "pct_delta": 49.97845624711638
+  },
+  "precision_max_abs_error": {
+    "160bit": 3.1952800268967435e-11,
+    "200bit": 1.800748751223935e-07,
+    "delta": 1.8004292232212454e-07
+  },
+  "key_finding": "Architecture-matched (same codebase, same rotation_hoisting.cpp, same strategy=fold, differ only in coeff_modulus): one additional 40-bit RNS prime (200-bit vs 160-bit chain) costs +6763.3us (97.4%) median latency (Mann-Whitney p=0.00e+00), measured under cpu_governor='performance'. This supersedes the deployed-binary delta, which mixed this cost with an unrelated server-architecture difference -- see artifacts/privacy_cost_analysis.json's 'deployed_cross_architecture_e2e_delta_DEPRECATED' field for that figure, kept for transparency, not for citation. (bandwidth: +131072 bytes / 50.0% per ciphertext; precision: max_abs_error stays within the noise floor in both chains, see artifacts/precision_analysis.json.)"
+}
+
+----------------------------------------------------------------------------------------------------
+FILE: artifacts/privacy_cost_matched_pair.json
+WHAT: Architecture-matched local-circuit pair: 200-bit vs 160-bit encrypt-compute-decrypt loop.
+----------------------------------------------------------------------------------------------------
+{
+  "framing": {
+    "description": "Architecture-matched §5.8 privacy-cost re-measurement (this session). Both binaries are local-circuit-only (encrypt..decrypt, no gRPC), share vendor_server/include/rotation_hoisting.h, and differ ONLY in ctx.params.coeff_modulus: 200-bit {60,40,40,60} (vendor_server/build/benchmark, CKKSContext) vs 160-bit {60,40,60} (vendor_server/build/benchmark_160, CKKSContext160). strategy=fold is the deployed reduction strategy. Both are OUT OF TCB (hold a live secret key for self-timing only); see ckks_context.h / ckks_context_160.h.",
+    "supersedes": "artifacts/privacy_cost_analysis.json's latency_us field, which measured vendor_server_main (200-bit, legacy decrypt-capable CKKSContext-in-RPC-service) vs vendor_server_160 (160-bit, eval-only EvalContext160) -- a different-server-architecture confound documented in AUDIT.md. That file's bandwidth_bytes and precision_max_abs_error fields are NOT superseded (they are functions of the modulus chain, not the binary, and remain valid).",
+    "methodology": "measured",
+    "cpu_governor": "performance",
+    "governor_caveat": null
+  },
+  "strategy": "fold",
+  "200bit": {
+    "n": 1000,
+    "mean_us": 13726.261100000002,
+    "std_us": 120.12130892056581,
+    "median_us": 13708.349999999999,
+    "iqr_us": {
+      "q1": 13683.650000000001,
+      "q3": 13742.55,
+      "iqr": 58.89999999999782
+    },
+    "bootstrap_ci95_mean_us": {
+      "lo": 13719.190812499999,
+      "hi": 13734.265632499999,
+      "n_resamples": 10000
+    },
+    "p95_us": 13860.31,
+    "p99_us": 14114.491,
+    "min_us": 13579.8,
+    "max_us": 15548.4,
+    "correctness_max_abs_error": 3.39071e-07
+  },
+  "160bit": {
+    "n": 1000,
+    "mean_us": 6980.46417,
+    "std_us": 124.35828819548419,
+    "median_us": 6945.085,
+    "iqr_us": {
+      "q1": 6930.6575,
+      "q3": 6964.995,
+      "iqr": 34.337499999999636
+    },
+    "bootstrap_ci95_mean_us": {
+      "lo": 6972.729678000001,
+      "hi": 6988.3246819999995,
+      "n_resamples": 10000
+    },
+    "p95_us": 7354.736,
+    "p99_us": 7411.221699999999,
+    "min_us": 6877.3,
+    "max_us": 7683.94,
+    "correctness_max_abs_error": 9.80666e-07
+  },
+  "delta": {
+    "median_us": 6763.2649999999985,
+    "pct_delta_vs_160bit_median": 97.38203348123167,
+    "mann_whitney_u": 1000000.0,
+    "mann_whitney_p_value": 0.0,
+    "significant_at_p05": true
+  },
+  "key_finding": "Architecture-matched (same codebase, same rotation_hoisting.cpp, same strategy=fold, differ only in coeff_modulus): one additional 40-bit RNS prime (200-bit vs 160-bit chain) costs +6763.3us (97.4%) median latency (Mann-Whitney p=0.00e+00), measured under cpu_governor='performance'. This supersedes the deployed-binary delta, which mixed this cost with an unrelated server-architecture difference -- see artifacts/privacy_cost_analysis.json's 'deployed_cross_architecture_e2e_delta_DEPRECATED' field for that figure, kept for transparency, not for citation.",
+  "timestamp_utc": "2026-06-28T19:59:58.993923+00:00"
+}
+
+----------------------------------------------------------------------------------------------------
+FILE: artifacts/precision_analysis.json
+WHAT: CKKS numerical error / precision headroom analysis.
+----------------------------------------------------------------------------------------------------
+{
+  "scale": 1099511627776.0,
+  "scale_log2": 40.0,
+  "middle_prime_bits": 40,
+  "full_dataset": {
+    "source": "artifacts/errors.json (Phase 0 parity harness, n=56962, logit-vs-logit over the full held-out test set)",
+    "n_samples": 56962,
+    "max_abs_error": 4.344353881080565e-07,
+    "mean_abs_error": 7.711101771065313e-08,
+    "median_abs_error": 6.330511626018165e-08,
+    "abs_error_distribution": {
+      "p50": 6.330511626018165e-08,
+      "p90": 1.6187945615087076e-07,
+      "p99": 2.685834879834203e-07,
+      "p99.9": 3.5575905043750035e-07,
+      "min": 9.132250511356688e-12,
+      "max": 4.344353881080565e-07
+    },
+    "noise_floor_min_abs_error": 9.132250511356688e-12,
+    "noise_ceiling_max_abs_error": 4.344353881080565e-07,
+    "scale_headroom_bits_log2_scale_over_max_ae": 61.13435503766097,
+    "max_ae_bits_below_unity": 21.13435503766097,
+    "scale_bits_consumed_reaching_max_ae": 18.86564496233903,
+    "scale_bits_remaining_headroom": 21.13435503766097
+  },
+  "representative_batch": {
+    "source": "first 16 transactions of artifacts/X_test.npy (= one 4096-slot packed ciphertext), via tools/local_benchmark/precision_probe",
+    "n_transactions": 16,
+    "bias": -8.366707513150757,
+    "q_last": 1099511480321,
+    "bias_scale": 1099511775231.0198,
+    "stage_errors_abs": {
+      "stage1_after_multiply_plain": {
+        "n": 4096,
+        "min": 2.2784531948188925e-15,
+        "max": 4.9676025515310585e-09,
+        "mean": 1.580418133650992e-10,
+        "std": 3.0375831898117824e-10,
+        "p50": 6.114652523463854e-11,
+        "p95": 6.154989904522904e-10,
+        "p99": 1.474487094064745e-09
+      },
+      "stage2_after_rescale": {
+        "n": 4096,
+        "min": 2.0016887453122578e-13,
+        "max": 7.648717033001406e-09,
+        "mean": 9.137917701821783e-10,
+        "std": 9.120641701375062e-10,
+        "p50": 6.359552838768739e-10,
+        "p95": 2.707243113714286e-09,
+        "p99": 4.108000232409645e-09
+      },
+      "stage3_after_hoisted_tree_sum": {
+        "n": 16,
+        "min": 7.658321865555706e-09,
+        "max": 3.640928587511638e-07,
+        "mean": 9.30231480837651e-08,
+        "std": 8.51458585929117e-08,
+        "p50": 8.071651247387734e-08,
+        "p95": 2.3496496812103196e-07,
+        "p99": 3.3826728062513737e-07
+      },
+      "stage4_after_add_plain_bias": {
+        "n": 16,
+        "min": 7.665670764822607e-09,
+        "max": 3.640855101849638e-07,
+        "mean": 9.302406672739849e-08,
+        "std": 8.514271373832997e-08,
+        "p50": 8.070916379665505e-08,
+        "p95": 2.349576178062307e-07,
+        "p99": 3.382599317092171e-07
+      }
+    }
+  }
+}
+
+----------------------------------------------------------------------------------------------------
+FILE: artifacts/errors.json
+WHAT: Full held-out test set correctness check: max/mean abs error, ROC-AUC, PR-AUC (encrypted).
+----------------------------------------------------------------------------------------------------
+{
+  "n_samples": 56962,
+  "max_abs_error": 4.969246543140571e-07,
+  "mean_abs_error": 7.746065326460816e-08,
+  "median_abs_error": 6.424531218129914e-08,
+  "abs_error_distribution": {
+    "p50": 6.424531218129914e-08,
+    "p90": 1.6103978861536916e-07,
+    "p99": 2.6678391666479225e-07,
+    "p99.9": 3.471970082404864e-07,
+    "min": 5.0182080713057076e-12,
+    "max": 4.969246543140571e-07
+  },
+  "roc_auc_encrypted": 0.9793983927279408,
+  "pr_auc_encrypted": 0.8238348513573128
+}
+
+----------------------------------------------------------------------------------------------------
+FILE: artifacts/e2e_latency_breakdown.json
+WHAT: Client+server end-to-end latency breakdown (encode/encrypt, network, server, decode/decrypt).
+----------------------------------------------------------------------------------------------------
+{
+  "framing": {
+    "description": "Phase 4 (this session): full bank's-perspective end-to-end latency -- client encode+encrypt -> serialize -> gRPC upload -> server deserialize+multiply_plain+rotation_hoisting+serialize -> gRPC download -> client deserialize+decrypt+sigmoid. Single request in flight, no concurrent load (see artifacts/throughput_results.json for that). n=1000 measured + 20 warmup per chain, in-band parity-gated before any timed sample.",
+    "cpu_governor": "performance",
+    "governor_caveat": null,
+    "note_on_grpc_roundtrip": "grpc_roundtrip_us is upload+server+download combined (Python's grpc API does not expose separate upload-complete/download-start timestamps for a unary call). network_and_grpc_overhead_us = grpc_roundtrip_us - server's own total_inference_us is the client-observable residual: network + gRPC framing + server-side (de)serialization of the request/response messages themselves (distinct from the server's internal deserialization_us/serialization_us stages, which time SEAL ciphertext (de)serialization, not protobuf/gRPC framing)."
+  },
+  "200bit": {
+    "correctness_max_abs_error": 1.392378679021533e-07,
+    "client_stage_us": {
+      "encode_encrypt_us": {
+        "mean_us": 5202.673736992438,
+        "median_us": 5224.521499258117,
+        "p95_us": 5306.120950990589,
+        "p99_us": 5357.29366234591,
+        "min_us": 4881.953998847166,
+        "max_us": 8804.869001323823
+      },
+      "grpc_roundtrip_us": {
+        "mean_us": 16122.478857985698,
+        "median_us": 16198.244000406703,
+        "p95_us": 16568.189749705198,
+        "p99_us": 16723.633352630713,
+        "min_us": 14938.609001546865,
+        "max_us": 29217.591996712144
+      },
+      "network_and_grpc_overhead_us": {
+        "mean_us": 1288.6918579856977,
+        "median_us": 1295.6059991415823,
+        "p95_us": 1474.580749466119,
+        "p99_us": 1531.3452407064894,
+        "min_us": 982.711998710176,
+        "max_us": 2210.6920004147105
+      },
+      "decode_decrypt_us": {
+        "mean_us": 935.4845909838332,
+        "median_us": 932.9060012532864,
+        "p95_us": 971.7855520648299,
+        "p99_us": 1007.6239633053774,
+        "min_us": 868.9300011610612,
+        "max_us": 1585.7580001465976
+      },
+      "sigmoid_us": {
+        "mean_us": 12.408788927132264,
+        "median_us": 12.530499589047395,
+        "p95_us": 15.257249287969898,
+        "p99_us": 19.231879559811194,
+        "min_us": 7.127000571927056,
+        "max_us": 39.20699964510277
+      },
+      "client_wall_total_us": {
+        "mean_us": 22355.69259490148,
+        "median_us": 22451.673499745084,
+        "p95_us": 22884.758950021933,
+        "p99_us": 23067.538418945333,
+        "min_us": 20870.66199965193,
+        "max_us": 39325.78899912187
+      }
+    },
+    "server_stage_us": {
+      "deserialization_us": {
+        "mean_us": 80.389,
+        "median_us": 79.0,
+        "p95_us": 93.0,
+        "p99_us": 108.0,
+        "min_us": 68.0,
+        "max_us": 222.0
+      },
+      "multiply_plain_us": {
+        "mean_us": 910.616,
+        "median_us": 906.0,
+        "p95_us": 960.0,
+        "p99_us": 1021.06,
+        "min_us": 833.0,
+        "max_us": 1750.0
+      },
+      "rotation_hoisting_us": {
+        "mean_us": 13754.111,
+        "median_us": 13858.5,
+        "p95_us": 14059.05,
+        "p99_us": 14126.02,
+        "min_us": 12819.0,
+        "max_us": 25759.0
+      },
+      "serialization_us": {
+        "mean_us": 87.161,
+        "median_us": 83.0,
+        "p95_us": 101.0,
+        "p99_us": 143.07999999999993,
+        "min_us": 73.0,
+        "max_us": 434.0
+      },
+      "total_inference_us": {
+        "mean_us": 14833.787,
+        "median_us": 14927.0,
+        "p95_us": 15156.0,
+        "p99_us": 15226.01,
+        "min_us": 13877.0,
+        "max_us": 27705.0
+      }
+    }
+  },
+  "160bit": {
+    "correctness_max_abs_error": 1.4640313549148243e-10,
+    "client_stage_us": {
+      "encode_encrypt_us": {
+        "mean_us": 4177.526669955114,
+        "median_us": 4181.846499704989,
+        "p95_us": 4257.671849882172,
+        "p99_us": 4298.590901817079,
+        "min_us": 3961.689999414375,
+        "max_us": 7120.1979990291875
+      },
+      "grpc_roundtrip_us": {
+        "mean_us": 8651.129345958907,
+        "median_us": 8680.381999511155,
+        "p95_us": 8934.169702297368,
+        "p99_us": 9077.015098373522,
+        "min_us": 7963.517000462161,
+        "max_us": 11353.37799860281
+      },
+      "network_and_grpc_overhead_us": {
+        "mean_us": 1109.850345958907,
+        "median_us": 1117.0249992393656,
+        "p95_us": 1271.1657023858977,
+        "p99_us": 1332.8698380074206,
+        "min_us": 753.5690018530004,
+        "max_us": 2378.3779986028094
+      },
+      "decode_decrypt_us": {
+        "mean_us": 449.41803802066715,
+        "median_us": 448.1665000639623,
+        "p95_us": 475.9408497193362,
+        "p99_us": 513.5436187993037,
+        "min_us": 405.7549995195586,
+        "max_us": 770.4790004936513
+      },
+      "sigmoid_us": {
+        "mean_us": 12.229805965034757,
+        "median_us": 12.589500329340808,
+        "p95_us": 15.421298121509604,
+        "p99_us": 17.726072728692078,
+        "min_us": 6.032998498994857,
+        "max_us": 24.73600034136325
+      },
+      "client_wall_total_us": {
+        "mean_us": 13357.930746962667,
+        "median_us": 13392.035500146449,
+        "p95_us": 13717.27914956864,
+        "p99_us": 13843.473968154285,
+        "min_us": 12554.239001474343,
+        "max_us": 18009.568000707077
+      }
+    },
+    "server_stage_us": {
+      "deserialization_us": {
+        "mean_us": 54.122,
+        "median_us": 53.0,
+        "p95_us": 64.0,
+        "p99_us": 70.00999999999999,
+        "min_us": 45.0,
+        "max_us": 168.0
+      },
+      "multiply_plain_us": {
+        "mean_us": 602.06,
+        "median_us": 598.0,
+        "p95_us": 630.0999999999999,
+        "p99_us": 683.05,
+        "min_us": 555.0,
+        "max_us": 1166.0
+      },
+      "rotation_hoisting_us": {
+        "mean_us": 6836.968,
+        "median_us": 6873.5,
+        "p95_us": 6993.05,
+        "p99_us": 7054.02,
+        "min_us": 6379.0,
+        "max_us": 8251.0
+      },
+      "serialization_us": {
+        "mean_us": 46.619,
+        "median_us": 46.0,
+        "p95_us": 55.0,
+        "p99_us": 60.0,
+        "min_us": 37.0,
+        "max_us": 174.0
+      },
+      "total_inference_us": {
+        "mean_us": 7541.279,
+        "median_us": 7578.5,
+        "p95_us": 7713.0,
+        "p99_us": 7773.02,
+        "min_us": 7022.0,
+        "max_us": 8975.0
+      }
+    }
+  },
+  "timestamp_utc": "2026-06-28T20:01:53.657253+00:00"
+}
+
+----------------------------------------------------------------------------------------------------
+FILE: artifacts/throughput_results.json
+WHAT: Concurrent-client throughput sweep (req/s, p50/p99 latency-under-load) vs vendor_server_160.
+----------------------------------------------------------------------------------------------------
+{
+  "framing": {
+    "description": "§5.4 throughput (closed-loop, concurrent load) vs tests/benchmark_comparison.py's latency (single request in flight). Same vendor_server_160 binary/circuit (hoisted_tree_sum, 160-bit chain).",
+    "fast": false
+  },
+  "ppfd_grpc_threads": 4,
+  "client_sweep": [
+    {
+      "n_clients": 1,
+      "duration_s": 30.004552364349365,
+      "n_requests": 2244,
+      "req_per_sec": 74.78865116035735,
+      "mean_latency_ms": 13.357540470169884,
+      "p99_latency_ms": 13.877381849961239,
+      "p50_latency_ms": 13.38230750116054,
+      "amortized_per_tx_us": 834.8462793856178,
+      "lanes_per_request": 16
+    },
+    {
+      "n_clients": 4,
+      "duration_s": 30.009456157684326,
+      "n_requests": 5964,
+      "req_per_sec": 198.73735694050015,
+      "mean_latency_ms": 20.082178029489675,
+      "p99_latency_ms": 37.97053464062619,
+      "p50_latency_ms": 19.83963400016364,
+      "amortized_per_tx_us": 1255.1361268431046,
+      "lanes_per_request": 16
+    },
+    {
+      "n_clients": 8,
+      "duration_s": 30.010366201400757,
+      "n_requests": 5967,
+      "req_per_sec": 198.8312958247569,
+      "mean_latency_ms": 40.029392916701916,
+      "p99_latency_ms": 151.57982186108717,
+      "p50_latency_ms": 30.2996720020019,
+      "amortized_per_tx_us": 2501.8370572938697,
+      "lanes_per_request": 16
+    },
+    {
+      "n_clients": 16,
+      "duration_s": 30.021195650100708,
+      "n_requests": 5848,
+      "req_per_sec": 194.79570594585505,
+      "mean_latency_ms": 81.00841336382783,
+      "p99_latency_ms": 245.54594821940546,
+      "p50_latency_ms": 80.60937949994695,
+      "amortized_per_tx_us": 5063.025835239239,
+      "lanes_per_request": 16
+    }
+  ],
+  "occupancy_sweep": [
+    {
+      "lanes": 1,
+      "n": 100,
+      "batch_latency_us": 13274.678502057213,
+      "per_tx_us": 13274.678502057213,
+      "mean_latency_us": 13323.957430111477,
+      "p99_latency_us": 14553.874663251921
+    },
+    {
+      "lanes": 4,
+      "n": 100,
+      "batch_latency_us": 13243.629500721,
+      "per_tx_us": 3310.90737518025,
+      "mean_latency_us": 13248.079490076634,
+      "p99_latency_us": 14470.23905973765
+    },
+    {
+      "lanes": 8,
+      "n": 100,
+      "batch_latency_us": 13453.309999022167,
+      "per_tx_us": 1681.663749877771,
+      "mean_latency_us": 13403.665749829088,
+      "p99_latency_us": 13791.54883834417
+    },
+    {
+      "lanes": 16,
+      "n": 100,
+      "batch_latency_us": 13326.295498700347,
+      "per_tx_us": 832.8934686687717,
+      "mean_latency_us": 13288.011620061297,
+      "p99_latency_us": 13771.527586686716
+    }
+  ]
+}
+
+----------------------------------------------------------------------------------------------------
+FILE: artifacts/c3_comparison.json
+WHAT: Client-vs-server compute crossover map across batch occupancy (lanes=1/4/8/16), performance governor.
+----------------------------------------------------------------------------------------------------
+{
+  "snapshot": "performance",
+  "is_plumbing_only": false,
+  "table_a_single_request": [
+    {
+      "chain": "160bit",
+      "client_encode_encrypt_median_us": 4181.8,
+      "server_total_inference_median_us": 7578.5,
+      "client_minus_server_us": -3396.7,
+      "client_over_server_ratio": 0.552,
+      "which_is_larger": "server"
+    },
+    {
+      "chain": "200bit",
+      "client_encode_encrypt_median_us": 5224.5,
+      "server_total_inference_median_us": 14927.0,
+      "client_minus_server_us": -9702.5,
+      "client_over_server_ratio": 0.35,
+      "which_is_larger": "server"
+    }
+  ],
+  "table_b_amortized_occupancy": [
+    {
+      "lanes": 1,
+      "client_encrypt_us_fixed_per_request": 4181.8,
+      "server_amortized_per_tx_us": 13274.7,
+      "amortization_factor_server": 1.0,
+      "client_over_server_ratio": 0.315,
+      "which_is_larger": "server"
+    },
+    {
+      "lanes": 4,
+      "client_encrypt_us_fixed_per_request": 4181.8,
+      "server_amortized_per_tx_us": 3310.9,
+      "amortization_factor_server": 4.009377792193454,
+      "client_over_server_ratio": 1.263,
+      "which_is_larger": "client"
+    },
+    {
+      "lanes": 8,
+      "client_encrypt_us_fixed_per_request": 4181.8,
+      "server_amortized_per_tx_us": 1681.7,
+      "amortization_factor_server": 7.8937769236103605,
+      "client_over_server_ratio": 2.487,
+      "which_is_larger": "client"
+    },
+    {
+      "lanes": 16,
+      "client_encrypt_us_fixed_per_request": 4181.8,
+      "server_amortized_per_tx_us": 832.9,
+      "amortization_factor_server": 15.93802689229196,
+      "client_over_server_ratio": 5.021,
+      "which_is_larger": "client"
+    }
+  ],
+  "table_c_lane_for_lane_hera": [
+    {
+      "lanes": 1,
+      "ckks_encrypt_median_us": 4181.8,
+      "hera_encrypt_median_us": 258.0,
+      "ckks_minus_hera_us": 3923.8,
+      "ckks_over_hera_ratio": 16.209,
+      "which_is_larger": "ckks",
+      "hera_upload_bytes": 1052,
+      "ckks_upload_bytes": 262257
+    },
+    {
+      "lanes": 4,
+      "ckks_encrypt_median_us": 4181.8,
+      "hera_encrypt_median_us": 1198.0,
+      "ckks_minus_hera_us": 2983.8,
+      "ckks_over_hera_ratio": 3.491,
+      "which_is_larger": "ckks",
+      "hera_upload_bytes": 4124,
+      "ckks_upload_bytes": 262257
+    },
+    {
+      "lanes": 8,
+      "ckks_encrypt_median_us": 4181.8,
+      "hera_encrypt_median_us": 2427.0,
+      "ckks_minus_hera_us": 1754.8,
+      "ckks_over_hera_ratio": 1.723,
+      "which_is_larger": "ckks",
+      "hera_upload_bytes": 8220,
+      "ckks_upload_bytes": 262257
+    },
+    {
+      "lanes": 16,
+      "ckks_encrypt_median_us": 4181.8,
+      "hera_encrypt_median_us": 4821.0,
+      "ckks_minus_hera_us": -639.2,
+      "ckks_over_hera_ratio": 0.867,
+      "which_is_larger": "hera",
+      "hera_upload_bytes": 16412,
+      "ckks_upload_bytes": 262257
+    }
+  ]
+}
+
+----------------------------------------------------------------------------------------------------
+FILE: artifacts/c3_comparison_PLUMBING_powersave.json
+WHAT: Same crossover map, earlier powersave-governor plumbing run (kept for transparency).
+----------------------------------------------------------------------------------------------------
+{
+  "snapshot": "baseline_powersave",
+  "is_plumbing_only": true,
+  "table_a_single_request": [
+    {
+      "chain": "160bit",
+      "client_encode_encrypt_median_us": 2933.2,
+      "server_total_inference_median_us": 6763.0,
+      "client_minus_server_us": -3829.8,
+      "client_over_server_ratio": 0.434,
+      "which_is_larger": "server"
+    },
+    {
+      "chain": "200bit",
+      "client_encode_encrypt_median_us": 3008.4,
+      "server_total_inference_median_us": 9037.5,
+      "client_minus_server_us": -6029.1,
+      "client_over_server_ratio": 0.333,
+      "which_is_larger": "server"
+    }
+  ],
+  "table_b_amortized_occupancy": [
+    {
+      "lanes": 1,
+      "client_encrypt_us_fixed_per_request": 2933.2,
+      "server_amortized_per_tx_us": 16104.7,
+      "amortization_factor_server": 1.0,
+      "client_over_server_ratio": 0.182,
+      "which_is_larger": "server"
+    },
+    {
+      "lanes": 4,
+      "client_encrypt_us_fixed_per_request": 2933.2,
+      "server_amortized_per_tx_us": 4468.8,
+      "amortization_factor_server": 3.603774947948646,
+      "client_over_server_ratio": 0.656,
+      "which_is_larger": "server"
+    },
+    {
+      "lanes": 8,
+      "client_encrypt_us_fixed_per_request": 2933.2,
+      "server_amortized_per_tx_us": 2097.2,
+      "amortization_factor_server": 7.679143695850723,
+      "client_over_server_ratio": 1.399,
+      "which_is_larger": "client"
+    },
+    {
+      "lanes": 16,
+      "client_encrypt_us_fixed_per_request": 2933.2,
+      "server_amortized_per_tx_us": 1070.1,
+      "amortization_factor_server": 15.050392493649907,
+      "client_over_server_ratio": 2.741,
+      "which_is_larger": "client"
+    }
+  ],
+  "table_c_lane_for_lane_hera": [
+    {
+      "lanes": 1,
+      "ckks_encrypt_median_us": 2933.2,
+      "hera_encrypt_median_us": 433.0,
+      "ckks_minus_hera_us": 2500.2,
+      "ckks_over_hera_ratio": 6.774,
+      "which_is_larger": "ckks",
+      "hera_upload_bytes": 1052,
+      "ckks_upload_bytes": 262257
+    },
+    {
+      "lanes": 4,
+      "ckks_encrypt_median_us": 2933.2,
+      "hera_encrypt_median_us": 1999.0,
+      "ckks_minus_hera_us": 934.2,
+      "ckks_over_hera_ratio": 1.467,
+      "which_is_larger": "ckks",
+      "hera_upload_bytes": 4124,
+      "ckks_upload_bytes": 262257
+    },
+    {
+      "lanes": 8,
+      "ckks_encrypt_median_us": 2933.2,
+      "hera_encrypt_median_us": 3521.0,
+      "ckks_minus_hera_us": -587.8,
+      "ckks_over_hera_ratio": 0.833,
+      "which_is_larger": "hera",
+      "hera_upload_bytes": 8220,
+      "ckks_upload_bytes": 262257
+    },
+    {
+      "lanes": 16,
+      "ckks_encrypt_median_us": 2933.2,
+      "hera_encrypt_median_us": 7327.0,
+      "ckks_minus_hera_us": -4393.8,
+      "ckks_over_hera_ratio": 0.4,
+      "which_is_larger": "hera",
+      "hera_upload_bytes": 16412,
+      "ckks_upload_bytes": 262257
+    }
+  ]
+}
+
+----------------------------------------------------------------------------------------------------
+FILE: artifacts/bandwidth_ladder.json
+WHAT: HHE (HERA-16) vs standard CKKS upload size at each batch occupancy.
+----------------------------------------------------------------------------------------------------
+{
+  "framing": {
+    "description": "Phase 7 §7.5 bandwidth ladder: 4 rungs for a realistic 256-feature (~8KB raw float64) payload, single transaction. Real measured numbers only; PENDING cells documented with exact reason, never estimated.",
+    "methodology": "measured"
+  },
+  "rungs": {
+    "rung_1_seal_seeded": {
+      "description": "SEAL seeded ciphertexts (Serializable<Ciphertext>, encrypt_symmetric). Halves upload at zero server cost. bank_client currently does NOT use this path -- it sends standard (public-key) ciphertexts. Confirmed by reading bank_client/bank_client.py and bank_client/he_wrapper/seal_wrapper_160.cpp: both call encrypt() (public-key), never encrypt_symmetric().",
+      "status": "MEASURED (size only) / NOT DEPLOYED",
+      "payload_bytes": 131266,
+      "expansion_factor_vs_seeded": 1.0,
+      "client_cpu_ms": "PENDING (requires bank_client encrypt_symmetric() integration to measure)",
+      "server_cost_ms": "same as rung 2 (no server-side change; server cannot distinguish wire format after deserialization)",
+      "online_latency_ms": "PENDING (not deployed; would be approx. e2e_latency_ms with halved upload time)",
+      "source": "artifacts/wire_sizes.json#chains.160bit.seeded_bytes"
+    },
+    "rung_2_seal_160bit_standard": {
+      "description": "160-bit chain, standard public-key ciphertext -- the CURRENT production wire format (bank_client.py -> seal_wrapper_160 -> gRPC).",
+      "status": "MEASURED",
+      "payload_bytes": 262257,
+      "expansion_factor_vs_seeded": 1.9979,
+      "client_cpu_ms": "included in online_latency_ms (not separately instrumented client-side)",
+      "server_cost_ms": "see artifacts/throughput_results.json#occupancy_sweep (per_tx_us)",
+      "online_latency_ms": 7.5635,
+      "source": "artifacts/wire_sizes.json + artifacts/comparison_results.json#summary.reduced_160bit"
+    },
+    "rung_3_hhe_online_upload": {
+      "description": "HHE online upload: HERA-16 symmetric ciphertext for 256 features, single transaction (lanes=1). AEAD-wrapped (AES-128-GCM).",
+      "status": "MEASURED (client-side) / PENDING (server-side)",
+      "payload_bytes": 1052,
+      "expansion_factor_vs_seeded": 124.7776,
+      "client_cpu_ms": 0.5076,
+      "server_cost_ms": "PENDING",
+      "online_latency_ms": "PENDING",
+      "pending_reason": "Server-side cost (BFV evaluation of HERA-16 + StC/CKKS conversion) requires the KAIST ckks_fv FV->CKKS scheme bridge, not present in standard Lattigo v6.2.0. Client-side cost (online_encrypt_ms, payload_bytes) is MEASURED.",
+      "source": "tools/transciphering/results/hera_bench_lane1.json"
+    },
+    "rung_4_full_rtf": {
+      "description": "Full RtF: transcipher (HERA-16 eval inside BFV) + StC/CKKS conversion + existing CKKS inference circuit, end-to-end.",
+      "status": "PENDING",
+      "payload_bytes": 1052,
+      "expansion_factor_vs_seeded": 124.7776,
+      "client_cpu_ms": 0.5076,
+      "server_cost_ms": "PENDING",
+      "online_latency_ms": "PENDING",
+      "pending_reason": "Full RtF end-to-end latency cannot be measured until the KAIST ckks_fv scheme bridge is integrated (see tools/transciphering/README.md). The CKKS-only post-transcipher inference stage would reuse the existing, already-measured depth-1 circuit (artifacts/comparison_results.json, median 10.68ms for 160-bit).",
+      "source": "tools/transciphering/results/hera_bench_lane1.json (online upload only)"
+    }
+  }
+}
+
+----------------------------------------------------------------------------------------------------
+FILE: artifacts/hhe_breakeven.json
+WHAT: HHE break-even map: bandwidth savings vs (PENDING) server-side transcipher compute.
+----------------------------------------------------------------------------------------------------
+{
+  "framing": {
+    "description": "Phase 7 §7.4 break-even map: for each (circuit_depth × batch_occupancy × uplink_bandwidth), computes the CKKS end-to-end latency (MEASURED) and the HHE end-to-end latency (PARTIAL: upload+encrypt MEASURED, server transcipher PENDING). 'hhe_upload_headroom_ms' = how many ms of server transcipher budget HHE has before CKKS wins on total latency.",
+    "axes": {
+      "circuit_depth": [
+        1,
+        2,
+        3
+      ],
+      "batch_occupancy_lanes": [
+        1,
+        4,
+        8,
+        16
+      ],
+      "uplink_bandwidth_kbps": [
+        1000,
+        10000,
+        100000
+      ]
+    },
+    "ckks_side_methodology": "MEASURED from artifacts/throughput_results.json + wire_sizes.json",
+    "hhe_side_methodology": "online_encrypt_ms MEASURED (tools/transciphering/results/); upload_bytes_symmetric COMPUTED (HERA-16 formula: n_features*lanes*4+28); online_transcipher_ms PENDING (KAIST ckks_fv scheme bridge); repacking_ms PENDING",
+    "pending_reason": "online_transcipher_ms and repacking_ms require BenchmarkRtFHera80as (KAIST-CryptLab/RtF-Transciphering, ckks_fv) on >=128 GiB RAM. The 15GB-RAM host OOM-killed the lightest benchmark (BenchmarkRtFHera80s, exit 137) before the online phase. RAM anchor: ~60 GB for HERA 80-bit cipher security [CONFIRMED-SOURCE: arXiv:2409.06422v1 §II]; minimum safe tier is r7i.4xlarge (128 GiB), not r7i.2xlarge (64 GiB) which has no margin. Literature fallbacks are exhausted: (1) RtF Table 5 (eprint 2020/1335) returns HTTP 403 on all accessible mirrors -- a dead end, not a future fetch. (2) Presto (arXiv 2507.00367) §V measures CLIENT-SIDE HERA stream-key generation on bank's edge device/FPGA, NOT server-side HE evaluation or HalfBoot latency; the 3-5x hardware speedup cited in prior analysis is not recoverable as server-side transcipher time. Cloud harness scaffolded at scripts/cloud_transcipher_bench/ for r7i.4xlarge -- prepped, not executed. See RESEARCH_FINDINGS_v3.md §B for full epistemics."
+  },
+  "cells": [
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 13.2747,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2111.8307,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 8.416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.2747,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2089.1324,
+        "note": "HHE upload+encrypt saves 2089.13 ms vs CKKS upload at 1000 kbps — server transcipher+repack must cost < 2089.13 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 13.2747,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 223.5803,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 0.8416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.2747,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 208.4564,
+        "note": "HHE upload+encrypt saves 208.46 ms vs CKKS upload at 10000 kbps — server transcipher+repack must cost < 208.46 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 13.2747,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 34.7552,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 0.08416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.2747,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 20.3888,
+        "note": "HHE upload+encrypt saves 20.39 ms vs CKKS upload at 100000 kbps — server transcipher+repack must cost < 20.39 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 13.2436,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2111.7996,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 32.992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.2436,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2063.0272,
+        "note": "HHE upload+encrypt saves 2063.03 ms vs CKKS upload at 1000 kbps — server transcipher+repack must cost < 2063.03 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 13.2436,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 223.5492,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 3.2992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.2436,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 204.4696,
+        "note": "HHE upload+encrypt saves 204.47 ms vs CKKS upload at 10000 kbps — server transcipher+repack must cost < 204.47 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 13.2436,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 34.7242,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 0.32992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.2436,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 18.6139,
+        "note": "HHE upload+encrypt saves 18.61 ms vs CKKS upload at 100000 kbps — server transcipher+repack must cost < 18.61 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 13.4533,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2112.0093,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 65.76,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.4533,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2028.6449,
+        "note": "HHE upload+encrypt saves 2028.64 ms vs CKKS upload at 1000 kbps — server transcipher+repack must cost < 2028.64 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 13.4533,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 223.7589,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 6.576,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.4533,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 199.5785,
+        "note": "HHE upload+encrypt saves 199.58 ms vs CKKS upload at 10000 kbps — server transcipher+repack must cost < 199.58 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 13.4533,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 34.9339,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 0.6576,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.4533,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 16.6719,
+        "note": "HHE upload+encrypt saves 16.67 ms vs CKKS upload at 100000 kbps — server transcipher+repack must cost < 16.67 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 13.3263,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2111.8823,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 131.296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.3263,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 1959.3246,
+        "note": "HHE upload+encrypt saves 1959.32 ms vs CKKS upload at 1000 kbps — server transcipher+repack must cost < 1959.32 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 13.3263,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 223.6319,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 13.1296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.3263,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 189.2406,
+        "note": "HHE upload+encrypt saves 189.24 ms vs CKKS upload at 10000 kbps — server transcipher+repack must cost < 189.24 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 1,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.0,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep (MEASURED)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 13.3263,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 34.8069,
+        "status": "MEASURED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 1.31296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 13.3263,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 12.2322,
+        "note": "HHE upload+encrypt saves 12.23 ms vs CKKS upload at 100000 kbps — server transcipher+repack must cost < 12.23 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 18.5845,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2117.1405,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 8.416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.5845,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2089.1324,
+        "note": "HHE upload+encrypt saves 2089.13 ms vs CKKS upload at 1000 kbps — server transcipher+repack must cost < 2089.13 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 18.5845,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 228.8901,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 0.8416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.5845,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 208.4564,
+        "note": "HHE upload+encrypt saves 208.46 ms vs CKKS upload at 10000 kbps — server transcipher+repack must cost < 208.46 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 18.5845,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 40.0651,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 0.08416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.5845,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 20.3888,
+        "note": "HHE upload+encrypt saves 20.39 ms vs CKKS upload at 100000 kbps — server transcipher+repack must cost < 20.39 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 18.5411,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2117.0971,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 32.992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.5411,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2063.0272,
+        "note": "HHE upload+encrypt saves 2063.03 ms vs CKKS upload at 1000 kbps — server transcipher+repack must cost < 2063.03 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 18.5411,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 228.8467,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 3.2992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.5411,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 204.4696,
+        "note": "HHE upload+encrypt saves 204.47 ms vs CKKS upload at 10000 kbps — server transcipher+repack must cost < 204.47 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 18.5411,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 40.0216,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 0.32992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.5411,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 18.6139,
+        "note": "HHE upload+encrypt saves 18.61 ms vs CKKS upload at 100000 kbps — server transcipher+repack must cost < 18.61 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 18.8346,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2117.3906,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 65.76,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.8346,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2028.6449,
+        "note": "HHE upload+encrypt saves 2028.64 ms vs CKKS upload at 1000 kbps — server transcipher+repack must cost < 2028.64 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 18.8346,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 229.1402,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 6.576,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.8346,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 199.5785,
+        "note": "HHE upload+encrypt saves 199.58 ms vs CKKS upload at 10000 kbps — server transcipher+repack must cost < 199.58 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 18.8346,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 40.3152,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 0.6576,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.8346,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 16.6719,
+        "note": "HHE upload+encrypt saves 16.67 ms vs CKKS upload at 100000 kbps — server transcipher+repack must cost < 16.67 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 18.6568,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2117.2128,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 131.296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.6568,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 1959.3246,
+        "note": "HHE upload+encrypt saves 1959.32 ms vs CKKS upload at 1000 kbps — server transcipher+repack must cost < 1959.32 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 18.6568,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 228.9624,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 13.1296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.6568,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 189.2406,
+        "note": "HHE upload+encrypt saves 189.24 ms vs CKKS upload at 10000 kbps — server transcipher+repack must cost < 189.24 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 2,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.4,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-2 he_eval scaled by 1.4x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 18.6568,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 40.1374,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 1.31296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 18.6568,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 12.2322,
+        "note": "HHE upload+encrypt saves 12.23 ms vs CKKS upload at 100000 kbps — server transcipher+repack must cost < 12.23 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 23.8944,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2122.4504,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 8.416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.8944,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2089.1324,
+        "note": "HHE upload+encrypt saves 2089.13 ms vs CKKS upload at 1000 kbps — server transcipher+repack must cost < 2089.13 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 23.8944,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 234.2,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 0.8416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.8944,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 208.4564,
+        "note": "HHE upload+encrypt saves 208.46 ms vs CKKS upload at 10000 kbps — server transcipher+repack must cost < 208.46 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 1,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 23.8944,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 45.375,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 1052,
+        "upload_ms": 0.08416,
+        "online_encrypt_ms": 0.5076,
+        "keygen_amortized_ms": 6.1e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.8944,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 20.3888,
+        "note": "HHE upload+encrypt saves 20.39 ms vs CKKS upload at 100000 kbps — server transcipher+repack must cost < 20.39 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 23.8385,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2122.3945,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 32.992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.8385,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2063.0272,
+        "note": "HHE upload+encrypt saves 2063.03 ms vs CKKS upload at 1000 kbps — server transcipher+repack must cost < 2063.03 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 23.8385,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 234.1441,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 3.2992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.8385,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 204.4696,
+        "note": "HHE upload+encrypt saves 204.47 ms vs CKKS upload at 10000 kbps — server transcipher+repack must cost < 204.47 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 4,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 23.8385,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 45.3191,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 4124,
+        "upload_ms": 0.32992,
+        "online_encrypt_ms": 2.0368,
+        "keygen_amortized_ms": 5.4e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.8385,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 18.6139,
+        "note": "HHE upload+encrypt saves 18.61 ms vs CKKS upload at 100000 kbps — server transcipher+repack must cost < 18.61 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 24.216,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2122.772,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 65.76,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 24.216,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 2028.6449,
+        "note": "HHE upload+encrypt saves 2028.64 ms vs CKKS upload at 1000 kbps — server transcipher+repack must cost < 2028.64 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 24.216,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 234.5216,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 6.576,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 24.216,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 199.5785,
+        "note": "HHE upload+encrypt saves 199.58 ms vs CKKS upload at 10000 kbps — server transcipher+repack must cost < 199.58 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 8,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 24.216,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 45.6965,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 8220,
+        "upload_ms": 0.6576,
+        "online_encrypt_ms": 3.6511,
+        "keygen_amortized_ms": 3.3e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 24.216,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 16.6719,
+        "note": "HHE upload+encrypt saves 16.67 ms vs CKKS upload at 100000 kbps — server transcipher+repack must cost < 16.67 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 1000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 2098.056,
+        "he_eval_ms": 23.9873,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 2122.5433,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 131.296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.9873,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 1959.3246,
+        "note": "HHE upload+encrypt saves 1959.32 ms vs CKKS upload at 1000 kbps — server transcipher+repack must cost < 1959.32 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 10000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 209.8056,
+        "he_eval_ms": 23.9873,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 234.2929,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 13.1296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.9873,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 189.2406,
+        "note": "HHE upload+encrypt saves 189.24 ms vs CKKS upload at 10000 kbps — server transcipher+repack must cost < 189.24 ms for HHE to win end-to-end."
+      }
+    },
+    {
+      "circuit_depth": 3,
+      "batch_occupancy_lanes": 16,
+      "uplink_bandwidth_kbps": 100000,
+      "depth_scale_factor": 1.8,
+      "methodology_note": "depth-1 he_eval from throughput_results.json occupancy_sweep; depth-3 he_eval scaled by 1.8x (modeled, not measured)",
+      "ckks": {
+        "upload_bytes": 262257,
+        "upload_ms": 20.9806,
+        "he_eval_ms": 23.9873,
+        "grpc_overhead_ms": 0.5,
+        "total_ms": 45.4679,
+        "status": "MODELED"
+      },
+      "hhe": {
+        "upload_bytes": 16412,
+        "upload_ms": 1.31296,
+        "online_encrypt_ms": 7.4354,
+        "keygen_amortized_ms": 4.9e-05,
+        "online_transcipher_ms": "PENDING",
+        "repacking_ms": "PENDING",
+        "he_eval_ms": 23.9873,
+        "total_ms": "PENDING",
+        "status": "PARTIAL",
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+      },
+      "result": {
+        "winner": "PENDING",
+        "margin_ms": null,
+        "hhe_upload_headroom_ms": 12.2322,
+        "note": "HHE upload+encrypt saves 12.23 ms vs CKKS upload at 100000 kbps — server transcipher+repack must cost < 12.23 ms for HHE to win end-to-end."
+      }
+    }
+  ]
+}
+
+----------------------------------------------------------------------------------------------------
+FILE: artifacts/wire_sizes.json
+WHAT: Serialized ciphertext / message wire sizes (request, response, keys).
+----------------------------------------------------------------------------------------------------
+{
+  "framing": {
+    "description": "§5.7 Part A: ciphertext wire sizes for a single (4096-slot) CKKS ciphertext, measured by vendor_server/build/wire_size_probe for both modulus chains. 'standard' is the public-key encryption wire format produced by bank_client/he_wrapper/seal_wrapper*. 'seeded' is a symmetric-key (encrypt_symmetric) 'what if' comparison point -- not what the bank's public-key path produces today.",
+    "methodology": "measured",
+    "source": "vendor_server/build/wire_size_probe"
+  },
+  "chains": {
+    "160bit": {
+      "coeff_modulus": "{60,40,60}",
+      "standard_bytes": 262257,
+      "seeded_bytes": 131266,
+      "standard_zlib_bytes": 262354,
+      "standard_zstd_bytes": 263281,
+      "seeded_vs_standard_ratio": 1.99791,
+      "zlib_compression_ratio": 0.99963,
+      "zstd_compression_ratio": 0.996111
+    },
+    "200bit": {
+      "coeff_modulus": "{60,40,40,60}",
+      "standard_bytes": 393329,
+      "seeded_bytes": 196802,
+      "standard_zlib_bytes": 393466,
+      "standard_zstd_bytes": 394865,
+      "seeded_vs_standard_ratio": 1.9986,
+      "zlib_compression_ratio": 0.999652,
+      "zstd_compression_ratio": 0.99611
+    }
+  }
+}
+
+----------------------------------------------------------------------------------------------------
+FILE: artifacts/amortization_table.json
+WHAT: Per-transaction amortized cost table across batch sizes.
+----------------------------------------------------------------------------------------------------
+{
+  "framing": {
+    "description": "§5.7 Part B: per-transaction amortization table, derived from the single-client batch-occupancy sweep in artifacts/throughput_results.json's 'occupancy_sweep' (vendor_server_160, hoisted_tree_sum, 160-bit chain, PPFD_GRPC_THREADS=4). amortization_factor is per_tx_us(lanes=1) / per_tx_us(lanes=N): how many times cheaper, per transaction, a batch of N is relative to a single-transaction request.",
+    "methodology": "measured",
+    "source": "artifacts/throughput_results.json#occupancy_sweep"
+  },
+  "amortization": [
+    {
+      "lanes": 1,
+      "n": 100,
+      "batch_latency_us": 13274.678502057213,
+      "per_tx_us": 13274.678502057213,
+      "amortization_factor": 1.0
+    },
+    {
+      "lanes": 4,
+      "n": 100,
+      "batch_latency_us": 13243.629500721,
+      "per_tx_us": 3310.90737518025,
+      "amortization_factor": 4.009377792193454
+    },
+    {
+      "lanes": 8,
+      "n": 100,
+      "batch_latency_us": 13453.309999022167,
+      "per_tx_us": 1681.663749877771,
+      "amortization_factor": 7.8937769236103605
+    },
+    {
+      "lanes": 16,
+      "n": 100,
+      "batch_latency_us": 13326.295498700347,
+      "per_tx_us": 832.8934686687717,
+      "amortization_factor": 15.93802689229196
+    }
+  ]
+}

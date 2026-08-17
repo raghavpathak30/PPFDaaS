@@ -1,0 +1,10 @@
+{
+  "governor_at_run_start": "performance",
+  "taskset_cpus": "0,2,4,6,8,10",
+  "run_started_at_utc": "2026-06-28T19:56:32.963490+00:00",
+  "allow_non_performance_override": false,
+  "cpu_governor": "performance",
+  "turbo_disabled": true,
+  "stamped_at_utc": "2026-06-28T20:01:55.301486+00:00",
+  "wall_seconds": 0.1
+}

@@ -211,13 +211,27 @@ def main() -> None:
             }
             row["correctness_max_abs_error"] = openfhe_results["correctness_max_abs_error"]
             row["correctness_passed"] = openfhe_results["correctness_passed"]
+            row["ring_dim"] = openfhe_results.get("ring_dim", "unknown")
             row["note"] = (
                 "'rotations'=30 and 'critical_path_steps'=2 mirror the SEAL BSGS "
                 "row's structure (same BSGS_ROTATION_STEPS set, two layers), but "
                 "each layer's 15 EvalFastRotation calls reuse ONE "
                 "EvalFastRotationPrecompute -- the digit-decomposition sharing "
                 "that defines genuine hoisting (§7.1) and that SEAL's public "
-                "API cannot express."
+                "API cannot express. CAVEAT (read before citing this row against "
+                "the SEAL rows above): OpenFHE's own parameter generator REJECTS "
+                f"ring_dim=8192 (SEAL's value, both BSGS and fold rows above) as "
+                f"non-HEStd_128_classic-compliant at depth=1/scaling_mod=40 bits and "
+                f"auto-selects ring_dim={row.get('ring_dim')} instead -- 2x SEAL's ring. "
+                "This single absolute-latency table is therefore NOT an equal-ring-"
+                "dimension comparison; the equal-rotation-count, unequal-ring-dimension "
+                "result is that SEAL BSGS (N=8192) measured faster than OpenFHE "
+                "hoisted-flat (N=16384) on this host under powersave -- i.e. this run "
+                "does NOT support a §7.5 claim that genuine hoisting beats SEAL's "
+                "public-API ceiling once ring dimension is held equal, because ring "
+                "dimension could not be held equal here. See docs/spec.md §7.5 for the "
+                "full discussion and what would be needed to test the hoisting claim "
+                "at matched ring dimension."
             )
         strategies.append(row)
     else:

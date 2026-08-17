@@ -1,0 +1,87 @@
+{
+  "framing": {
+    "description": "\u00a75.4 throughput (closed-loop, concurrent load) vs tests/benchmark_comparison.py's latency (single request in flight). Same vendor_server_160 binary/circuit (hoisted_tree_sum, 160-bit chain).",
+    "fast": false
+  },
+  "ppfd_grpc_threads": 4,
+  "client_sweep": [
+    {
+      "n_clients": 1,
+      "duration_s": 30.01289200782776,
+      "n_requests": 1687,
+      "req_per_sec": 56.2091783610859,
+      "mean_latency_ms": 17.75703456788599,
+      "p99_latency_ms": 33.26892531960764,
+      "p50_latency_ms": 17.049969999789027,
+      "amortized_per_tx_us": 1109.8146604928745,
+      "lanes_per_request": 16
+    },
+    {
+      "n_clients": 4,
+      "duration_s": 30.024725914001465,
+      "n_requests": 3136,
+      "req_per_sec": 104.44724821076836,
+      "mean_latency_ms": 38.187827220355075,
+      "p99_latency_ms": 79.29780445037979,
+      "p50_latency_ms": 35.20717900028103,
+      "amortized_per_tx_us": 2386.739201272192,
+      "lanes_per_request": 16
+    },
+    {
+      "n_clients": 8,
+      "duration_s": 30.027425050735474,
+      "n_requests": 3509,
+      "req_per_sec": 116.85983710128527,
+      "mean_latency_ms": 67.96680608976529,
+      "p99_latency_ms": 157.20826643992046,
+      "p50_latency_ms": 62.688429999980144,
+      "amortized_per_tx_us": 4247.925380610331,
+      "lanes_per_request": 16
+    },
+    {
+      "n_clients": 16,
+      "duration_s": 30.03377604484558,
+      "n_requests": 3642,
+      "req_per_sec": 121.26347331623799,
+      "mean_latency_ms": 130.0498222474123,
+      "p99_latency_ms": 361.69667822934656,
+      "p50_latency_ms": 116.37389250063279,
+      "amortized_per_tx_us": 8128.113890463268,
+      "lanes_per_request": 16
+    }
+  ],
+  "occupancy_sweep": [
+    {
+      "lanes": 1,
+      "n": 100,
+      "batch_latency_us": 16104.703999189951,
+      "per_tx_us": 16104.703999189951,
+      "mean_latency_us": 16443.789550012298,
+      "p99_latency_us": 21897.599269977964
+    },
+    {
+      "lanes": 4,
+      "n": 100,
+      "batch_latency_us": 17875.37149994023,
+      "per_tx_us": 4468.842874985057,
+      "mean_latency_us": 18664.245330110134,
+      "p99_latency_us": 28693.42788055292
+    },
+    {
+      "lanes": 8,
+      "n": 100,
+      "batch_latency_us": 16777.60400070838,
+      "per_tx_us": 2097.2005000885474,
+      "mean_latency_us": 17321.88491998386,
+      "p99_latency_us": 22986.526209642765
+    },
+    {
+      "lanes": 16,
+      "n": 100,
+      "batch_latency_us": 17120.833499575383,
+      "per_tx_us": 1070.0520937234614,
+      "mean_latency_us": 17468.016060065565,
+      "p99_latency_us": 23474.99773890377
+    }
+  ]
+}

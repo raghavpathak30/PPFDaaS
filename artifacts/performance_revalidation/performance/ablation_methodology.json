@@ -1,0 +1,36 @@
+{
+  "methodology": "measured",
+  "source": "vendor_server/build/benchmark_160 --strategy=<naive|fold>",
+  "scope": "local CKKS circuit only: encrypt, multiply_plain, rescale, reduction, decrypt (no gRPC/serialization)",
+  "framing": "Type 1 self-ablation (docs/spec.md \u00a75.7): same algorithm family, codebase, binary, and hardware; only the reduction strategy differs. NOT a comparison against an external baseline library.",
+  "fast_ablation": false,
+  "measure_rounds": 100,
+  "warmup_rounds": 20,
+  "hoisted_rotations": 8,
+  "naive_rotations": 255,
+  "hoisted_critical_path": 8,
+  "naive_critical_path": 255,
+  "hoisted_galois_keygen_us": 30136,
+  "naive_galois_keygen_us": 968619,
+  "hoisted_correctness_max_abs_error": 1.98121e-07,
+  "naive_correctness_max_abs_error": 8.32245e-06,
+  "naive_latency_us": {
+    "mean": 205394,
+    "std": 1074.1,
+    "p50": 205321,
+    "p95": 205785,
+    "p99": 206230,
+    "min": 204569,
+    "max": 215557
+  },
+  "hoisted_latency_us": {
+    "mean": 7044.02,
+    "std": 193.69,
+    "p50": 6948.54,
+    "p95": 7409.57,
+    "p99": 7588.87,
+    "min": 6885.89,
+    "max": 7723.72
+  },
+  "naive_to_hoisted_ratio": 29.158633848285493
+}

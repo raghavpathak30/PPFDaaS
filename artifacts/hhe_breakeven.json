@@ -21,7 +21,7 @@
     },
     "ckks_side_methodology": "MEASURED from artifacts/throughput_results.json + wire_sizes.json",
     "hhe_side_methodology": "online_encrypt_ms MEASURED (tools/transciphering/results/); upload_bytes_symmetric COMPUTED (HERA-16 formula: n_features*lanes*4+28); online_transcipher_ms PENDING (KAIST ckks_fv scheme bridge); repacking_ms PENDING",
-    "pending_reason": "online_transcipher_ms and repacking_ms require BenchmarkRtFHera80as (KAIST-CryptLab/RtF-Transciphering, ckks_fv) on >=128 GiB RAM. The 15GB-RAM host OOM-killed the lightest benchmark (BenchmarkRtFHera80s, exit 137) before the online phase. RAM anchor: ~60 GB for HERA 80-bit cipher security [CONFIRMED-SOURCE: arXiv:2409.06422v1 §II]; minimum safe tier is r7i.4xlarge (128 GiB), not r7i.2xlarge (64 GiB) which has no margin. Literature fallbacks are exhausted: (1) RtF Table 5 (eprint 2020/1335) returns HTTP 403 on all accessible mirrors -- a dead end, not a future fetch. (2) Presto (arXiv 2507.00367) §V measures CLIENT-SIDE HERA stream-key generation on bank's edge device/FPGA, NOT server-side HE evaluation or HalfBoot latency; the 3-5x hardware speedup cited in prior analysis is not recoverable as server-side transcipher time. Cloud harness scaffolded at scripts/cloud_transcipher_bench/ for r7i.4xlarge -- prepped, not executed. See RESEARCH_FINDINGS_v3.md §B for full epistemics."
+    "pending_reason": "online_transcipher_ms and repacking_ms require BenchmarkRtFHera80as (KAIST-CryptLab/RtF-Transciphering, ckks_fv) on >=128 GiB RAM. The 15GB-RAM host OOM-killed the lightest benchmark (BenchmarkRtFHera80s, exit 137) before the online phase. RAM anchor: ~60 GB for HERA 80-bit cipher security [CONFIRMED-SOURCE: arXiv:2409.06422v1 \u00a7II]; minimum safe tier is r7i.4xlarge (128 GiB), not r7i.2xlarge (64 GiB) which has no margin. Literature fallbacks are exhausted: (1) RtF Table 5 (eprint 2020/1335) returns HTTP 403 on all accessible mirrors -- a dead end, not a future fetch. (2) Presto (arXiv 2507.00367) \u00a7V measures CLIENT-SIDE HERA stream-key generation on bank's edge device/FPGA, NOT server-side HE evaluation or HalfBoot latency. Cloud harness scaffolded at scripts/cloud_transcipher_bench/ for r7i.4xlarge -- prepped, not executed. See RESEARCH_FINDINGS_v3.md \u00a7B for full epistemics. 2026-07-27 update: this session vendored a pinned, reproducible checkout (third_party/fetch_rtf.sh), confirmed `go vet` + `go test -c` compile cleanly on Go 1.25 with zero source changes -- the bridge is not broken, only RAM-blocked -- and ran a toy-scale (LogN=10, deliberately insecure) correctness harness that PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval, max abs error 2.1e-05, peak RSS ~275 MB). See tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure, LogN=16) params blocks a timing number."
   },
   "cells": [
     {
@@ -48,7 +48,7 @@
         "he_eval_ms": 13.2747,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -81,7 +81,7 @@
         "he_eval_ms": 13.2747,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -114,7 +114,7 @@
         "he_eval_ms": 13.2747,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -147,7 +147,7 @@
         "he_eval_ms": 13.2436,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -180,7 +180,7 @@
         "he_eval_ms": 13.2436,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -213,7 +213,7 @@
         "he_eval_ms": 13.2436,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -246,7 +246,7 @@
         "he_eval_ms": 13.4533,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -279,7 +279,7 @@
         "he_eval_ms": 13.4533,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -312,7 +312,7 @@
         "he_eval_ms": 13.4533,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -345,7 +345,7 @@
         "he_eval_ms": 13.3263,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -378,7 +378,7 @@
         "he_eval_ms": 13.3263,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -411,7 +411,7 @@
         "he_eval_ms": 13.3263,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -444,7 +444,7 @@
         "he_eval_ms": 18.5845,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -477,7 +477,7 @@
         "he_eval_ms": 18.5845,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -510,7 +510,7 @@
         "he_eval_ms": 18.5845,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -543,7 +543,7 @@
         "he_eval_ms": 18.5411,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -576,7 +576,7 @@
         "he_eval_ms": 18.5411,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -609,7 +609,7 @@
         "he_eval_ms": 18.5411,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -642,7 +642,7 @@
         "he_eval_ms": 18.8346,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -675,7 +675,7 @@
         "he_eval_ms": 18.8346,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -708,7 +708,7 @@
         "he_eval_ms": 18.8346,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -741,7 +741,7 @@
         "he_eval_ms": 18.6568,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -774,7 +774,7 @@
         "he_eval_ms": 18.6568,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -807,7 +807,7 @@
         "he_eval_ms": 18.6568,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -840,7 +840,7 @@
         "he_eval_ms": 23.8944,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -873,7 +873,7 @@
         "he_eval_ms": 23.8944,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -906,7 +906,7 @@
         "he_eval_ms": 23.8944,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -939,7 +939,7 @@
         "he_eval_ms": 23.8385,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -972,7 +972,7 @@
         "he_eval_ms": 23.8385,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -1005,7 +1005,7 @@
         "he_eval_ms": 23.8385,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -1038,7 +1038,7 @@
         "he_eval_ms": 24.216,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -1071,7 +1071,7 @@
         "he_eval_ms": 24.216,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -1104,7 +1104,7 @@
         "he_eval_ms": 24.216,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -1137,7 +1137,7 @@
         "he_eval_ms": 23.9873,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -1170,7 +1170,7 @@
         "he_eval_ms": 23.9873,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",
@@ -1203,7 +1203,7 @@
         "he_eval_ms": 23.9873,
         "total_ms": "PENDING",
         "status": "PARTIAL",
-        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto §V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ — not yet run. All other HHE columns are MEASURED (plaintext path)."
+        "pending_reason": "PENDING: online_transcipher_ms + repacking_ms require KAIST ckks_fv on >=128 GiB RAM. Table 5 (eprint 2020/1335) 403-unreachable on all accessible mirrors; Presto \u00a7V is client-side only, not a server-side latency source. Cloud harness at scripts/cloud_transcipher_bench/ \u2014 not yet run. 2026-07-27: build confirmed clean (go vet + go test -c, Go 1.25, zero source changes) and a toy-scale (LogN=10, deliberately insecure) correctness harness PASSED end-to-end (HERA-in-BFV -> HalfBoot -> repack -> CKKS eval) -- see tools/transciphering/toy_correctness/README.md. The code path is proven correct; only the ~60 GB RAM ceiling for the real (secure) params blocks a timing number. All other HHE columns are MEASURED (plaintext path)."
       },
       "result": {
         "winner": "PENDING",

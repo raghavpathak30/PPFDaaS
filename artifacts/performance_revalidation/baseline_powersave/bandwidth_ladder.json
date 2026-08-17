@@ -1,0 +1,50 @@
+{
+  "framing": {
+    "description": "Phase 7 \u00a77.5 bandwidth ladder: 4 rungs for a realistic 256-feature (~8KB raw float64) payload, single transaction. Real measured numbers only; PENDING cells documented with exact reason, never estimated.",
+    "methodology": "measured"
+  },
+  "rungs": {
+    "rung_1_seal_seeded": {
+      "description": "SEAL seeded ciphertexts (Serializable<Ciphertext>, encrypt_symmetric). Halves upload at zero server cost. bank_client currently does NOT use this path -- it sends standard (public-key) ciphertexts. Confirmed by reading bank_client/bank_client.py and bank_client/he_wrapper/seal_wrapper_160.cpp: both call encrypt() (public-key), never encrypt_symmetric().",
+      "status": "MEASURED (size only) / NOT DEPLOYED",
+      "payload_bytes": 131266,
+      "expansion_factor_vs_seeded": 1.0,
+      "client_cpu_ms": "PENDING (requires bank_client encrypt_symmetric() integration to measure)",
+      "server_cost_ms": "same as rung 2 (no server-side change; server cannot distinguish wire format after deserialization)",
+      "online_latency_ms": "PENDING (not deployed; would be approx. e2e_latency_ms with halved upload time)",
+      "source": "artifacts/wire_sizes.json#chains.160bit.seeded_bytes"
+    },
+    "rung_2_seal_160bit_standard": {
+      "description": "160-bit chain, standard public-key ciphertext -- the CURRENT production wire format (bank_client.py -> seal_wrapper_160 -> gRPC).",
+      "status": "MEASURED",
+      "payload_bytes": 262257,
+      "expansion_factor_vs_seeded": 1.9979,
+      "client_cpu_ms": "included in online_latency_ms (not separately instrumented client-side)",
+      "server_cost_ms": "see artifacts/throughput_results.json#occupancy_sweep (per_tx_us)",
+      "online_latency_ms": 10.6755,
+      "source": "artifacts/wire_sizes.json + artifacts/comparison_results.json#summary.reduced_160bit"
+    },
+    "rung_3_hhe_online_upload": {
+      "description": "HHE online upload: HERA-16 symmetric ciphertext for 256 features, single transaction (lanes=1). AEAD-wrapped (AES-128-GCM).",
+      "status": "MEASURED (client-side) / PENDING (server-side)",
+      "payload_bytes": 1052,
+      "expansion_factor_vs_seeded": 124.7776,
+      "client_cpu_ms": 0.5076,
+      "server_cost_ms": "PENDING",
+      "online_latency_ms": "PENDING",
+      "pending_reason": "Server-side cost (BFV evaluation of HERA-16 + StC/CKKS conversion) requires the KAIST ckks_fv FV->CKKS scheme bridge, not present in standard Lattigo v6.2.0. Client-side cost (online_encrypt_ms, payload_bytes) is MEASURED.",
+      "source": "tools/transciphering/results/hera_bench_lane1.json"
+    },
+    "rung_4_full_rtf": {
+      "description": "Full RtF: transcipher (HERA-16 eval inside BFV) + StC/CKKS conversion + existing CKKS inference circuit, end-to-end.",
+      "status": "PENDING",
+      "payload_bytes": 1052,
+      "expansion_factor_vs_seeded": 124.7776,
+      "client_cpu_ms": 0.5076,
+      "server_cost_ms": "PENDING",
+      "online_latency_ms": "PENDING",
+      "pending_reason": "Full RtF end-to-end latency cannot be measured until the KAIST ckks_fv scheme bridge is integrated (see tools/transciphering/README.md). The CKKS-only post-transcipher inference stage would reuse the existing, already-measured depth-1 circuit (artifacts/comparison_results.json, median 10.68ms for 160-bit).",
+      "source": "tools/transciphering/results/hera_bench_lane1.json (online upload only)"
+    }
+  }
+}

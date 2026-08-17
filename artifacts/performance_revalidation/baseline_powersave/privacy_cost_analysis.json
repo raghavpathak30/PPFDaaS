@@ -1,0 +1,44 @@
+{
+  "framing": {
+    "description": "\u00a75.8: privacy cost analysis. Uses the 200-bit modulus chain ({60,40,40,60}, 4 primes) vs the 160-bit chain ({60,40,60}, 3 primes) as a PROXY for the cost of ONE ADDITIONAL homomorphic multiplicative level (e.g. a model-weight masking step for model privacy). This is the same self-ablation (docs/spec.md \u00a75.7 Type 1) used by tests/benchmark_comparison.py -- same codebase/circuit/hardware, only the modulus chain differs. As of this session the HEADLINE latency number is the architecture-matched local-circuit pair (see matched_pair_latency_us below / artifacts/privacy_cost_matched_pair.json), not deployed_cross_architecture_e2e_delta_DEPRECATED (see AUDIT.md for why that figure conflates the modulus-chain cost with a server-architecture difference).",
+    "methodology": "measured",
+    "sources": {
+      "latency": "artifacts/privacy_cost_matched_pair.json (headline); artifacts/comparison_results.json#summary (deprecated, deployed-binary)",
+      "bandwidth": "artifacts/wire_sizes.json#chains",
+      "precision": "fresh single-inference \u00a75.5 parity-gate run (this script)"
+    }
+  },
+  "modulus_bits": {
+    "160bit": 160,
+    "200bit": 200,
+    "delta": 40
+  },
+  "matched_pair_latency_us": {
+    "160bit_median": 4559.889999999999,
+    "200bit_median": 11133.9,
+    "delta": 6574.01,
+    "pct_delta": 144.1703637587749,
+    "mann_whitney_p_value": 0.0,
+    "cpu_governor": "powersave",
+    "source": "artifacts/privacy_cost_matched_pair.json"
+  },
+  "deployed_cross_architecture_e2e_delta_DEPRECATED": {
+    "160bit_median": 10675.5,
+    "200bit_median": 17670.5,
+    "delta": 6995.0,
+    "pct_delta": 65.52386305091098,
+    "deprecation_note": "CONFOUNDED -- do not cite as the privacy-cost-per-level number. Measures vendor_server_main (200-bit, legacy decrypt-capable CKKSContext-in-RPC-service) vs vendor_server_160 (160-bit, eval-only EvalContext160): the delta mixes the modulus-chain cost with an unrelated server-architecture/RPC-service-implementation difference. Kept for transparency only -- see AUDIT.md."
+  },
+  "bandwidth_bytes": {
+    "160bit_standard": 262257,
+    "200bit_standard": 393329,
+    "delta": 131072,
+    "pct_delta": 49.97845624711638
+  },
+  "precision_max_abs_error": {
+    "160bit": 6.692879383303138e-11,
+    "200bit": 1.9214515256660292e-07,
+    "delta": 1.9207822377276989e-07
+  },
+  "key_finding": "Architecture-matched (same codebase, same rotation_hoisting.cpp, same strategy=fold, differ only in coeff_modulus): one additional 40-bit RNS prime (200-bit vs 160-bit chain) costs +6574.0us (144.2%) median latency (Mann-Whitney p=0.00e+00), measured under cpu_governor='powersave'. This supersedes the deployed-binary delta, which mixed this cost with an unrelated server-architecture difference -- see artifacts/privacy_cost_analysis.json's 'deployed_cross_architecture_e2e_delta_DEPRECATED' field for that figure, kept for transparency, not for citation. (bandwidth: +131072 bytes / 50.0% per ciphertext; precision: max_abs_error stays within the noise floor in both chains, see artifacts/precision_analysis.json.)"
+}

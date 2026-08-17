@@ -151,13 +151,41 @@ def _from_rotation_strategy_comparison() -> dict:
     return {"status": "PENDING", "reason": f"no local-circuit BSGS row found in {path}"}
 
 
-def _openfhe_pending() -> dict:
+def _openfhe_measured_or_pending() -> dict:
+    """OpenFHE only ever implements ONE circuit: hoisted_flat over the
+    30-element BSGS_ROTATION_STEPS set (tools/openfhe_benchmark/). There is no
+    OpenFHE fold (8-rotation) or naive (255-rotation) implementation -- those
+    cells remain PENDING regardless of this function's result. This function
+    covers the "bsgs" slot only.
+    """
     path = REPO_ROOT / "tools" / "openfhe_benchmark" / "results" / "openfhe_results.json"
-    reason = "OpenFHE not installed in this environment"
-    if path.exists():
-        d = json.loads(path.read_text())
-        reason = d.get("reason", reason)
-    return {"status": "PENDING", "reason": reason}
+    if not path.exists():
+        return {"status": "PENDING", "reason": "OpenFHE not installed in this environment"}
+    d = json.loads(path.read_text())
+    if d.get("status") != "MEASURED":
+        return {"status": "PENDING", "reason": d.get("reason", "OpenFHE benchmark not run")}
+    return {
+        "status": "MEASURED",
+        "source": "tools/openfhe_benchmark/results/openfhe_results.json",
+        "scope": "local circuit only: encrypt, EvalMult, EvalFastRotationPrecompute + "
+                 "EvalFastRotation (x2 layers), decrypt",
+        "rotations": d["rotations"],
+        "critical_path_steps": d["critical_path"],
+        "ring_dim": d.get("ring_dim"),
+        "correctness_max_abs_error": d["correctness_max_abs_error"],
+        "n": d["n"],
+        "latency_us": d["latency_us"]["total"],
+        "note": (
+            "CAVEAT: ring_dim=" + str(d.get("ring_dim")) + " -- OpenFHE's own parameter "
+            "generator rejects SEAL's ring_dim=8192 as non-HEStd_128_classic-compliant at "
+            "this depth/scaling-mod-size and auto-selects a larger ring instead. This cell "
+            "is therefore NOT comparable to the SEAL cells in this same row at equal ring "
+            "dimension -- see docs/spec.md §7.5 and rotation_strategy_comparison.json. "
+            "Filed under both 160bit/200bit because OpenFHE's parameter generator is not "
+            "addressed by a named modulus-chain choice the way SEAL's is; it is the same "
+            "single measured data point in both places."
+        ),
+    }
 
 
 # ─── §5.6 parallelism axis (PPFD_GRPC_THREADS) ──────────────────────────────
@@ -319,7 +347,13 @@ def main() -> int:
     fold_160, naive_160 = _from_ablation_methodology()
     bsgs_160 = _from_rotation_strategy_comparison()
     fold_200 = _run_benchmark_200_fold()
-    openfhe = _openfhe_pending()
+    openfhe_bsgs = _openfhe_measured_or_pending()
+    openfhe_unimplemented = {
+        "status": "PENDING",
+        "reason": "tools/openfhe_benchmark/ implements only the hoisted_flat circuit over "
+                   "the 30-rotation BSGS_ROTATION_STEPS set; no OpenFHE fold (8-rotation) or "
+                   "naive (255-rotation) circuit exists.",
+    }
 
     reduction_x_chain_x_library = {
         "SEAL": {
@@ -351,8 +385,8 @@ def main() -> int:
             },
         },
         "OpenFHE": {
-            "160bit": {"fold": openfhe, "bsgs": openfhe, "naive": openfhe},
-            "200bit": {"fold": openfhe, "bsgs": openfhe, "naive": openfhe},
+            "160bit": {"fold": openfhe_unimplemented, "bsgs": openfhe_bsgs, "naive": openfhe_unimplemented},
+            "200bit": {"fold": openfhe_unimplemented, "bsgs": openfhe_bsgs, "naive": openfhe_unimplemented},
         },
     }
 
@@ -379,9 +413,14 @@ def main() -> int:
             "parallelism_axis and occupancy_axis are gRPC-layer measurements "
             "(reduced_160bit / fold only -- PPFD_GRPC_THREADS is wired only into "
             "inference_service_160.cpp).",
-            "library=OpenFHE is PENDING for every cell: OpenFHE is not installed in "
-            "this environment (no OpenFHEConfig.cmake / pkg-config). "
-            "tools/openfhe_benchmark/ is a compile-ready, never-built scaffold.",
+            "library=OpenFHE: only the 'bsgs' cells are MEASURED (the only circuit "
+            "tools/openfhe_benchmark/ implements, hoisted_flat over the 30-rotation "
+            "BSGS_ROTATION_STEPS set); 'fold' and 'naive' OpenFHE cells remain PENDING "
+            "(unimplemented, not uninstalled). The measured OpenFHE cell used ring_dim=16384 "
+            "(OpenFHE's own parameter generator rejected SEAL's ring_dim=8192 as "
+            "non-HEStd_128_classic-compliant at this depth/scaling-mod-size) -- it is NOT "
+            "an equal-ring-dimension comparison against the SEAL cells in the same row. "
+            "See the OpenFHE cell's own 'note' field and docs/spec.md §7.5.",
         ],
         "reduction_strategy_x_modulus_chain_x_library": reduction_x_chain_x_library,
         "parallelism_axis": parallelism_axis,
@@ -404,7 +443,15 @@ def main() -> int:
             else:
                 row.append(f"{'PENDING':>22s}")
         print(f"{strat:10s} {row[0]:>22s} {row[1]:>22s}")
-    print(f"{'OpenFHE':10s} {'PENDING':>22s} {'PENDING':>22s}")
+    for strat in ["fold", "bsgs", "naive"]:
+        row = []
+        for chain in ["160bit", "200bit"]:
+            cell = reduction_x_chain_x_library["OpenFHE"][chain][strat]
+            if cell["status"] == "MEASURED":
+                row.append(f"{cell['latency_us']['mean']:>14.2f} us(ring16384)")
+            else:
+                row.append(f"{'PENDING':>22s}")
+        print(f"OpenFHE.{strat:6s} {row[0]:>22s} {row[1]:>22s}")
 
     print("\nparallelism axis (n_clients=8, lanes=16):")
     for p in parallelism_axis:

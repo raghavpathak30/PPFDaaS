@@ -178,10 +178,22 @@ def main() -> int:
     comparison = json.loads(COMPARISON_RESULTS.read_text(encoding="utf-8"))
     wire_sizes = json.loads(WIRE_SIZES.read_text(encoding="utf-8"))
 
+    # ─── Phase 3 (this session, AUDIT.md): the deployed-binary delta below
+    # conflates the modulus-chain cost with an unrelated server-architecture
+    # difference (vendor_server_main = legacy decrypt-capable CKKSContext-in-
+    # RPC-service vs vendor_server_160 = eval-only EvalContext160). It is kept
+    # here under a DEPRECATED key for transparency (to show the magnitude of
+    # the old confound), but is NOT the headline number. The headline number
+    # is now artifacts/privacy_cost_matched_pair.json (architecture-matched
+    # local-circuit pair, scripts/privacy_cost_matched_pair.py), surfaced
+    # below as matched_pair_latency_us if that file exists.
     latency_160_us = comparison["summary"]["reduced_160bit"]["median_us"]
     latency_200_us = comparison["summary"]["baseline_200bit"]["median_us"]
     latency_delta_us = latency_200_us - latency_160_us
     latency_pct_delta = latency_delta_us / latency_160_us * 100.0
+
+    matched_pair_path = ARTIFACTS / "privacy_cost_matched_pair.json"
+    matched_pair = json.loads(matched_pair_path.read_text()) if matched_pair_path.exists() else None
 
     bandwidth_160_bytes = wire_sizes["chains"]["160bit"]["standard_bytes"]
     bandwidth_200_bytes = wire_sizes["chains"]["200bit"]["standard_bytes"]
@@ -193,16 +205,19 @@ def main() -> int:
     precision = _measure_precision()
     precision_delta = precision["200bit"] - precision["160bit"]
 
-    key_finding = (
-        f"Provisioning the one additional 40-bit RNS prime that one extra "
-        f"homomorphic multiplicative level (e.g. a model-weight masking step "
-        f"for model privacy) would require -- measured via the 200-bit vs "
-        f"160-bit self-ablation -- costs +{latency_delta_us:.1f}us "
-        f"({latency_pct_delta:.1f}%) median latency and "
-        f"+{bandwidth_delta_bytes} bytes ({bandwidth_pct_delta:.1f}%) per "
-        f"ciphertext, while max_abs_error in both chains remains within the "
-        f"existing noise floor (~1e-7, see artifacts/precision_analysis.json)."
-    )
+    if matched_pair is not None:
+        key_finding = matched_pair["key_finding"] + (
+            f" (bandwidth: +{bandwidth_delta_bytes} bytes / {bandwidth_pct_delta:.1f}% per "
+            f"ciphertext; precision: max_abs_error stays within the noise floor in both "
+            f"chains, see artifacts/precision_analysis.json.)"
+        )
+    else:
+        key_finding = (
+            f"PENDING matched-pair re-measurement (run scripts/privacy_cost_matched_pair.py). "
+            f"Deployed-binary delta (confounded, see AUDIT.md): +{latency_delta_us:.1f}us "
+            f"({latency_pct_delta:.1f}%) median latency and +{bandwidth_delta_bytes} bytes "
+            f"({bandwidth_pct_delta:.1f}%) per ciphertext."
+        )
 
     out = {
         "framing": {
@@ -214,11 +229,18 @@ def main() -> int:
                 "masking step for model privacy). This is the same "
                 "self-ablation (docs/spec.md §5.7 Type 1) used by "
                 "tests/benchmark_comparison.py -- same codebase/circuit/"
-                "hardware, only the modulus chain differs."
+                "hardware, only the modulus chain differs. As of this session "
+                "the HEADLINE latency number is the architecture-matched local-"
+                "circuit pair (see matched_pair_latency_us below / "
+                "artifacts/privacy_cost_matched_pair.json), not "
+                "deployed_cross_architecture_e2e_delta_DEPRECATED (see AUDIT.md "
+                "for why that figure conflates the modulus-chain cost with a "
+                "server-architecture difference)."
             ),
             "methodology": "measured",
             "sources": {
-                "latency": "artifacts/comparison_results.json#summary",
+                "latency": "artifacts/privacy_cost_matched_pair.json (headline); "
+                           "artifacts/comparison_results.json#summary (deprecated, deployed-binary)",
                 "bandwidth": "artifacts/wire_sizes.json#chains",
                 "precision": "fresh single-inference §5.5 parity-gate run (this script)",
             },
@@ -228,11 +250,31 @@ def main() -> int:
             "200bit": MODULUS_BITS["200bit"],
             "delta": modulus_bits_delta,
         },
-        "latency_us": {
+        "matched_pair_latency_us": (
+            {
+                "160bit_median": matched_pair["160bit"]["median_us"],
+                "200bit_median": matched_pair["200bit"]["median_us"],
+                "delta": matched_pair["delta"]["median_us"],
+                "pct_delta": matched_pair["delta"]["pct_delta_vs_160bit_median"],
+                "mann_whitney_p_value": matched_pair["delta"]["mann_whitney_p_value"],
+                "cpu_governor": matched_pair["framing"]["cpu_governor"],
+                "source": "artifacts/privacy_cost_matched_pair.json",
+            }
+            if matched_pair is not None
+            else {"status": "PENDING", "reason": "run scripts/privacy_cost_matched_pair.py"}
+        ),
+        "deployed_cross_architecture_e2e_delta_DEPRECATED": {
             "160bit_median": latency_160_us,
             "200bit_median": latency_200_us,
             "delta": latency_delta_us,
             "pct_delta": latency_pct_delta,
+            "deprecation_note": (
+                "CONFOUNDED -- do not cite as the privacy-cost-per-level number. Measures "
+                "vendor_server_main (200-bit, legacy decrypt-capable CKKSContext-in-RPC-"
+                "service) vs vendor_server_160 (160-bit, eval-only EvalContext160): the delta "
+                "mixes the modulus-chain cost with an unrelated server-architecture/RPC-"
+                "service-implementation difference. Kept for transparency only -- see AUDIT.md."
+            ),
         },
         "bandwidth_bytes": {
             "160bit_standard": bandwidth_160_bytes,
