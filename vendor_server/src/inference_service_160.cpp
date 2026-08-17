@@ -260,6 +260,35 @@ public:
         return grpc::Status::OK;
     }
 
+    // ─── CanaryCheckTranscipher (Phase 7 §8.4 / §8.6 — PENDING stub) ───────
+    //
+    // PENDING: Full implementation requires the KAIST ckks_fv FV->CKKS scheme
+    // bridge (standard Lattigo v6.2.0 does not include it). This stub returns
+    // pending_impl=true so the bank-side client can detect the PENDING path
+    // without a hard error.  The CKKS path (Phases 0-6) is completely unaffected
+    // by this stub -- it is a new RPC, not a modification of any existing one.
+    //
+    // When the KAIST scheme bridge is available, this stub must be replaced with:
+    //   1. AEAD (AES-128-GCM) verification of req->sym_ciphertext().
+    //   2. HERA-16 evaluation inside BFV using the provisioned Enc_BFV(k).
+    //   3. StC + CKKS modular reduction -> CKKS ciphertext.
+    //   4. Return result in resp->result_ckks() with pending_impl=false.
+    grpc::Status CanaryCheckTranscipher(
+        grpc::ServerContext *,
+        const ppfdaas::CanaryTranscipherRequest *req,
+        ppfdaas::CanaryTranscipherResponse *resp) override
+    {
+        (void)req;
+        resp->set_state(sm_.current_state());
+        resp->set_pending_impl(true);
+        resp->set_message(
+            "PENDING: CanaryCheckTranscipher vendor-side BFV evaluation requires "
+            "the KAIST ckks_fv FV->CKKS scheme bridge, which is not in standard "
+            "Lattigo v6.2.0. See tools/transciphering/README.md and docs/spec.md §8.6. "
+            "The existing CKKS inference path (Phases 0-6) is unaffected.");
+        return grpc::Status::OK;
+    }
+
     // ─── RunInference (§1.5 rung c — continuous) ───────────────────────────
     grpc::Status RunInference(
         grpc::ServerContext *,

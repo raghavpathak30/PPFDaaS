@@ -77,6 +77,16 @@ class FraudInferenceService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::ppfdaas::ProvisioningStatusResponse>> PrepareAsyncGetProvisioningStatus(::grpc::ClientContext* context, const ::ppfdaas::ProvisioningStatusRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::ppfdaas::ProvisioningStatusResponse>>(PrepareAsyncGetProvisioningStatusRaw(context, request, cq));
     }
+    // Phase 7 transciphering canary (§8.4 / §8.6).
+    // PENDING vendor-side BFV eval — returns pending_impl=true until
+    // the KAIST ckks_fv scheme bridge is integrated.
+    virtual ::grpc::Status CanaryCheckTranscipher(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest& request, ::ppfdaas::CanaryTranscipherResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::ppfdaas::CanaryTranscipherResponse>> AsyncCanaryCheckTranscipher(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::ppfdaas::CanaryTranscipherResponse>>(AsyncCanaryCheckTranscipherRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::ppfdaas::CanaryTranscipherResponse>> PrepareAsyncCanaryCheckTranscipher(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::ppfdaas::CanaryTranscipherResponse>>(PrepareAsyncCanaryCheckTranscipherRaw(context, request, cq));
+    }
     class async_interface {
      public:
       virtual ~async_interface() {}
@@ -97,6 +107,11 @@ class FraudInferenceService final {
       virtual void CanaryConfirm(::grpc::ClientContext* context, const ::ppfdaas::CanaryConfirmRequest* request, ::ppfdaas::CanaryConfirmResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void GetProvisioningStatus(::grpc::ClientContext* context, const ::ppfdaas::ProvisioningStatusRequest* request, ::ppfdaas::ProvisioningStatusResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void GetProvisioningStatus(::grpc::ClientContext* context, const ::ppfdaas::ProvisioningStatusRequest* request, ::ppfdaas::ProvisioningStatusResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      // Phase 7 transciphering canary (§8.4 / §8.6).
+      // PENDING vendor-side BFV eval — returns pending_impl=true until
+      // the KAIST ckks_fv scheme bridge is integrated.
+      virtual void CanaryCheckTranscipher(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest* request, ::ppfdaas::CanaryTranscipherResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void CanaryCheckTranscipher(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest* request, ::ppfdaas::CanaryTranscipherResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
     };
     typedef class async_interface experimental_async_interface;
     virtual class async_interface* async() { return nullptr; }
@@ -112,6 +127,8 @@ class FraudInferenceService final {
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::ppfdaas::CanaryConfirmResponse>* PrepareAsyncCanaryConfirmRaw(::grpc::ClientContext* context, const ::ppfdaas::CanaryConfirmRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::ppfdaas::ProvisioningStatusResponse>* AsyncGetProvisioningStatusRaw(::grpc::ClientContext* context, const ::ppfdaas::ProvisioningStatusRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::ppfdaas::ProvisioningStatusResponse>* PrepareAsyncGetProvisioningStatusRaw(::grpc::ClientContext* context, const ::ppfdaas::ProvisioningStatusRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::ppfdaas::CanaryTranscipherResponse>* AsyncCanaryCheckTranscipherRaw(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::ppfdaas::CanaryTranscipherResponse>* PrepareAsyncCanaryCheckTranscipherRaw(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest& request, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
@@ -151,6 +168,13 @@ class FraudInferenceService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::ppfdaas::ProvisioningStatusResponse>> PrepareAsyncGetProvisioningStatus(::grpc::ClientContext* context, const ::ppfdaas::ProvisioningStatusRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::ppfdaas::ProvisioningStatusResponse>>(PrepareAsyncGetProvisioningStatusRaw(context, request, cq));
     }
+    ::grpc::Status CanaryCheckTranscipher(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest& request, ::ppfdaas::CanaryTranscipherResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::ppfdaas::CanaryTranscipherResponse>> AsyncCanaryCheckTranscipher(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::ppfdaas::CanaryTranscipherResponse>>(AsyncCanaryCheckTranscipherRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::ppfdaas::CanaryTranscipherResponse>> PrepareAsyncCanaryCheckTranscipher(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::ppfdaas::CanaryTranscipherResponse>>(PrepareAsyncCanaryCheckTranscipherRaw(context, request, cq));
+    }
     class async final :
       public StubInterface::async_interface {
      public:
@@ -164,6 +188,8 @@ class FraudInferenceService final {
       void CanaryConfirm(::grpc::ClientContext* context, const ::ppfdaas::CanaryConfirmRequest* request, ::ppfdaas::CanaryConfirmResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void GetProvisioningStatus(::grpc::ClientContext* context, const ::ppfdaas::ProvisioningStatusRequest* request, ::ppfdaas::ProvisioningStatusResponse* response, std::function<void(::grpc::Status)>) override;
       void GetProvisioningStatus(::grpc::ClientContext* context, const ::ppfdaas::ProvisioningStatusRequest* request, ::ppfdaas::ProvisioningStatusResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void CanaryCheckTranscipher(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest* request, ::ppfdaas::CanaryTranscipherResponse* response, std::function<void(::grpc::Status)>) override;
+      void CanaryCheckTranscipher(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest* request, ::ppfdaas::CanaryTranscipherResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
      private:
       friend class Stub;
       explicit async(Stub* stub): stub_(stub) { }
@@ -185,11 +211,14 @@ class FraudInferenceService final {
     ::grpc::ClientAsyncResponseReader< ::ppfdaas::CanaryConfirmResponse>* PrepareAsyncCanaryConfirmRaw(::grpc::ClientContext* context, const ::ppfdaas::CanaryConfirmRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::ppfdaas::ProvisioningStatusResponse>* AsyncGetProvisioningStatusRaw(::grpc::ClientContext* context, const ::ppfdaas::ProvisioningStatusRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::ppfdaas::ProvisioningStatusResponse>* PrepareAsyncGetProvisioningStatusRaw(::grpc::ClientContext* context, const ::ppfdaas::ProvisioningStatusRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::ppfdaas::CanaryTranscipherResponse>* AsyncCanaryCheckTranscipherRaw(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::ppfdaas::CanaryTranscipherResponse>* PrepareAsyncCanaryCheckTranscipherRaw(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest& request, ::grpc::CompletionQueue* cq) override;
     const ::grpc::internal::RpcMethod rpcmethod_RunInference_;
     const ::grpc::internal::RpcMethod rpcmethod_ProvisionGaloisKeys_;
     const ::grpc::internal::RpcMethod rpcmethod_CanaryCheck_;
     const ::grpc::internal::RpcMethod rpcmethod_CanaryConfirm_;
     const ::grpc::internal::RpcMethod rpcmethod_GetProvisioningStatus_;
+    const ::grpc::internal::RpcMethod rpcmethod_CanaryCheckTranscipher_;
   };
   static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
 
@@ -209,6 +238,10 @@ class FraudInferenceService final {
     virtual ::grpc::Status CanaryCheck(::grpc::ServerContext* context, const ::ppfdaas::CanaryRequest* request, ::ppfdaas::CanaryResponse* response);
     virtual ::grpc::Status CanaryConfirm(::grpc::ServerContext* context, const ::ppfdaas::CanaryConfirmRequest* request, ::ppfdaas::CanaryConfirmResponse* response);
     virtual ::grpc::Status GetProvisioningStatus(::grpc::ServerContext* context, const ::ppfdaas::ProvisioningStatusRequest* request, ::ppfdaas::ProvisioningStatusResponse* response);
+    // Phase 7 transciphering canary (§8.4 / §8.6).
+    // PENDING vendor-side BFV eval — returns pending_impl=true until
+    // the KAIST ckks_fv scheme bridge is integrated.
+    virtual ::grpc::Status CanaryCheckTranscipher(::grpc::ServerContext* context, const ::ppfdaas::CanaryTranscipherRequest* request, ::ppfdaas::CanaryTranscipherResponse* response);
   };
   template <class BaseClass>
   class WithAsyncMethod_RunInference : public BaseClass {
@@ -310,7 +343,27 @@ class FraudInferenceService final {
       ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_RunInference<WithAsyncMethod_ProvisionGaloisKeys<WithAsyncMethod_CanaryCheck<WithAsyncMethod_CanaryConfirm<WithAsyncMethod_GetProvisioningStatus<Service > > > > > AsyncService;
+  template <class BaseClass>
+  class WithAsyncMethod_CanaryCheckTranscipher : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_CanaryCheckTranscipher() {
+      ::grpc::Service::MarkMethodAsync(5);
+    }
+    ~WithAsyncMethod_CanaryCheckTranscipher() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CanaryCheckTranscipher(::grpc::ServerContext* /*context*/, const ::ppfdaas::CanaryTranscipherRequest* /*request*/, ::ppfdaas::CanaryTranscipherResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestCanaryCheckTranscipher(::grpc::ServerContext* context, ::ppfdaas::CanaryTranscipherRequest* request, ::grpc::ServerAsyncResponseWriter< ::ppfdaas::CanaryTranscipherResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  typedef WithAsyncMethod_RunInference<WithAsyncMethod_ProvisionGaloisKeys<WithAsyncMethod_CanaryCheck<WithAsyncMethod_CanaryConfirm<WithAsyncMethod_GetProvisioningStatus<WithAsyncMethod_CanaryCheckTranscipher<Service > > > > > > AsyncService;
   template <class BaseClass>
   class WithCallbackMethod_RunInference : public BaseClass {
    private:
@@ -446,7 +499,34 @@ class FraudInferenceService final {
     virtual ::grpc::ServerUnaryReactor* GetProvisioningStatus(
       ::grpc::CallbackServerContext* /*context*/, const ::ppfdaas::ProvisioningStatusRequest* /*request*/, ::ppfdaas::ProvisioningStatusResponse* /*response*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_RunInference<WithCallbackMethod_ProvisionGaloisKeys<WithCallbackMethod_CanaryCheck<WithCallbackMethod_CanaryConfirm<WithCallbackMethod_GetProvisioningStatus<Service > > > > > CallbackService;
+  template <class BaseClass>
+  class WithCallbackMethod_CanaryCheckTranscipher : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_CanaryCheckTranscipher() {
+      ::grpc::Service::MarkMethodCallback(5,
+          new ::grpc::internal::CallbackUnaryHandler< ::ppfdaas::CanaryTranscipherRequest, ::ppfdaas::CanaryTranscipherResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::ppfdaas::CanaryTranscipherRequest* request, ::ppfdaas::CanaryTranscipherResponse* response) { return this->CanaryCheckTranscipher(context, request, response); }));}
+    void SetMessageAllocatorFor_CanaryCheckTranscipher(
+        ::grpc::MessageAllocator< ::ppfdaas::CanaryTranscipherRequest, ::ppfdaas::CanaryTranscipherResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(5);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::ppfdaas::CanaryTranscipherRequest, ::ppfdaas::CanaryTranscipherResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_CanaryCheckTranscipher() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CanaryCheckTranscipher(::grpc::ServerContext* /*context*/, const ::ppfdaas::CanaryTranscipherRequest* /*request*/, ::ppfdaas::CanaryTranscipherResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* CanaryCheckTranscipher(
+      ::grpc::CallbackServerContext* /*context*/, const ::ppfdaas::CanaryTranscipherRequest* /*request*/, ::ppfdaas::CanaryTranscipherResponse* /*response*/)  { return nullptr; }
+  };
+  typedef WithCallbackMethod_RunInference<WithCallbackMethod_ProvisionGaloisKeys<WithCallbackMethod_CanaryCheck<WithCallbackMethod_CanaryConfirm<WithCallbackMethod_GetProvisioningStatus<WithCallbackMethod_CanaryCheckTranscipher<Service > > > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_RunInference : public BaseClass {
@@ -529,6 +609,23 @@ class FraudInferenceService final {
     }
     // disable synchronous version of this method
     ::grpc::Status GetProvisioningStatus(::grpc::ServerContext* /*context*/, const ::ppfdaas::ProvisioningStatusRequest* /*request*/, ::ppfdaas::ProvisioningStatusResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_CanaryCheckTranscipher : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_CanaryCheckTranscipher() {
+      ::grpc::Service::MarkMethodGeneric(5);
+    }
+    ~WithGenericMethod_CanaryCheckTranscipher() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CanaryCheckTranscipher(::grpc::ServerContext* /*context*/, const ::ppfdaas::CanaryTranscipherRequest* /*request*/, ::ppfdaas::CanaryTranscipherResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -631,6 +728,26 @@ class FraudInferenceService final {
     }
     void RequestGetProvisioningStatus(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_CanaryCheckTranscipher : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_CanaryCheckTranscipher() {
+      ::grpc::Service::MarkMethodRaw(5);
+    }
+    ~WithRawMethod_CanaryCheckTranscipher() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CanaryCheckTranscipher(::grpc::ServerContext* /*context*/, const ::ppfdaas::CanaryTranscipherRequest* /*request*/, ::ppfdaas::CanaryTranscipherResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestCanaryCheckTranscipher(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -741,6 +858,28 @@ class FraudInferenceService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     virtual ::grpc::ServerUnaryReactor* GetProvisioningStatus(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_CanaryCheckTranscipher : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_CanaryCheckTranscipher() {
+      ::grpc::Service::MarkMethodRawCallback(5,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->CanaryCheckTranscipher(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_CanaryCheckTranscipher() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CanaryCheckTranscipher(::grpc::ServerContext* /*context*/, const ::ppfdaas::CanaryTranscipherRequest* /*request*/, ::ppfdaas::CanaryTranscipherResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* CanaryCheckTranscipher(
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
@@ -878,9 +1017,36 @@ class FraudInferenceService final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedGetProvisioningStatus(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::ppfdaas::ProvisioningStatusRequest,::ppfdaas::ProvisioningStatusResponse>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_RunInference<WithStreamedUnaryMethod_ProvisionGaloisKeys<WithStreamedUnaryMethod_CanaryCheck<WithStreamedUnaryMethod_CanaryConfirm<WithStreamedUnaryMethod_GetProvisioningStatus<Service > > > > > StreamedUnaryService;
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_CanaryCheckTranscipher : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_CanaryCheckTranscipher() {
+      ::grpc::Service::MarkMethodStreamed(5,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::ppfdaas::CanaryTranscipherRequest, ::ppfdaas::CanaryTranscipherResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::ppfdaas::CanaryTranscipherRequest, ::ppfdaas::CanaryTranscipherResponse>* streamer) {
+                       return this->StreamedCanaryCheckTranscipher(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_CanaryCheckTranscipher() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status CanaryCheckTranscipher(::grpc::ServerContext* /*context*/, const ::ppfdaas::CanaryTranscipherRequest* /*request*/, ::ppfdaas::CanaryTranscipherResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedCanaryCheckTranscipher(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::ppfdaas::CanaryTranscipherRequest,::ppfdaas::CanaryTranscipherResponse>* server_unary_streamer) = 0;
+  };
+  typedef WithStreamedUnaryMethod_RunInference<WithStreamedUnaryMethod_ProvisionGaloisKeys<WithStreamedUnaryMethod_CanaryCheck<WithStreamedUnaryMethod_CanaryConfirm<WithStreamedUnaryMethod_GetProvisioningStatus<WithStreamedUnaryMethod_CanaryCheckTranscipher<Service > > > > > > StreamedUnaryService;
   typedef Service SplitStreamedService;
-  typedef WithStreamedUnaryMethod_RunInference<WithStreamedUnaryMethod_ProvisionGaloisKeys<WithStreamedUnaryMethod_CanaryCheck<WithStreamedUnaryMethod_CanaryConfirm<WithStreamedUnaryMethod_GetProvisioningStatus<Service > > > > > StreamedService;
+  typedef WithStreamedUnaryMethod_RunInference<WithStreamedUnaryMethod_ProvisionGaloisKeys<WithStreamedUnaryMethod_CanaryCheck<WithStreamedUnaryMethod_CanaryConfirm<WithStreamedUnaryMethod_GetProvisioningStatus<WithStreamedUnaryMethod_CanaryCheckTranscipher<Service > > > > > > StreamedService;
 };
 
 }  // namespace ppfdaas

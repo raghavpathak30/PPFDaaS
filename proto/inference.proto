@@ -114,6 +114,36 @@ message ProvisioningStatusResponse {
     string detail = 2;
 }
 
+// ─── Phase 7: Transciphering canary (§8.4 / §8.6) ─────────────────────────
+//
+// CanaryCheckTranscipher extends the Phase 1 canary handshake through the
+// FV→CKKS conversion — a new silent-wrong-answer surface introduced by the
+// transciphering path. The bank sends a known plaintext under the symmetric
+// key k (as a HERA-16 symmetric ciphertext). The vendor evaluates HERA inside
+// BFV, converts to CKKS via StC + CKKS modular reduction, and returns the
+// CKKS ciphertext. Only the bank (holding the secret key) can decrypt and
+// confirm correctness.
+//
+// PENDING: vendor-side implementation requires the KAIST ckks_fv scheme bridge
+// (Standard Lattigo v6.2.0 does not include this module). The proto definition
+// and the new provisioning-state scaffolding are complete; the actual BFV
+// evaluation in inference_service_160.cpp is stub-only until the scheme
+// bridge is available. See tools/transciphering/README.md.
+//
+// This RPC does NOT modify the existing CanaryCheck / CanaryConfirm RPCs or
+// the PROV_READY state machine.
+message CanaryTranscipherRequest {
+    bytes sym_ciphertext = 1;  // HERA-16 online ciphertext (AES-GCM wrapped, §8.3)
+    bytes nonce          = 2;  // 16-byte nonce used to produce sym_ciphertext
+}
+
+message CanaryTranscipherResponse {
+    ProvisioningState state         = 1;
+    bytes             result_ckks   = 2;  // CKKS ciphertext after FV→CKKS (PENDING)
+    string            message       = 3;
+    bool              pending_impl  = 4;  // true = stub path (KAIST bridge not yet integrated)
+}
+
 service FraudInferenceService {
     // The vendor server NEVER sees plaintext transaction data.
     // Permitted ONLY when ProvisioningState == PROV_READY; otherwise rejected
@@ -128,4 +158,9 @@ service FraudInferenceService {
     rpc CanaryCheck (CanaryRequest) returns (CanaryResponse);
     rpc CanaryConfirm (CanaryConfirmRequest) returns (CanaryConfirmResponse);
     rpc GetProvisioningStatus (ProvisioningStatusRequest) returns (ProvisioningStatusResponse);
+
+    // Phase 7 transciphering canary (§8.4 / §8.6).
+    // PENDING vendor-side BFV eval — returns pending_impl=true until
+    // the KAIST ckks_fv scheme bridge is integrated.
+    rpc CanaryCheckTranscipher (CanaryTranscipherRequest) returns (CanaryTranscipherResponse);
 }

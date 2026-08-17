@@ -27,6 +27,7 @@ static const char* FraudInferenceService_method_names[] = {
   "/ppfdaas.FraudInferenceService/CanaryCheck",
   "/ppfdaas.FraudInferenceService/CanaryConfirm",
   "/ppfdaas.FraudInferenceService/GetProvisioningStatus",
+  "/ppfdaas.FraudInferenceService/CanaryCheckTranscipher",
 };
 
 std::unique_ptr< FraudInferenceService::Stub> FraudInferenceService::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
@@ -41,6 +42,7 @@ FraudInferenceService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterfac
   , rpcmethod_CanaryCheck_(FraudInferenceService_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_CanaryConfirm_(FraudInferenceService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_GetProvisioningStatus_(FraudInferenceService_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_CanaryCheckTranscipher_(FraudInferenceService_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status FraudInferenceService::Stub::RunInference(::grpc::ClientContext* context, const ::ppfdaas::InferenceRequest& request, ::ppfdaas::InferenceResponse* response) {
@@ -158,6 +160,29 @@ void FraudInferenceService::Stub::async::GetProvisioningStatus(::grpc::ClientCon
   return result;
 }
 
+::grpc::Status FraudInferenceService::Stub::CanaryCheckTranscipher(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest& request, ::ppfdaas::CanaryTranscipherResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::ppfdaas::CanaryTranscipherRequest, ::ppfdaas::CanaryTranscipherResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_CanaryCheckTranscipher_, context, request, response);
+}
+
+void FraudInferenceService::Stub::async::CanaryCheckTranscipher(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest* request, ::ppfdaas::CanaryTranscipherResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::ppfdaas::CanaryTranscipherRequest, ::ppfdaas::CanaryTranscipherResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_CanaryCheckTranscipher_, context, request, response, std::move(f));
+}
+
+void FraudInferenceService::Stub::async::CanaryCheckTranscipher(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest* request, ::ppfdaas::CanaryTranscipherResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_CanaryCheckTranscipher_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::ppfdaas::CanaryTranscipherResponse>* FraudInferenceService::Stub::PrepareAsyncCanaryCheckTranscipherRaw(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::ppfdaas::CanaryTranscipherResponse, ::ppfdaas::CanaryTranscipherRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_CanaryCheckTranscipher_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::ppfdaas::CanaryTranscipherResponse>* FraudInferenceService::Stub::AsyncCanaryCheckTranscipherRaw(::grpc::ClientContext* context, const ::ppfdaas::CanaryTranscipherRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncCanaryCheckTranscipherRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
 FraudInferenceService::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       FraudInferenceService_method_names[0],
@@ -209,6 +234,16 @@ FraudInferenceService::Service::Service() {
              ::ppfdaas::ProvisioningStatusResponse* resp) {
                return service->GetProvisioningStatus(ctx, req, resp);
              }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      FraudInferenceService_method_names[5],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< FraudInferenceService::Service, ::ppfdaas::CanaryTranscipherRequest, ::ppfdaas::CanaryTranscipherResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](FraudInferenceService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::ppfdaas::CanaryTranscipherRequest* req,
+             ::ppfdaas::CanaryTranscipherResponse* resp) {
+               return service->CanaryCheckTranscipher(ctx, req, resp);
+             }, this)));
 }
 
 FraudInferenceService::Service::~Service() {
@@ -243,6 +278,13 @@ FraudInferenceService::Service::~Service() {
 }
 
 ::grpc::Status FraudInferenceService::Service::GetProvisioningStatus(::grpc::ServerContext* context, const ::ppfdaas::ProvisioningStatusRequest* request, ::ppfdaas::ProvisioningStatusResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status FraudInferenceService::Service::CanaryCheckTranscipher(::grpc::ServerContext* context, const ::ppfdaas::CanaryTranscipherRequest* request, ::ppfdaas::CanaryTranscipherResponse* response) {
   (void) context;
   (void) request;
   (void) response;

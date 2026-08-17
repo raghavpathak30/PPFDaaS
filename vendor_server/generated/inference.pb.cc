@@ -180,8 +180,38 @@ struct ProvisioningStatusResponseDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ProvisioningStatusResponseDefaultTypeInternal _ProvisioningStatusResponse_default_instance_;
+PROTOBUF_CONSTEXPR CanaryTranscipherRequest::CanaryTranscipherRequest(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.sym_ciphertext_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.nonce_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct CanaryTranscipherRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR CanaryTranscipherRequestDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~CanaryTranscipherRequestDefaultTypeInternal() {}
+  union {
+    CanaryTranscipherRequest _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 CanaryTranscipherRequestDefaultTypeInternal _CanaryTranscipherRequest_default_instance_;
+PROTOBUF_CONSTEXPR CanaryTranscipherResponse::CanaryTranscipherResponse(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.result_ckks_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.message_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.state_)*/0
+  , /*decltype(_impl_.pending_impl_)*/false
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct CanaryTranscipherResponseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR CanaryTranscipherResponseDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~CanaryTranscipherResponseDefaultTypeInternal() {}
+  union {
+    CanaryTranscipherResponse _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 CanaryTranscipherResponseDefaultTypeInternal _CanaryTranscipherResponse_default_instance_;
 }  // namespace ppfdaas
-static ::_pb::Metadata file_level_metadata_inference_2eproto[11];
+static ::_pb::Metadata file_level_metadata_inference_2eproto[13];
 static const ::_pb::EnumDescriptor* file_level_enum_descriptors_inference_2eproto[2];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_inference_2eproto = nullptr;
 
@@ -280,6 +310,24 @@ const uint32_t TableStruct_inference_2eproto::offsets[] PROTOBUF_SECTION_VARIABL
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::ppfdaas::ProvisioningStatusResponse, _impl_.state_),
   PROTOBUF_FIELD_OFFSET(::ppfdaas::ProvisioningStatusResponse, _impl_.detail_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::ppfdaas::CanaryTranscipherRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::ppfdaas::CanaryTranscipherRequest, _impl_.sym_ciphertext_),
+  PROTOBUF_FIELD_OFFSET(::ppfdaas::CanaryTranscipherRequest, _impl_.nonce_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::ppfdaas::CanaryTranscipherResponse, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::ppfdaas::CanaryTranscipherResponse, _impl_.state_),
+  PROTOBUF_FIELD_OFFSET(::ppfdaas::CanaryTranscipherResponse, _impl_.result_ckks_),
+  PROTOBUF_FIELD_OFFSET(::ppfdaas::CanaryTranscipherResponse, _impl_.message_),
+  PROTOBUF_FIELD_OFFSET(::ppfdaas::CanaryTranscipherResponse, _impl_.pending_impl_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::ppfdaas::TimingBreakdown)},
@@ -293,6 +341,8 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 72, -1, -1, sizeof(::ppfdaas::CanaryConfirmResponse)},
   { 80, -1, -1, sizeof(::ppfdaas::ProvisioningStatusRequest)},
   { 86, -1, -1, sizeof(::ppfdaas::ProvisioningStatusResponse)},
+  { 94, -1, -1, sizeof(::ppfdaas::CanaryTranscipherRequest)},
+  { 102, -1, -1, sizeof(::ppfdaas::CanaryTranscipherResponse)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -307,6 +357,8 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::ppfdaas::_CanaryConfirmResponse_default_instance_._instance,
   &::ppfdaas::_ProvisioningStatusRequest_default_instance_._instance,
   &::ppfdaas::_ProvisioningStatusResponse_default_instance_._instance,
+  &::ppfdaas::_CanaryTranscipherRequest_default_instance_._instance,
+  &::ppfdaas::_CanaryTranscipherResponse_default_instance_._instance,
 };
 
 const char descriptor_table_protodef_inference_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
@@ -335,14 +387,19 @@ const char descriptor_table_protodef_inference_2eproto[] PROTOBUF_SECTION_VARIAB
   "isioningState\022\017\n\007message\030\002 \001(\t\"\033\n\031Provis"
   "ioningStatusRequest\"W\n\032ProvisioningStatu"
   "sResponse\022)\n\005state\030\001 \001(\0162\032.ppfdaas.Provi"
-  "sioningState\022\016\n\006detail\030\002 \001(\t*\253\001\n\017Inferen"
+  "sioningState\022\016\n\006detail\030\002 \001(\t\"A\n\030CanaryTr"
+  "anscipherRequest\022\026\n\016sym_ciphertext\030\001 \001(\014"
+  "\022\r\n\005nonce\030\002 \001(\014\"\202\001\n\031CanaryTranscipherRes"
+  "ponse\022)\n\005state\030\001 \001(\0162\032.ppfdaas.Provision"
+  "ingState\022\023\n\013result_ckks\030\002 \001(\014\022\017\n\007message"
+  "\030\003 \001(\t\022\024\n\014pending_impl\030\004 \001(\010*\253\001\n\017Inferen"
   "ceStatus\022\006\n\002OK\020\000\022\036\n\032ERR_NOISE_BUDGET_EXH"
   "AUSTED\020\001\022\034\n\030ERR_MALFORMED_CIPHERTEXT\020\002\022\026"
   "\n\022ERR_PARAM_MISMATCH\020\003\022\017\n\013ERR_TIMEOUT\020\004\022"
   "\020\n\014ERR_INTERNAL\020\005\022\027\n\023ERR_NOT_PROVISIONED"
   "\020\006*o\n\021ProvisioningState\022\r\n\tPROV_INIT\020\000\022\026"
   "\n\022PROV_AWAITING_KEYS\020\001\022\023\n\017PROV_VALIDATIN"
-  "G\020\002\022\016\n\nPROV_READY\020\003\022\016\n\nPROV_FAULT\020\0042\262\003\n\025"
+  "G\020\002\022\016\n\nPROV_READY\020\003\022\016\n\nPROV_FAULT\020\0042\223\004\n\025"
   "FraudInferenceService\022E\n\014RunInference\022\031."
   "ppfdaas.InferenceRequest\032\032.ppfdaas.Infer"
   "enceResponse\022`\n\023ProvisionGaloisKeys\022#.pp"
@@ -353,13 +410,16 @@ const char descriptor_table_protodef_inference_2eproto[] PROTOBUF_SECTION_VARIAB
   "s.CanaryConfirmRequest\032\036.ppfdaas.CanaryC"
   "onfirmResponse\022`\n\025GetProvisioningStatus\022"
   "\".ppfdaas.ProvisioningStatusRequest\032#.pp"
-  "fdaas.ProvisioningStatusResponseb\006proto3"
+  "fdaas.ProvisioningStatusResponse\022_\n\026Cana"
+  "ryCheckTranscipher\022!.ppfdaas.CanaryTrans"
+  "cipherRequest\032\".ppfdaas.CanaryTransciphe"
+  "rResponseb\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_inference_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_inference_2eproto = {
-    false, false, 1760, descriptor_table_protodef_inference_2eproto,
+    false, false, 2057, descriptor_table_protodef_inference_2eproto,
     "inference.proto",
-    &descriptor_table_inference_2eproto_once, nullptr, 0, 11,
+    &descriptor_table_inference_2eproto_once, nullptr, 0, 13,
     schemas, file_default_instances, TableStruct_inference_2eproto::offsets,
     file_level_metadata_inference_2eproto, file_level_enum_descriptors_inference_2eproto,
     file_level_service_descriptors_inference_2eproto,
@@ -3078,6 +3138,560 @@ void ProvisioningStatusResponse::InternalSwap(ProvisioningStatusResponse* other)
       file_level_metadata_inference_2eproto[10]);
 }
 
+// ===================================================================
+
+class CanaryTranscipherRequest::_Internal {
+ public:
+};
+
+CanaryTranscipherRequest::CanaryTranscipherRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:ppfdaas.CanaryTranscipherRequest)
+}
+CanaryTranscipherRequest::CanaryTranscipherRequest(const CanaryTranscipherRequest& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  CanaryTranscipherRequest* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.sym_ciphertext_){}
+    , decltype(_impl_.nonce_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.sym_ciphertext_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.sym_ciphertext_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_sym_ciphertext().empty()) {
+    _this->_impl_.sym_ciphertext_.Set(from._internal_sym_ciphertext(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.nonce_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.nonce_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_nonce().empty()) {
+    _this->_impl_.nonce_.Set(from._internal_nonce(), 
+      _this->GetArenaForAllocation());
+  }
+  // @@protoc_insertion_point(copy_constructor:ppfdaas.CanaryTranscipherRequest)
+}
+
+inline void CanaryTranscipherRequest::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.sym_ciphertext_){}
+    , decltype(_impl_.nonce_){}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.sym_ciphertext_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.sym_ciphertext_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.nonce_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.nonce_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
+CanaryTranscipherRequest::~CanaryTranscipherRequest() {
+  // @@protoc_insertion_point(destructor:ppfdaas.CanaryTranscipherRequest)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void CanaryTranscipherRequest::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.sym_ciphertext_.Destroy();
+  _impl_.nonce_.Destroy();
+}
+
+void CanaryTranscipherRequest::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void CanaryTranscipherRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:ppfdaas.CanaryTranscipherRequest)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.sym_ciphertext_.ClearToEmpty();
+  _impl_.nonce_.ClearToEmpty();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* CanaryTranscipherRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // bytes sym_ciphertext = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          auto str = _internal_mutable_sym_ciphertext();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // bytes nonce = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          auto str = _internal_mutable_nonce();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* CanaryTranscipherRequest::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:ppfdaas.CanaryTranscipherRequest)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // bytes sym_ciphertext = 1;
+  if (!this->_internal_sym_ciphertext().empty()) {
+    target = stream->WriteBytesMaybeAliased(
+        1, this->_internal_sym_ciphertext(), target);
+  }
+
+  // bytes nonce = 2;
+  if (!this->_internal_nonce().empty()) {
+    target = stream->WriteBytesMaybeAliased(
+        2, this->_internal_nonce(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:ppfdaas.CanaryTranscipherRequest)
+  return target;
+}
+
+size_t CanaryTranscipherRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:ppfdaas.CanaryTranscipherRequest)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // bytes sym_ciphertext = 1;
+  if (!this->_internal_sym_ciphertext().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+        this->_internal_sym_ciphertext());
+  }
+
+  // bytes nonce = 2;
+  if (!this->_internal_nonce().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+        this->_internal_nonce());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData CanaryTranscipherRequest::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    CanaryTranscipherRequest::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*CanaryTranscipherRequest::GetClassData() const { return &_class_data_; }
+
+
+void CanaryTranscipherRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<CanaryTranscipherRequest*>(&to_msg);
+  auto& from = static_cast<const CanaryTranscipherRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:ppfdaas.CanaryTranscipherRequest)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_sym_ciphertext().empty()) {
+    _this->_internal_set_sym_ciphertext(from._internal_sym_ciphertext());
+  }
+  if (!from._internal_nonce().empty()) {
+    _this->_internal_set_nonce(from._internal_nonce());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void CanaryTranscipherRequest::CopyFrom(const CanaryTranscipherRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:ppfdaas.CanaryTranscipherRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool CanaryTranscipherRequest::IsInitialized() const {
+  return true;
+}
+
+void CanaryTranscipherRequest::InternalSwap(CanaryTranscipherRequest* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.sym_ciphertext_, lhs_arena,
+      &other->_impl_.sym_ciphertext_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.nonce_, lhs_arena,
+      &other->_impl_.nonce_, rhs_arena
+  );
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata CanaryTranscipherRequest::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_inference_2eproto_getter, &descriptor_table_inference_2eproto_once,
+      file_level_metadata_inference_2eproto[11]);
+}
+
+// ===================================================================
+
+class CanaryTranscipherResponse::_Internal {
+ public:
+};
+
+CanaryTranscipherResponse::CanaryTranscipherResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:ppfdaas.CanaryTranscipherResponse)
+}
+CanaryTranscipherResponse::CanaryTranscipherResponse(const CanaryTranscipherResponse& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  CanaryTranscipherResponse* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.result_ckks_){}
+    , decltype(_impl_.message_){}
+    , decltype(_impl_.state_){}
+    , decltype(_impl_.pending_impl_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.result_ckks_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.result_ckks_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_result_ckks().empty()) {
+    _this->_impl_.result_ckks_.Set(from._internal_result_ckks(), 
+      _this->GetArenaForAllocation());
+  }
+  _impl_.message_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.message_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_message().empty()) {
+    _this->_impl_.message_.Set(from._internal_message(), 
+      _this->GetArenaForAllocation());
+  }
+  ::memcpy(&_impl_.state_, &from._impl_.state_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.pending_impl_) -
+    reinterpret_cast<char*>(&_impl_.state_)) + sizeof(_impl_.pending_impl_));
+  // @@protoc_insertion_point(copy_constructor:ppfdaas.CanaryTranscipherResponse)
+}
+
+inline void CanaryTranscipherResponse::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.result_ckks_){}
+    , decltype(_impl_.message_){}
+    , decltype(_impl_.state_){0}
+    , decltype(_impl_.pending_impl_){false}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.result_ckks_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.result_ckks_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  _impl_.message_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.message_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
+CanaryTranscipherResponse::~CanaryTranscipherResponse() {
+  // @@protoc_insertion_point(destructor:ppfdaas.CanaryTranscipherResponse)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void CanaryTranscipherResponse::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.result_ckks_.Destroy();
+  _impl_.message_.Destroy();
+}
+
+void CanaryTranscipherResponse::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void CanaryTranscipherResponse::Clear() {
+// @@protoc_insertion_point(message_clear_start:ppfdaas.CanaryTranscipherResponse)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.result_ckks_.ClearToEmpty();
+  _impl_.message_.ClearToEmpty();
+  ::memset(&_impl_.state_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.pending_impl_) -
+      reinterpret_cast<char*>(&_impl_.state_)) + sizeof(_impl_.pending_impl_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* CanaryTranscipherResponse::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .ppfdaas.ProvisioningState state = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_state(static_cast<::ppfdaas::ProvisioningState>(val));
+        } else
+          goto handle_unusual;
+        continue;
+      // bytes result_ckks = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          auto str = _internal_mutable_result_ckks();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // string message = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+          auto str = _internal_mutable_message();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "ppfdaas.CanaryTranscipherResponse.message"));
+        } else
+          goto handle_unusual;
+        continue;
+      // bool pending_impl = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
+          _impl_.pending_impl_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* CanaryTranscipherResponse::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:ppfdaas.CanaryTranscipherResponse)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .ppfdaas.ProvisioningState state = 1;
+  if (this->_internal_state() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteEnumToArray(
+      1, this->_internal_state(), target);
+  }
+
+  // bytes result_ckks = 2;
+  if (!this->_internal_result_ckks().empty()) {
+    target = stream->WriteBytesMaybeAliased(
+        2, this->_internal_result_ckks(), target);
+  }
+
+  // string message = 3;
+  if (!this->_internal_message().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_message().data(), static_cast<int>(this->_internal_message().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "ppfdaas.CanaryTranscipherResponse.message");
+    target = stream->WriteStringMaybeAliased(
+        3, this->_internal_message(), target);
+  }
+
+  // bool pending_impl = 4;
+  if (this->_internal_pending_impl() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(4, this->_internal_pending_impl(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:ppfdaas.CanaryTranscipherResponse)
+  return target;
+}
+
+size_t CanaryTranscipherResponse::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:ppfdaas.CanaryTranscipherResponse)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // bytes result_ckks = 2;
+  if (!this->_internal_result_ckks().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+        this->_internal_result_ckks());
+  }
+
+  // string message = 3;
+  if (!this->_internal_message().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_message());
+  }
+
+  // .ppfdaas.ProvisioningState state = 1;
+  if (this->_internal_state() != 0) {
+    total_size += 1 +
+      ::_pbi::WireFormatLite::EnumSize(this->_internal_state());
+  }
+
+  // bool pending_impl = 4;
+  if (this->_internal_pending_impl() != 0) {
+    total_size += 1 + 1;
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData CanaryTranscipherResponse::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    CanaryTranscipherResponse::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*CanaryTranscipherResponse::GetClassData() const { return &_class_data_; }
+
+
+void CanaryTranscipherResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<CanaryTranscipherResponse*>(&to_msg);
+  auto& from = static_cast<const CanaryTranscipherResponse&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:ppfdaas.CanaryTranscipherResponse)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_result_ckks().empty()) {
+    _this->_internal_set_result_ckks(from._internal_result_ckks());
+  }
+  if (!from._internal_message().empty()) {
+    _this->_internal_set_message(from._internal_message());
+  }
+  if (from._internal_state() != 0) {
+    _this->_internal_set_state(from._internal_state());
+  }
+  if (from._internal_pending_impl() != 0) {
+    _this->_internal_set_pending_impl(from._internal_pending_impl());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void CanaryTranscipherResponse::CopyFrom(const CanaryTranscipherResponse& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:ppfdaas.CanaryTranscipherResponse)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool CanaryTranscipherResponse::IsInitialized() const {
+  return true;
+}
+
+void CanaryTranscipherResponse::InternalSwap(CanaryTranscipherResponse* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.result_ckks_, lhs_arena,
+      &other->_impl_.result_ckks_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.message_, lhs_arena,
+      &other->_impl_.message_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(CanaryTranscipherResponse, _impl_.pending_impl_)
+      + sizeof(CanaryTranscipherResponse::_impl_.pending_impl_)
+      - PROTOBUF_FIELD_OFFSET(CanaryTranscipherResponse, _impl_.state_)>(
+          reinterpret_cast<char*>(&_impl_.state_),
+          reinterpret_cast<char*>(&other->_impl_.state_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata CanaryTranscipherResponse::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_inference_2eproto_getter, &descriptor_table_inference_2eproto_once,
+      file_level_metadata_inference_2eproto[12]);
+}
+
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace ppfdaas
 PROTOBUF_NAMESPACE_OPEN
@@ -3124,6 +3738,14 @@ Arena::CreateMaybeMessage< ::ppfdaas::ProvisioningStatusRequest >(Arena* arena) 
 template<> PROTOBUF_NOINLINE ::ppfdaas::ProvisioningStatusResponse*
 Arena::CreateMaybeMessage< ::ppfdaas::ProvisioningStatusResponse >(Arena* arena) {
   return Arena::CreateMessageInternal< ::ppfdaas::ProvisioningStatusResponse >(arena);
+}
+template<> PROTOBUF_NOINLINE ::ppfdaas::CanaryTranscipherRequest*
+Arena::CreateMaybeMessage< ::ppfdaas::CanaryTranscipherRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::ppfdaas::CanaryTranscipherRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::ppfdaas::CanaryTranscipherResponse*
+Arena::CreateMaybeMessage< ::ppfdaas::CanaryTranscipherResponse >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::ppfdaas::CanaryTranscipherResponse >(arena);
 }
 PROTOBUF_NAMESPACE_CLOSE
 

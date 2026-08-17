@@ -15,3 +15,4 @@ ctest_output.txt
 verify_output.txt
 .cursor
 *.docx
+bank_client/*.so

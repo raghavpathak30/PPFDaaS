@@ -7,6 +7,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <random>
 #include <string>
@@ -101,11 +102,15 @@ void run_circuit(
 
 int main(int argc, char **argv) {
     std::string strategy; // empty => legacy default behavior (backward-compatible)
+    std::string samples_out; // optional: dump raw per-iteration latencies_us as a JSON array
     for (int i = 1; i < argc; ++i) {
         const std::string arg = argv[i];
-        const std::string prefix = "--strategy=";
-        if (arg.rfind(prefix, 0) == 0) {
-            strategy = arg.substr(prefix.size());
+        const std::string strategy_prefix = "--strategy=";
+        const std::string samples_prefix = "--samples-out=";
+        if (arg.rfind(strategy_prefix, 0) == 0) {
+            strategy = arg.substr(strategy_prefix.size());
+        } else if (arg.rfind(samples_prefix, 0) == 0) {
+            samples_out = arg.substr(samples_prefix.size());
         }
     }
 
@@ -269,6 +274,16 @@ int main(int argc, char **argv) {
     }
 
     const Stats stats = compute_stats(latencies_us);
+
+    if (!samples_out.empty()) {
+        std::ofstream samples_file(samples_out);
+        samples_file << "[";
+        for (std::size_t i = 0; i < latencies_us.size(); ++i) {
+            if (i) samples_file << ",";
+            samples_file << latencies_us[i];
+        }
+        samples_file << "]";
+    }
 
     std::cout << "{\n"
               << "  \"strategy\": \"" << strategy << "\",\n"

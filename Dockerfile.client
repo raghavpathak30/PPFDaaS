@@ -3,8 +3,6 @@
 # ---------- Stage 1: builder (heavy, discarded) ----------
 FROM python:3.13-bookworm AS builder
 
-LABEL org.opencontainers.image.source=https://github.com/raghavpathak30/PPFDaaS
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
         cmake ninja-build \
     && rm -rf /var/lib/apt/lists/*
@@ -13,6 +11,9 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     pip install pybind11
 
 # Microsoft SEAL, pinned to the exact release tag your keys + server use.
+# HEXL OFF + no -march flags => SEAL emits no AVX-512; the wrapper .so is portable
+# across x86-64 (verified with the objdump zmm scan below). Static so it folds into
+# the .so and the slim runtime needs no SEAL package.
 RUN git clone --depth 1 --branch v4.1.2 https://github.com/microsoft/SEAL.git /tmp/SEAL \
     && cmake -S /tmp/SEAL -B /tmp/SEAL/build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
@@ -28,6 +29,8 @@ COPY . .
 
 # Build ONLY the wrapper — a minimal top-level project that add_subdirectory()'s
 # just bank_client, so we never configure vendor_server (gRPC/protobuf) or Catch2.
+# (bank_client/CMakeLists.txt references he_core for generate_seal_keys, but we only
+# build the two wrapper targets, so that unbuilt target's missing he_core never bites.)
 RUN mkdir -p /wrap /out \
     && printf '%s\n' \
         'cmake_minimum_required(VERSION 3.20)' \
@@ -45,6 +48,11 @@ RUN mkdir -p /wrap /out \
 # ---------- Stage 2: runtime (slim, non-root) ----------
 FROM python:3.13-slim-bookworm AS runtime
 
+# Label lives on the FINAL stage so it lands on the PUBLISHED image config and
+# GHCR links the package to the repo. A builder-stage label never reaches the push.
+LABEL org.opencontainers.image.source=https://github.com/raghavpathak30/PPFDaaS
+LABEL org.opencontainers.image.description="PPFDaaS bank client (encrypts transactions, decrypts scores). Holds the CKKS secret key; the vendor never sees plaintext. Connects to SERVER_ADDR (default vendor_server:50052)."
+
 # libstdc++6 = the GNU C++ stdlib the .so needs. Everything else SEAL uses is
 # statically linked into the .so. Both stages are bookworm, so the .so built in
 # stage 1 matches this runtime's glibc (this is what the host-mounted .so did NOT).
@@ -52,13 +60,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libstdc++6 \
     && rm -rf /var/lib/apt/lists/*
 
+# Dockerfile.client, runtime stage, before USER 10001
+RUN apt-get update \
+ && apt-get upgrade -y --no-install-recommends \
+ && rm -rf /var/lib/apt/lists/*
+
 RUN useradd --create-home --uid 10001 appuser
 WORKDIR /app
 
-# Runtime deps. scipy is needed by bank_client.py (expit). Pin to your .venv
-# versions: pip freeze | grep -Ei 'numpy|scipy|grpcio|protobuf'
+# Runtime deps. grpcio/protobuf are PINNED to the versions that generated the stubs
+# in generated/ — both stubs hard-raise at import on a version mismatch:
+#   protobuf  -> ValidateProtobufRuntimeVersion(... 6, 31, 1 ...)
+#   grpcio    -> GRPC_GENERATED_VERSION = '1.80.0'  (requires installed >= 1.80.0)
+# scipy is needed by bank_client.py (expit). To also pin numpy/scipy for full
+# reproducibility, replace with your .venv versions: pip freeze | grep -Ei 'numpy|scipy'
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install numpy scipy grpcio protobuf
+    pip install \
+        grpcio==1.80.0 \
+        protobuf==6.33.5  \
+        numpy scipy
 
 # --- Preserve the repo LAYOUT so the package imports resolve ---
 # generated/ package (the real 4 KB stubs + __init__.py, NOT the root shims)

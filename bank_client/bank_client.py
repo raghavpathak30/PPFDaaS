@@ -158,22 +158,57 @@ class BankClient:
             flat = np.ascontiguousarray(self._pad_buffer.ravel(), dtype=np.float64)
         else:
             flat = np.ascontiguousarray(X.ravel(), dtype=np.float64)
+        # ─── Phase 4 (this session) — full client-side stage timers ──────────
+        # Complements the server's 5-field TimingBreakdown proto (deserialize
+        # -> multiply_plain -> rotation_hoisting -> serialize -> total) with
+        # the bank-side stages of the same request, so the whole wall-clock
+        # path (encode+encrypt -> serialize -> gRPC upload -> [server] ->
+        # gRPC download -> deserialize+decrypt+sigmoid) is timed end to end.
+        # The gRPC stub call itself is NOT split into upload/download here --
+        # the Python grpc API does not expose separate upload-complete /
+        # download-start timestamps for a unary call without bidirectional
+        # streaming -- so 'grpc_roundtrip_us' is upload+server+download
+        # combined, and 'network_and_grpc_overhead_us' (==
+        # grpc_roundtrip_us - server's own total_inference_us) is the
+        # client-observable residual attributable to (de)serialization +
+        # network + gRPC framing, since the server's total_inference_us is
+        # already known from resp.timing.
         t_start = time.perf_counter()
+
+        t0 = time.perf_counter()
         ct_bytes   = self._wrapper.encrypt_batch(flat)
+        t1 = time.perf_counter()
+        encrypt_us = (t1 - t0) * 1e6
+
         request_id = str(uuid.uuid4())
         req = inference_pb2.InferenceRequest(
             ciphertext=ct_bytes, request_id=request_id,
             institution_id=institution_id, n_transactions=n_txns)
+
+        t2 = time.perf_counter()
         resp = self._stub.RunInference(req, timeout=timeout_seconds)
+        t3 = time.perf_counter()
+        grpc_roundtrip_us = (t3 - t2) * 1e6
+
         if resp.status != inference_pb2.InferenceStatus.OK:
             raise RuntimeError(f'Vendor error {resp.status}: {resp.error_message}')
         if resp.request_id != request_id:
             raise RuntimeError(f'Request ID mismatch: sent {request_id}')
+
+        t4 = time.perf_counter()
         raw = self._wrapper.decrypt_batch(resp.result_ciphertext, n_txns)
+        t5 = time.perf_counter()
+        decrypt_us = (t5 - t4) * 1e6
+
         # §1.3: bias is applied server-side (inference_service_160.cpp) and is
         # already included in `raw`. The bank never sees model_weights.bin.
+        t6 = time.perf_counter()
         probs = expit(raw)
+        t7 = time.perf_counter()
+        sigmoid_us = (t7 - t6) * 1e6
+
         latency_ms = (time.perf_counter() - t_start) * 1000.0
+        network_and_grpc_overhead_us = grpc_roundtrip_us - resp.timing.total_inference_us
         return {
             'fraud_probabilities': probs,
             'latency_ms':          latency_ms,
@@ -184,6 +219,14 @@ class BankClient:
                 'rotation_hoisting_us':  resp.timing.rotation_hoisting_us,
                 'serialization_us':      resp.timing.serialization_us,
                 'total_inference_us':    resp.timing.total_inference_us,
+            },
+            'client_timing_breakdown': {
+                'encode_encrypt_us':              encrypt_us,
+                'grpc_roundtrip_us':               grpc_roundtrip_us,
+                'network_and_grpc_overhead_us':     network_and_grpc_overhead_us,
+                'decode_decrypt_us':               decrypt_us,
+                'sigmoid_us':                       sigmoid_us,
+                'client_wall_total_us':            latency_ms * 1000.0,
             }
         }
 

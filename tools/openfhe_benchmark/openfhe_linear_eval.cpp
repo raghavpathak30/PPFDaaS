@@ -26,13 +26,18 @@ LinearEvalContext build_context() {
     parameters.SetScalingModSize(40);
     parameters.SetBatchSize(kSlotCount);
     parameters.SetSecurityLevel(HEStd_128_classic);
-    // OpenFHE picks a ring dimension automatically from
-    // (multiplicative depth, security level, scaling mod size); 8192 is the
-    // SEAL 160-bit context's ring dimension and is requested explicitly here
-    // for parameter-equivalence, but OpenFHE may override it if its own
-    // parameter selection determines a larger ring is required at this
-    // security level / depth (see README.md, "Ring dimension" row).
-    parameters.SetRingDim(8192);
+    // Phase 2 (this session): forcing SetRingDim(8192) to match SEAL's 160-bit
+    // ring dimension makes OpenFHE's own parameter generator THROW --
+    // ParamsGenCKKSRNSInternal() rejects 8192 as non-compliant with
+    // HEStd_128_classic at this depth/scaling-mod-size combination (it
+    // requires >= 16384). This is itself a real, measured finding (OpenFHE's
+    // standards-compliance check for these parameters is stricter than
+    // SEAL's at N=8192/tc128 -- see docs/spec.md §7.5), not a bug to paper
+    // over by forcing the ring. SetRingDim is left unset so OpenFHE selects
+    // its own standards-compliant ring dimension; the actual selected value
+    // is read back via ctx.cyclotomic_order / 2 and recorded in the output
+    // JSON ("n" field) so the comparison against SEAL's N=8192 is explicit
+    // about the mismatch rather than silent.
 
     CryptoContext<DCRTPoly> cc = GenCryptoContext(parameters);
     cc->Enable(PKE);

@@ -53,7 +53,7 @@ constexpr int kGiantStep = 16;
 struct LinearEvalContext {
     lbcrypto::CryptoContext<lbcrypto::DCRTPoly> cc;
     lbcrypto::KeyPair<lbcrypto::DCRTPoly> key_pair;
-    lbcrypto::usint cyclotomic_order = 0;
+    usint cyclotomic_order = 0;
 };
 
 // Builds a CKKS CryptoContext intended to be the closest OpenFHE equivalent

@@ -59,6 +59,12 @@ extern CanaryRequestDefaultTypeInternal _CanaryRequest_default_instance_;
 class CanaryResponse;
 struct CanaryResponseDefaultTypeInternal;
 extern CanaryResponseDefaultTypeInternal _CanaryResponse_default_instance_;
+class CanaryTranscipherRequest;
+struct CanaryTranscipherRequestDefaultTypeInternal;
+extern CanaryTranscipherRequestDefaultTypeInternal _CanaryTranscipherRequest_default_instance_;
+class CanaryTranscipherResponse;
+struct CanaryTranscipherResponseDefaultTypeInternal;
+extern CanaryTranscipherResponseDefaultTypeInternal _CanaryTranscipherResponse_default_instance_;
 class InferenceRequest;
 struct InferenceRequestDefaultTypeInternal;
 extern InferenceRequestDefaultTypeInternal _InferenceRequest_default_instance_;
@@ -86,6 +92,8 @@ template<> ::ppfdaas::CanaryConfirmRequest* Arena::CreateMaybeMessage<::ppfdaas:
 template<> ::ppfdaas::CanaryConfirmResponse* Arena::CreateMaybeMessage<::ppfdaas::CanaryConfirmResponse>(Arena*);
 template<> ::ppfdaas::CanaryRequest* Arena::CreateMaybeMessage<::ppfdaas::CanaryRequest>(Arena*);
 template<> ::ppfdaas::CanaryResponse* Arena::CreateMaybeMessage<::ppfdaas::CanaryResponse>(Arena*);
+template<> ::ppfdaas::CanaryTranscipherRequest* Arena::CreateMaybeMessage<::ppfdaas::CanaryTranscipherRequest>(Arena*);
+template<> ::ppfdaas::CanaryTranscipherResponse* Arena::CreateMaybeMessage<::ppfdaas::CanaryTranscipherResponse>(Arena*);
 template<> ::ppfdaas::InferenceRequest* Arena::CreateMaybeMessage<::ppfdaas::InferenceRequest>(Arena*);
 template<> ::ppfdaas::InferenceResponse* Arena::CreateMaybeMessage<::ppfdaas::InferenceResponse>(Arena*);
 template<> ::ppfdaas::ProvisionGaloisKeysRequest* Arena::CreateMaybeMessage<::ppfdaas::ProvisionGaloisKeysRequest>(Arena*);
@@ -2034,6 +2042,366 @@ class ProvisioningStatusResponse final :
   union { Impl_ _impl_; };
   friend struct ::TableStruct_inference_2eproto;
 };
+// -------------------------------------------------------------------
+
+class CanaryTranscipherRequest final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:ppfdaas.CanaryTranscipherRequest) */ {
+ public:
+  inline CanaryTranscipherRequest() : CanaryTranscipherRequest(nullptr) {}
+  ~CanaryTranscipherRequest() override;
+  explicit PROTOBUF_CONSTEXPR CanaryTranscipherRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  CanaryTranscipherRequest(const CanaryTranscipherRequest& from);
+  CanaryTranscipherRequest(CanaryTranscipherRequest&& from) noexcept
+    : CanaryTranscipherRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline CanaryTranscipherRequest& operator=(const CanaryTranscipherRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline CanaryTranscipherRequest& operator=(CanaryTranscipherRequest&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const CanaryTranscipherRequest& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const CanaryTranscipherRequest* internal_default_instance() {
+    return reinterpret_cast<const CanaryTranscipherRequest*>(
+               &_CanaryTranscipherRequest_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    11;
+
+  friend void swap(CanaryTranscipherRequest& a, CanaryTranscipherRequest& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(CanaryTranscipherRequest* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(CanaryTranscipherRequest* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  CanaryTranscipherRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<CanaryTranscipherRequest>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const CanaryTranscipherRequest& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const CanaryTranscipherRequest& from) {
+    CanaryTranscipherRequest::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(CanaryTranscipherRequest* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "ppfdaas.CanaryTranscipherRequest";
+  }
+  protected:
+  explicit CanaryTranscipherRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kSymCiphertextFieldNumber = 1,
+    kNonceFieldNumber = 2,
+  };
+  // bytes sym_ciphertext = 1;
+  void clear_sym_ciphertext();
+  const std::string& sym_ciphertext() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_sym_ciphertext(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_sym_ciphertext();
+  PROTOBUF_NODISCARD std::string* release_sym_ciphertext();
+  void set_allocated_sym_ciphertext(std::string* sym_ciphertext);
+  private:
+  const std::string& _internal_sym_ciphertext() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_sym_ciphertext(const std::string& value);
+  std::string* _internal_mutable_sym_ciphertext();
+  public:
+
+  // bytes nonce = 2;
+  void clear_nonce();
+  const std::string& nonce() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_nonce(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_nonce();
+  PROTOBUF_NODISCARD std::string* release_nonce();
+  void set_allocated_nonce(std::string* nonce);
+  private:
+  const std::string& _internal_nonce() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_nonce(const std::string& value);
+  std::string* _internal_mutable_nonce();
+  public:
+
+  // @@protoc_insertion_point(class_scope:ppfdaas.CanaryTranscipherRequest)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr sym_ciphertext_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr nonce_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_inference_2eproto;
+};
+// -------------------------------------------------------------------
+
+class CanaryTranscipherResponse final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:ppfdaas.CanaryTranscipherResponse) */ {
+ public:
+  inline CanaryTranscipherResponse() : CanaryTranscipherResponse(nullptr) {}
+  ~CanaryTranscipherResponse() override;
+  explicit PROTOBUF_CONSTEXPR CanaryTranscipherResponse(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  CanaryTranscipherResponse(const CanaryTranscipherResponse& from);
+  CanaryTranscipherResponse(CanaryTranscipherResponse&& from) noexcept
+    : CanaryTranscipherResponse() {
+    *this = ::std::move(from);
+  }
+
+  inline CanaryTranscipherResponse& operator=(const CanaryTranscipherResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline CanaryTranscipherResponse& operator=(CanaryTranscipherResponse&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const CanaryTranscipherResponse& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const CanaryTranscipherResponse* internal_default_instance() {
+    return reinterpret_cast<const CanaryTranscipherResponse*>(
+               &_CanaryTranscipherResponse_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    12;
+
+  friend void swap(CanaryTranscipherResponse& a, CanaryTranscipherResponse& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(CanaryTranscipherResponse* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(CanaryTranscipherResponse* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  CanaryTranscipherResponse* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<CanaryTranscipherResponse>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const CanaryTranscipherResponse& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const CanaryTranscipherResponse& from) {
+    CanaryTranscipherResponse::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(CanaryTranscipherResponse* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "ppfdaas.CanaryTranscipherResponse";
+  }
+  protected:
+  explicit CanaryTranscipherResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kResultCkksFieldNumber = 2,
+    kMessageFieldNumber = 3,
+    kStateFieldNumber = 1,
+    kPendingImplFieldNumber = 4,
+  };
+  // bytes result_ckks = 2;
+  void clear_result_ckks();
+  const std::string& result_ckks() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_result_ckks(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_result_ckks();
+  PROTOBUF_NODISCARD std::string* release_result_ckks();
+  void set_allocated_result_ckks(std::string* result_ckks);
+  private:
+  const std::string& _internal_result_ckks() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_result_ckks(const std::string& value);
+  std::string* _internal_mutable_result_ckks();
+  public:
+
+  // string message = 3;
+  void clear_message();
+  const std::string& message() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_message(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_message();
+  PROTOBUF_NODISCARD std::string* release_message();
+  void set_allocated_message(std::string* message);
+  private:
+  const std::string& _internal_message() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_message(const std::string& value);
+  std::string* _internal_mutable_message();
+  public:
+
+  // .ppfdaas.ProvisioningState state = 1;
+  void clear_state();
+  ::ppfdaas::ProvisioningState state() const;
+  void set_state(::ppfdaas::ProvisioningState value);
+  private:
+  ::ppfdaas::ProvisioningState _internal_state() const;
+  void _internal_set_state(::ppfdaas::ProvisioningState value);
+  public:
+
+  // bool pending_impl = 4;
+  void clear_pending_impl();
+  bool pending_impl() const;
+  void set_pending_impl(bool value);
+  private:
+  bool _internal_pending_impl() const;
+  void _internal_set_pending_impl(bool value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:ppfdaas.CanaryTranscipherResponse)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr result_ckks_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr message_;
+    int state_;
+    bool pending_impl_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_inference_2eproto;
+};
 // ===================================================================
 
 
@@ -3165,9 +3533,261 @@ inline void ProvisioningStatusResponse::set_allocated_detail(std::string* detail
   // @@protoc_insertion_point(field_set_allocated:ppfdaas.ProvisioningStatusResponse.detail)
 }
 
+// -------------------------------------------------------------------
+
+// CanaryTranscipherRequest
+
+// bytes sym_ciphertext = 1;
+inline void CanaryTranscipherRequest::clear_sym_ciphertext() {
+  _impl_.sym_ciphertext_.ClearToEmpty();
+}
+inline const std::string& CanaryTranscipherRequest::sym_ciphertext() const {
+  // @@protoc_insertion_point(field_get:ppfdaas.CanaryTranscipherRequest.sym_ciphertext)
+  return _internal_sym_ciphertext();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void CanaryTranscipherRequest::set_sym_ciphertext(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.sym_ciphertext_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:ppfdaas.CanaryTranscipherRequest.sym_ciphertext)
+}
+inline std::string* CanaryTranscipherRequest::mutable_sym_ciphertext() {
+  std::string* _s = _internal_mutable_sym_ciphertext();
+  // @@protoc_insertion_point(field_mutable:ppfdaas.CanaryTranscipherRequest.sym_ciphertext)
+  return _s;
+}
+inline const std::string& CanaryTranscipherRequest::_internal_sym_ciphertext() const {
+  return _impl_.sym_ciphertext_.Get();
+}
+inline void CanaryTranscipherRequest::_internal_set_sym_ciphertext(const std::string& value) {
+  
+  _impl_.sym_ciphertext_.Set(value, GetArenaForAllocation());
+}
+inline std::string* CanaryTranscipherRequest::_internal_mutable_sym_ciphertext() {
+  
+  return _impl_.sym_ciphertext_.Mutable(GetArenaForAllocation());
+}
+inline std::string* CanaryTranscipherRequest::release_sym_ciphertext() {
+  // @@protoc_insertion_point(field_release:ppfdaas.CanaryTranscipherRequest.sym_ciphertext)
+  return _impl_.sym_ciphertext_.Release();
+}
+inline void CanaryTranscipherRequest::set_allocated_sym_ciphertext(std::string* sym_ciphertext) {
+  if (sym_ciphertext != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.sym_ciphertext_.SetAllocated(sym_ciphertext, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.sym_ciphertext_.IsDefault()) {
+    _impl_.sym_ciphertext_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:ppfdaas.CanaryTranscipherRequest.sym_ciphertext)
+}
+
+// bytes nonce = 2;
+inline void CanaryTranscipherRequest::clear_nonce() {
+  _impl_.nonce_.ClearToEmpty();
+}
+inline const std::string& CanaryTranscipherRequest::nonce() const {
+  // @@protoc_insertion_point(field_get:ppfdaas.CanaryTranscipherRequest.nonce)
+  return _internal_nonce();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void CanaryTranscipherRequest::set_nonce(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.nonce_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:ppfdaas.CanaryTranscipherRequest.nonce)
+}
+inline std::string* CanaryTranscipherRequest::mutable_nonce() {
+  std::string* _s = _internal_mutable_nonce();
+  // @@protoc_insertion_point(field_mutable:ppfdaas.CanaryTranscipherRequest.nonce)
+  return _s;
+}
+inline const std::string& CanaryTranscipherRequest::_internal_nonce() const {
+  return _impl_.nonce_.Get();
+}
+inline void CanaryTranscipherRequest::_internal_set_nonce(const std::string& value) {
+  
+  _impl_.nonce_.Set(value, GetArenaForAllocation());
+}
+inline std::string* CanaryTranscipherRequest::_internal_mutable_nonce() {
+  
+  return _impl_.nonce_.Mutable(GetArenaForAllocation());
+}
+inline std::string* CanaryTranscipherRequest::release_nonce() {
+  // @@protoc_insertion_point(field_release:ppfdaas.CanaryTranscipherRequest.nonce)
+  return _impl_.nonce_.Release();
+}
+inline void CanaryTranscipherRequest::set_allocated_nonce(std::string* nonce) {
+  if (nonce != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.nonce_.SetAllocated(nonce, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.nonce_.IsDefault()) {
+    _impl_.nonce_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:ppfdaas.CanaryTranscipherRequest.nonce)
+}
+
+// -------------------------------------------------------------------
+
+// CanaryTranscipherResponse
+
+// .ppfdaas.ProvisioningState state = 1;
+inline void CanaryTranscipherResponse::clear_state() {
+  _impl_.state_ = 0;
+}
+inline ::ppfdaas::ProvisioningState CanaryTranscipherResponse::_internal_state() const {
+  return static_cast< ::ppfdaas::ProvisioningState >(_impl_.state_);
+}
+inline ::ppfdaas::ProvisioningState CanaryTranscipherResponse::state() const {
+  // @@protoc_insertion_point(field_get:ppfdaas.CanaryTranscipherResponse.state)
+  return _internal_state();
+}
+inline void CanaryTranscipherResponse::_internal_set_state(::ppfdaas::ProvisioningState value) {
+  
+  _impl_.state_ = value;
+}
+inline void CanaryTranscipherResponse::set_state(::ppfdaas::ProvisioningState value) {
+  _internal_set_state(value);
+  // @@protoc_insertion_point(field_set:ppfdaas.CanaryTranscipherResponse.state)
+}
+
+// bytes result_ckks = 2;
+inline void CanaryTranscipherResponse::clear_result_ckks() {
+  _impl_.result_ckks_.ClearToEmpty();
+}
+inline const std::string& CanaryTranscipherResponse::result_ckks() const {
+  // @@protoc_insertion_point(field_get:ppfdaas.CanaryTranscipherResponse.result_ckks)
+  return _internal_result_ckks();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void CanaryTranscipherResponse::set_result_ckks(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.result_ckks_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:ppfdaas.CanaryTranscipherResponse.result_ckks)
+}
+inline std::string* CanaryTranscipherResponse::mutable_result_ckks() {
+  std::string* _s = _internal_mutable_result_ckks();
+  // @@protoc_insertion_point(field_mutable:ppfdaas.CanaryTranscipherResponse.result_ckks)
+  return _s;
+}
+inline const std::string& CanaryTranscipherResponse::_internal_result_ckks() const {
+  return _impl_.result_ckks_.Get();
+}
+inline void CanaryTranscipherResponse::_internal_set_result_ckks(const std::string& value) {
+  
+  _impl_.result_ckks_.Set(value, GetArenaForAllocation());
+}
+inline std::string* CanaryTranscipherResponse::_internal_mutable_result_ckks() {
+  
+  return _impl_.result_ckks_.Mutable(GetArenaForAllocation());
+}
+inline std::string* CanaryTranscipherResponse::release_result_ckks() {
+  // @@protoc_insertion_point(field_release:ppfdaas.CanaryTranscipherResponse.result_ckks)
+  return _impl_.result_ckks_.Release();
+}
+inline void CanaryTranscipherResponse::set_allocated_result_ckks(std::string* result_ckks) {
+  if (result_ckks != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.result_ckks_.SetAllocated(result_ckks, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.result_ckks_.IsDefault()) {
+    _impl_.result_ckks_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:ppfdaas.CanaryTranscipherResponse.result_ckks)
+}
+
+// string message = 3;
+inline void CanaryTranscipherResponse::clear_message() {
+  _impl_.message_.ClearToEmpty();
+}
+inline const std::string& CanaryTranscipherResponse::message() const {
+  // @@protoc_insertion_point(field_get:ppfdaas.CanaryTranscipherResponse.message)
+  return _internal_message();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void CanaryTranscipherResponse::set_message(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.message_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:ppfdaas.CanaryTranscipherResponse.message)
+}
+inline std::string* CanaryTranscipherResponse::mutable_message() {
+  std::string* _s = _internal_mutable_message();
+  // @@protoc_insertion_point(field_mutable:ppfdaas.CanaryTranscipherResponse.message)
+  return _s;
+}
+inline const std::string& CanaryTranscipherResponse::_internal_message() const {
+  return _impl_.message_.Get();
+}
+inline void CanaryTranscipherResponse::_internal_set_message(const std::string& value) {
+  
+  _impl_.message_.Set(value, GetArenaForAllocation());
+}
+inline std::string* CanaryTranscipherResponse::_internal_mutable_message() {
+  
+  return _impl_.message_.Mutable(GetArenaForAllocation());
+}
+inline std::string* CanaryTranscipherResponse::release_message() {
+  // @@protoc_insertion_point(field_release:ppfdaas.CanaryTranscipherResponse.message)
+  return _impl_.message_.Release();
+}
+inline void CanaryTranscipherResponse::set_allocated_message(std::string* message) {
+  if (message != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.message_.SetAllocated(message, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.message_.IsDefault()) {
+    _impl_.message_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:ppfdaas.CanaryTranscipherResponse.message)
+}
+
+// bool pending_impl = 4;
+inline void CanaryTranscipherResponse::clear_pending_impl() {
+  _impl_.pending_impl_ = false;
+}
+inline bool CanaryTranscipherResponse::_internal_pending_impl() const {
+  return _impl_.pending_impl_;
+}
+inline bool CanaryTranscipherResponse::pending_impl() const {
+  // @@protoc_insertion_point(field_get:ppfdaas.CanaryTranscipherResponse.pending_impl)
+  return _internal_pending_impl();
+}
+inline void CanaryTranscipherResponse::_internal_set_pending_impl(bool value) {
+  
+  _impl_.pending_impl_ = value;
+}
+inline void CanaryTranscipherResponse::set_pending_impl(bool value) {
+  _internal_set_pending_impl(value);
+  // @@protoc_insertion_point(field_set:ppfdaas.CanaryTranscipherResponse.pending_impl)
+}
+
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------
