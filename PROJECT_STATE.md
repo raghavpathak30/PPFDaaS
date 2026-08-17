@@ -27,11 +27,41 @@ Three CKKS variants coexist:
 HERA-16 is the currently-implemented symmetric cipher
 (`tools/transciphering/cipher/hera.go`). `CanaryCheckTranscipher` RPC and
 provisioning scaffolding exist in `proto/inference.proto`; vendor-side BFV
-evaluation is stub-only, pending the KAIST `ckks_fv` scheme bridge (not in
-stock Lattigo v6.2.0). Last measured same-session client-CPU ratio, HERA
-r=5 vs. plain-CKKS 160-bit encode+encrypt: **~9.0-9.4x** (varies with
-desktop contention; see `docs/SESSION_LOG.md` 2026-08-06c/d — same-session
-ratio is the trustworthy number, not either absolute value).
+evaluation is stub-only in `vendor_server`. It is **not** pending the KAIST
+`ckks_fv` scheme bridge: the bridge is vendored and pinned at commit
+`105fc73115b56f1d6ff357029c7682b19a6d8510` under `third_party/`
+(gitignored checkout, reproducible via `third_party/fetch_rtf.sh`,
+toolchain documented in `third_party/BUILD_NOTES.md`). It builds clean
+under Go 1.25 with zero source changes — `go vet ./...` and
+`go test -c -run '^$' .` both exit 0 in `ckks_fv/`.
+
+Two results now exist for the reference path (neither yet integrated into
+`vendor_server`):
+- **Toy correctness: PASS.** `RtFHeraParams[3]` ("128as") deep-copied with
+  only `LogN: 16 -> 10` changed, all moduli reused; full server-side path
+  (HERA-in-BFV transcipher -> HalfBoot -> FV->CKKS repack -> CKKS eval ->
+  decrypt) run end-to-end. Max abs error 2.1e-5 against a 5e-2 tolerance.
+  Caveat: the CKKS stage evaluated a trivial `2x+1` circuit, not the fraud
+  model.
+- **Full-scale: CONFIRMED-RAN.** `hera.Crypt` completed at the real secure
+  LogN 16 / "128as" params on this 15 GB host: 73.7 s total, peak VmHWM
+  9.54 GB, zero swap, under `GOMEMLIMIT=11GiB GOGC=50`. The prior ~60 GB
+  RAM anchor was never itself measured end-to-end; this run supersedes it.
+  Memory is ~97% setup (StC precompute + key material) vs. ~3% `hera.Crypt`;
+  runtime is ~70% `hera.Crypt`, of which ~92% is the cube/S-box step.
+
+**Real blocker:** integrating the validated reference path into
+`vendor_server` — not hardware procurement. Open items: (1)
+`artifacts/hhe_breakeven.json` — all cells still PENDING; (2)
+batched-reduction correctness at 256-slot blocks (everything verified so
+far is single-block); (3) the toy harness still runs a trivial `2x+1`
+circuit, not the real fraud model; (4)
+`scripts/cloud_transcipher_bench/run_benchmark.sh`'s ~90 GB preflight gate
+is ~9.4x the measured peak and needs revising regardless of whether cloud
+is ever used. Last measured same-session client-CPU ratio, HERA r=5 vs.
+plain-CKKS 160-bit encode+encrypt: **~9.0-9.4x** (varies with desktop
+contention; see `docs/SESSION_LOG.md` 2026-08-06c/d — same-session ratio
+is the trustworthy number, not either absolute value).
 
 ### Docker / DevSecOps
 No session-log entry covers this arm. `Dockerfile.client`, `compose.prod.yaml`,
