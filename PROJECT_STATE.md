@@ -42,13 +42,28 @@ under `third_party/` (gitignored checkout, reproducible via
 source changes — `go vet ./...` and `go test -c -run '^$' .` both exit 0 in
 `ckks_fv/`.
 
+**`tools/transciphering` itself now depends on `third_party/` being
+vendored, not just `toy_correctness/`'s tests.** `cipher/rubato.go`'s
+Gaussian noise sampler calls `github.com/ldsec/lattigo/v2`'s
+`ring.GaussianSampler.AGN` (a KAIST-CryptLab addition absent from the
+public `lattigo/v2` module — confirmed by diffing against it), satisfied
+via a `go.mod replace` to the relative path `../../third_party/RtF-Transciphering`.
+Run `third_party/fetch_rtf.sh` before `go build ./...` in that module; see
+`tools/transciphering/README.md`'s "Build / run" section. Checked: this
+doesn't break any existing automated pipeline — neither `Dockerfile.client`
+nor `Dockerfile.server` invokes the Go toolchain, and no CI workflow exists
+in this repo at all.
+
 **Correctness gates, both required before any timing number is trusted, and
 both PASS for both ciphers:**
 - **Gate A — known-answer test** (`cipher/hera_test.go`, `rubato_test.go`):
   this module's keystream vs. `ckks_fv`'s own `plainHera`/`plainRubato`
   reference for fixed inputs. Caught a real bug during implementation
   (Rubato's Feistel layer reducing mod the wrong modulus via an
-  accidentally-shared helper) before any measurement.
+  accidentally-shared helper) before any measurement. **Cannot and does not
+  validate the noise sampler's distribution** — it runs Rubato at `sigma=0`
+  by design. That gap let a second, more serious bug through review-invisible
+  to both gates: see below.
 - **Gate B — toy-scale HE harness** (`toy_correctness/`): full server-side
   path (cipher-in-BFV → HalfBoot → FV→CKKS repack → CKKS eval → decrypt) at
   `LogN 16→10`, all moduli reused. **PASS, all three configs**: HERA
@@ -56,15 +71,65 @@ both PASS for both ciphers:**
   exact parity with `HeraRounds=5`, max abs error 1.4e-5), Rubato-128L (new,
   includes real Gaussian noise, max abs error 3.4e-5) — all against a 5e-2
   tolerance. Caveat unchanged: the CKKS stage evaluates a trivial `2x+1`
-  circuit, not the fraud model.
+  circuit, not the fraud model. Also cannot validate the noise
+  *distribution* (only that CKKS's tolerance absorbs its magnitude) — but
+  this gate uses `ckks_fv`'s own `plainRubato`/`ring.GaussianSampler`
+  directly, so it was never exposed to the client-module bug below.
 
-**HERA-vs-Rubato cross-arm comparison (this session, same machine state,
-AC power, powersave governor):** Rubato-128L client encrypt costs
-**~1.75-2.25x HERA-16** across a 1/4/8/16-lane sweep (256 features/txn,
-n=200). Upload size is identical between the two ciphers at every lane
+**Correctness bug found and fixed after initial measurement (found by
+review, not by either gate):** `cipher/rubato.go`'s Gaussian noise sampler
+initially approximated the reference's discrete Gaussian via a
+Box-Muller transform over `crypto/rand`-drawn uniforms, never verified
+statistically equivalent to `ckks_fv`'s actual `ring.GaussianSampler.AGN`.
+Since Rubato's security rests on an LWE-style assumption stated over
+Gaussian error, this was a correctness bug, not a performance detail.
+Fixed: `noiseAGN` now calls the reference sampler directly (`go.mod`
+`replace`s `github.com/ldsec/lattigo/v2` with the pinned
+`third_party/RtF-Transciphering` checkout, since `AGN` is a KAIST-CryptLab
+addition absent from the public module). Added
+`TestRubatoNoiseStatistics` (empirical mean/std-dev vs. `sigma`, PASS) to
+catch this class of bug going forward. **This changed the measured
+numbers substantially, including their direction** — see below.
+
+**HERA-vs-Rubato cross-arm comparison (re-measured after the fix, same
+session, AC power, powersave governor):** Rubato-128L client encrypt now
+costs **~0.48-0.82x HERA-16 per record** across a 1/4/8/16-lane sweep (256
+features/txn, n=200) — i.e. Rubato is CHEAPER, reversing the first
+(wrong-sampler) measurement of ~1.75-2.25x. Per keystream element (HERA
+yields 16/block, Rubato 60, confirmed via a same-invocation 7-repetition
+micro-benchmark under low/clean load): **~0.77x with Gaussian noise
+included, ~0.57x without** — also reversed from the prior ~3.05x/~1.19x.
+The wrong sampler's own overhead, not Rubato's algebra, was the dominant
+cost in the original measurement. (An intermediate re-measurement pass
+reported ~0.70x/~0.53x from a less rigorous 5-repetition run; a review pass
+flagged the without-noise figure as suspicious since that code path never
+invokes the sampler at all — investigated and confirmed the discrepancy
+traces to the FIRST report's single-shot, low-repetition benchmark
+methodology, not the sampler fix; both rigorous re-measurements converge
+to ~144-146 ns/element independently. See
+`tools/transciphering/README.md`'s per-element section for the full
+account.) Upload size is identical between the two ciphers at every lane
 count — the swap changes client CPU cost only, not the wire-format
-reduction vs. plain CKKS (16x-249x smaller). Full numbers, machine state,
-and correctness-gate detail: `artifacts/hera_vs_rubato_transciphering.json`.
+reduction vs. plain CKKS (16x-249x smaller). Gate B toy-scale (LogN=10)
+wall time/RSS (re-verified after the fix, since the Rubato figure is the
+basis for a full-scale memory-risk estimate: calls `ckks_fv`'s own
+`plainRubato`/`ring.GaussianSampler` directly, confirmed never exposed to
+the client-side bug, and RSS confirmed stable across 4 total runs — ~7%
+band for Rubato, ~3.5% for HERA, under both clean and elevated-load
+conditions): HERA r=5 ~287MB (283-293MB range), Rubato-128L ~611-654MB —
+the only server-side evidence available while `vendor_server` is
+stub-only, and not the deciding
+number: by multiplicative depth (read directly from `ckks_fv`'s source —
+HERA's cube S-box is 10 sequential-multiplication levels across 5 rounds,
+Rubato's Feistel-square is 2, since its per-round squarings are mutually
+independent and parallel), Rubato should need ~5x fewer sequential
+ciphertext multiplications homomorphically — the corrected client numbers
+now happen to point the same direction, but that agreement isn't
+confirmation (the two are different cost models); confirming the depth
+argument is blocked on the same `vendor_server` integration as everything
+else in this section. Full
+numbers, machine state, and correctness-gate detail:
+`artifacts/hera_vs_rubato_transciphering.json`.
 
 Full-scale (non-toy) RSS instrumentation exists for HERA only (not yet
 re-run for Rubato): **CONFIRMED-RAN.** `hera.Crypt` completed at the real
