@@ -22,6 +22,20 @@ The first ("80as") predates the HERA→Rubato swap and is kept as-is; the
 other two were added for this task, since neither an exact-round-count HERA
 harness nor any Rubato harness previously existed here.
 
+**Limitation, stated explicitly:** `TestRtFRubato128LToyCorrectness` uses
+`plainRubato` with Rubato-128L's real `sigma` (client-side Gaussian noise is
+genuine, unlike HERA which has none), and passing means the resulting CKKS
+approximation error is within the 5e-2 tolerance. It does **not** validate
+that the noise sampler's distribution is actually Gaussian -- a
+wrong-but-similarly-small-magnitude noise source (e.g. uniform, or an
+unverified approximation) would also pass this check, since CKKS's
+tolerance absorbs any sufficiently small residual error regardless of its
+shape. This gate is a pipeline/magnitude check, not a distribution check.
+The client Go module's own noise sampler (`cipher/rubato.go`) is
+distribution-checked separately, by `cipher/rubato_test.go`'s
+`TestRubatoNoiseStatistics` -- see that file's doc comments for why neither
+correctness gate here would catch a wrong noise distribution on its own.
+
 ## What's here
 
 - `testdata/ckks_fv_patch/*.go` -- the tracked source of all three
