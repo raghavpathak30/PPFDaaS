@@ -1,18 +1,19 @@
-// bench measures the HERA-16 plaintext path (client CPU + upload-size).
+// bench measures the client-side plaintext path (client CPU + upload-size)
+// for either symmetric cipher backend (HERA-16 or Rubato-128L).
 //
 // This covers the "online_encrypt_ms" and "upload_bytes_symmetric" columns
 // in the Phase 7 break-even map (scripts/hhe_breakeven.py).
 //
-// PENDING columns (require KAIST ckks_fv scheme bridge, not in Lattigo v6):
-//   - online_transcipher_time_ms  (BFV evaluation of HERA inside the vendor)
+// PENDING columns (require vendor_server integration, currently stub-only):
+//   - online_transcipher_time_ms  (BFV evaluation of the cipher inside the vendor)
 //   - repacking_time_ms           (StC + CKKS modular reduction)
 //   - full RtF end-to-end latency
 //
 // Usage:
-//   go run ./bench [--features N] [--lanes L] [--rounds R]
-//   Defaults: features=256, lanes=16, rounds=100
+//   go run ./bench [--cipher hera|rubato] [--features N] [--lanes L] [--rounds R]
+//   Defaults: cipher=hera, features=256, lanes=16, rounds=100
 //
-// Output: JSON to stdout + ./results/hera_bench.json
+// Output: JSON to stdout + ./results/<cipher>_bench.json
 package main
 
 import (
@@ -60,12 +61,16 @@ type BenchResult struct {
 }
 
 func main() {
+	cipherName := flag.String("cipher", "hera", "symmetric cipher backend: hera or rubato")
 	features := flag.Int("features", 256, "features per transaction")
 	lanes := flag.Int("lanes", 16, "transactions per batch (batch occupancy)")
 	rounds := flag.Int("rounds", 100, "benchmark rounds")
 	flag.Parse()
 
-	h := cipher.NewHERA16()
+	h, err := selectCipher(*cipherName)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
 	n := (*features) * (*lanes) // total uint64 elements per batch
 
 	// Generate a random key and nonce.
@@ -80,7 +85,7 @@ func main() {
 	keTimes := make([]float64, *rounds)
 	for i := 0; i < warmup+*rounds; i++ {
 		t0 := time.Now()
-		_, err := h.EvalKeyExpansion(key, nil)
+		_, err := h.EvalKeyExpansion(key, nonce, nil)
 		elapsed := float64(time.Since(t0).Microseconds()) / 1000.0
 		if err != nil {
 			log.Fatalf("EvalKeyExpansion: %v", err)
@@ -132,12 +137,11 @@ func main() {
 
 		OnlineTranscipherTimeMs: "PENDING",
 		RepackingTimeMs:         "PENDING",
-		PendingReason: "PENDING: Standard Lattigo v6.2.0 does not include the " +
-			"KAIST ckks_fv FV->CKKS scheme bridge. The online transcipher time " +
-			"(BFV evaluation of HERA inside vendor_server) and repacking time " +
-			"(StC + CKKS modular reduction) cannot be measured until the KAIST " +
-			"fork (github.com/B-R-P/lattigo-ckks-fv or CHES-2025 SoK extension) " +
-			"is integrated. All plaintext-path columns above are MEASURED.",
+		PendingReason: "PENDING: vendor_server's BFV evaluation of " + h.Name() +
+			" is stub-only. The online transcipher time (BFV evaluation of " +
+			h.Name() + " inside vendor_server) and repacking time (StC + " +
+			"CKKS modular reduction) cannot be measured until vendor_server " +
+			"integration lands. All plaintext-path columns above are MEASURED.",
 	}
 
 	out, _ := json.MarshalIndent(res, "", "  ")
@@ -146,11 +150,23 @@ func main() {
 	if err := os.MkdirAll("results", 0755); err != nil {
 		log.Fatalf("mkdir results: %v", err)
 	}
-	path := filepath.Join("results", "hera_bench.json")
+	path := filepath.Join("results", *cipherName+"_bench.json")
 	if err := os.WriteFile(path, out, 0644); err != nil {
 		log.Fatalf("write %s: %v", path, err)
 	}
 	fmt.Fprintf(os.Stderr, "results written to %s\n", path)
+}
+
+// selectCipher maps a --cipher flag value to a CipherBackend.
+func selectCipher(name string) (cipher.CipherBackend, error) {
+	switch name {
+	case "hera":
+		return cipher.NewHERA16(), nil
+	case "rubato":
+		return cipher.NewRubato128L(), nil
+	default:
+		return nil, fmt.Errorf("unknown --cipher %q: want hera or rubato", name)
+	}
 }
 
 // --- helpers ---

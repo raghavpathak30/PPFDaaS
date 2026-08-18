@@ -1,0 +1,78 @@
+{
+  "artifact": "hera_vs_rubato_transciphering",
+  "generated_utc": "2026-08-17T18:41:02Z",
+  "task": "Swap the transciphering symmetric cipher HERA -> Rubato, re-measure, cross-arm comparison (Prof. Debranjan's assigned task, branch rubato-swap).",
+  "status_tags_legend": "CONFIRMED-RAN = executed this session, command given. CONFIRMED-SOURCE = verified against ckks_fv source (file+line) or a cited paper. UNVERIFIED = plausible, not independently checked this session.",
+
+  "machine_state": {
+    "status": "CONFIRMED-RAN",
+    "governor": "powersave",
+    "power_source": "AC (ADP0 online=1)",
+    "load_average_1_5_15": [2.53, 2.40, 2.13],
+    "scaling_cur_freq_range_mhz": "800-1200 (observed across cores; ceiling scaling_max_freq=4700 MHz)",
+    "caveat": "Absolute latencies below are NOT comparable to any number measured in a different session (PROJECT_STATE.md measurement rules). Same-session paired ratios (HERA vs Rubato, at fixed lane counts) are the defensible output; both ciphers were measured back-to-back in this session under identical machine state.",
+    "cpu_count": 20
+  },
+
+  "correctness_gates": {
+    "gate_a_known_answer_test": {
+      "status": "CONFIRMED-RAN",
+      "description": "Client Go cipher keystream vs ckks_fv's own plainHera/plainRubato reference (pinned SHA 105fc73115b56f1d6ff357029c7682b19a6d8510), fixed key/nonce[/counter]. Rubato compared at sigma=0 (deterministic algebra only; AGN noise is randomized by design, checked separately for boundedness).",
+      "hera_result": "PASS (tools/transciphering/cipher/hera_test.go: TestHERAKnownAnswer)",
+      "rubato_result": "PASS (tools/transciphering/cipher/rubato_test.go: TestRubatoKnownAnswer, TestRubatoNoiseBounded)",
+      "note": "This gate caught and led to a fix of a real bug during implementation: Rubato's Feistel layer was reducing mod HeraModulus (2^26) instead of RubatoModulus (0x1fc0001) via an accidentally-shared helper."
+    },
+    "gate_b_toy_he_harness": {
+      "status": "CONFIRMED-RAN",
+      "description": "Full server-side path (cipher-in-BFV transcipher -> HalfBoot -> FV->CKKS repack -> trivial 2x+1 CKKS eval -> decrypt), LogN 16->10, all moduli reused unchanged, tolerance 5e-2. See tools/transciphering/toy_correctness/README.md.",
+      "hera_r4_80as": {"max_abs_error": "~2e-05 (varies run to run, random data)", "tolerance": 5e-2, "result": "PASS", "note": "pre-existing harness, r=4, HeraModDownParams80 -- BenchmarkRtFHera80as's exact config"},
+      "hera_r5_128as": {"max_abs_error": "1.390409e-05", "tolerance": 5e-2, "result": "PASS", "note": "new this task -- exact round-count parity with cipher/hera.go's HeraRounds=5"},
+      "rubato_128L": {"max_abs_error": "3.419122e-05", "tolerance": 5e-2, "result": "PASS", "note": "new this task -- includes real Gaussian noise (sigma=1.6356633496458739795537788457309656607510203877762320964302959); slots=512 (full-coefficient packing, the only CKKS/RtF param set Rubato has in this checkout) vs HERA's slots=16 (sparse packing) -- a property of the reference's own param sets, not a change made here"}
+    },
+    "note": "No timing number below is meaningful independent of these gates passing -- both passed before any measurement was taken."
+  },
+
+  "axis_b_hera_vs_rubato_client_cipher": {
+    "status": "CONFIRMED-RAN",
+    "description": "Client-side plaintext-path benchmark (tools/transciphering/bench, --cipher=hera|rubato), 256 features/transaction, n=200 measured + 10 warmup per point, HERA and Rubato run back-to-back this session under the machine_state above.",
+    "cipher_config": {
+      "hera": "HERA-16: m=16, r=5, t=2^26 -- SHAKE256(nonce)-derived round keys, fixed [2,3,1,1] circulant linear layer (both replacing the prior fixed-table/AES-ECB-PRF implementation)",
+      "rubato": "Rubato-128L: n=64, r=2, q=0x1fc0001, sigma=1.6356633496458739795537788457309656607510203877762320964302959 -- SHAKE256(nonce||counter)-derived round keys, blocksize-64 linear layer, sequential Feistel-square nonlinear layer, client-side Gaussian noise"
+    },
+    "by_lane_count": [
+      {"n_lanes": 1,  "hera_mean_ms": 0.08208, "hera_median_ms": 0.075, "rubato_mean_ms": 0.17240, "rubato_median_ms": 0.150, "ratio_rubato_over_hera_mean": 2.101, "ratio_rubato_over_hera_median": 2.000, "upload_bytes_both_ciphers": 1052},
+      {"n_lanes": 4,  "hera_mean_ms": 0.39020, "hera_median_ms": 0.357, "rubato_mean_ms": 0.87655, "rubato_median_ms": 0.745, "ratio_rubato_over_hera_mean": 2.246, "ratio_rubato_over_hera_median": 2.087, "upload_bytes_both_ciphers": 4124},
+      {"n_lanes": 8,  "hera_mean_ms": 0.69307, "hera_median_ms": 0.607, "rubato_mean_ms": 1.23097, "rubato_median_ms": 1.061, "ratio_rubato_over_hera_mean": 1.776, "ratio_rubato_over_hera_median": 1.748, "upload_bytes_both_ciphers": 8220},
+      {"n_lanes": 16, "hera_mean_ms": 1.21299, "hera_median_ms": 1.085, "rubato_mean_ms": 2.49437, "rubato_median_ms": 2.119, "ratio_rubato_over_hera_mean": 2.056, "ratio_rubato_over_hera_median": 1.953, "upload_bytes_both_ciphers": 16412}
+    ],
+    "headline": "Rubato-128L client encrypt costs ~1.75-2.25x HERA-16 (mean), ~1.7-2.1x (median), consistently across the 1-16 lane sweep this session. Treat this range, not a single point estimate, as the result -- see machine_state caveat.",
+    "upload_size_finding": "Upload size in bytes is IDENTICAL between HERA and Rubato at every lane count (both use the same OnlineCiphertextBytes(n) = 4n+28 wire format) -- the cipher swap changes client CPU cost only, not the ~16x-249x upload-size reduction vs plain CKKS standard (262,257 bytes) that motivated using a symmetric cipher at all.",
+    "raw_result_files": [
+      "tools/transciphering/results/hera_bench_lane{1,4,8,16}_r_fixed.json",
+      "tools/transciphering/results/rubato_bench_lane{1,4,8,16}_r_fixed.json"
+    ]
+  },
+
+  "axis_c_simd_circuit_behaviour": {
+    "status": "PARTIAL",
+    "description": "Client-cipher lane sweep (1/4/8/16, matching hhe_breakeven.json's batch_occupancy_lanes axis) is covered by axis_b above for both ciphers. What's NOT covered: SIMD lane behavior of the homomorphic (server-side) evaluation path (mfvHera.Crypt / mfvRubato.Crypt across many simultaneous FV-slot lanes) -- the toy harnesses above only exercise slot 0 (HERA) / output-element 0 (Rubato), proving correctness of one lane, not throughput across many. That remains PENDING, same blocker as axis_a below."
+  },
+
+  "axis_a_plain_ckks_vs_rtf_transciphering": {
+    "status": "PENDING",
+    "description": "Unchanged by this task and independent of which symmetric cipher is used: vendor_server's BFV evaluation is stub-only (PROJECT_STATE.md), so online_transcipher_ms and repacking_ms cannot be measured for either HERA or Rubato outside the toy-scale harnesses above. artifacts/hhe_breakeven.json's 36 cells remain PENDING for the same reason, unaffected by this task.",
+    "not_attempted_this_session": "A fresh same-session plain-CKKS client encode+encrypt baseline (scripts/e2e_latency_breakdown.py, the source of the prior '~9.0-9.4x HERA vs plain CKKS' ratio in README.md/PROJECT_STATE.md) was not re-run this session -- it requires spinning up vendor_server/gRPC infrastructure, out of scope for this cipher-swap measurement pass. That prior ratio was measured against the pre-fix HERA implementation (fixed-table round keys) at r=5, not the corrected SHAKE256-derived r=5 implementation measured above, and should not be combined with the numbers in this artifact."
+  },
+
+  "known_defects_fixed_this_task": [
+    "cipher/hera.go: replaced the fixed heraRC table (whose 5th row was an admitted, unsourced placeholder) and heraRoundKey's AES-128-ECB PRF with SHAKE256(nonce)-derived round keys (roundKeys, shared with rubato.go), matching ckks_fv's fv_hera.go:100-113 / RtF_bench_test.go:500-513 exactly.",
+    "cipher/hera.go: replaced heraMixColumns (which derived its matrix from heraRC per round -- never matched HERA's actual spec) with the fixed [2,3,1,1] circulant from RtF_bench_test.go:525-547.",
+    "cipher/hera.go: replaced the fabricated nonce-mixed initial state (nonce[i%16]+ctr*(i+1)) with HERA's actual fixed public initial state (i+1), matching fv_hera.go:65-68.",
+    "cipher/hera.go: restructured encryptBlock's round order to match the reference exactly (initial whitening, then linLayer+cube+addRoundKey per round, finalization with a double linLayer) -- the prior structure (addRoundKey+cube+mix interleaved per round) did not match."
+  ],
+
+  "sourcing": {
+    "rubato_variant_choice": "Rubato-128L (RUBATO128L: n=64, r=2, q=0x1fc0001, sigma=1.6356633496458739795537788457309656607510203877762320964302959 -- fv_rubato.go:48-53). Grassi et al. (CRYPTO 2023, eprint 2023/822 Section 6.1/7.1, p.22, read directly this task) state the attack's bound 'cannot be established' for Rubato-128L specifically, unlike the other five variants. This means Rubato-128L is NOT COVERED by this attack's established bound -- not the same as proven secure. This benchmark is a performance/feasibility comparison, not a security endorsement.",
+    "constants_not_fabricated": "Every cipher constant, matrix coefficient, and derivation formula used in cipher/hera.go and cipher/rubato.go is cited in-code to an exact ckks_fv file/line at the pinned SHA 105fc73115b56f1d6ff357029c7682b19a6d8510. The previous 'Table 3 of Cho et al. 2021' citation for heraRC was discarded, not re-sourced or replaced with another placeholder."
+  }
+}
