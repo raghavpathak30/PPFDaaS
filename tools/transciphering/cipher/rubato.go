@@ -3,12 +3,13 @@ package cipher
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
-	"math"
-	"math/big"
+	"sync"
+
+	"github.com/ldsec/lattigo/v2/ring"
+	"github.com/ldsec/lattigo/v2/utils"
 )
 
 // Rubato128L implements CipherBackend using the Rubato-128L stream cipher
@@ -48,16 +49,24 @@ import (
 //
 // Gaussian noise: added once, in the finalization step, before the last
 // AddRoundKey (RtF_bench_test.go:658-660, rubatoAddGaussianNoise:766-769).
-// The reference samples via a lattice-library Gaussian sampler
-// (ldsec/lattigo's ring.GaussianSampler.AGN, bound = 6*sigma) that this
-// module does not depend on; noiseAGN below implements the same shape
-// (discrete Gaussian, std dev sigma, rejection-bounded at 6*sigma) rather
-// than porting that specific PRNG -- noise is randomized by design (the
-// reference's own plainRubato draws a freshly-seeded PRNG per call and is
-// non-deterministic run-to-run), so bit-exact reproduction isn't meaningful.
-// Gate A's known-answer test therefore compares with sigma=0 (the
-// deterministic algebra only) and separately checks the noise is present
-// and bounded. See cipher/rubato_test.go.
+// noiseAGN below calls ldsec/lattigo's ring.GaussianSampler.AGN directly --
+// the exact primitive the reference uses, via a `replace` in go.mod pointing
+// at the pinned third_party/RtF-Transciphering checkout (that fork's module
+// path is github.com/ldsec/lattigo/v2; AGN is a KAIST-CryptLab addition not
+// present in the real upstream github.com/ldsec/lattigo/v2, so this can't
+// be satisfied by the public module alone -- third_party/fetch_rtf.sh must
+// be run before this module builds). An earlier version of this file
+// approximated the noise via Box-Muller over crypto/rand-drawn uniforms;
+// that is a DIFFERENT distribution than AGN's discrete Gaussian and was
+// never verified statistically equivalent to it -- Rubato's security rests
+// on an LWE-style assumption stated over Gaussian error, so an unverified
+// substitute distribution is a correctness bug, not a performance detail.
+// Noise is still randomized by design (the reference's own plainRubato
+// draws a freshly-seeded PRNG per call and is non-deterministic
+// run-to-run), so Gate A's known-answer test compares with sigma=0 (the
+// deterministic algebra only); see cipher/rubato_test.go for that gate's
+// explicit statement that it cannot and does not validate the noise
+// distribution, and TestRubatoNoiseStatistics for what does.
 //
 // mfvRubato, the homomorphic (server-side) evaluator in ckks_fv, does NOT
 // add this noise (grepped fv_rubato.go: zero references to Sigma/Gaussian).
@@ -290,50 +299,49 @@ func rubatoFeistel(state [RubatoBlockSize]uint64) [RubatoBlockSize]uint64 {
 	return out
 }
 
-// noiseAGN adds discrete Gaussian noise (std dev sigma, rejection-bounded at
-// 6*sigma, matching rubatoAddGaussianNoise's bound := int(6*sigma),
-// RtF_bench_test.go:766-769) to each element of state in place, reduced mod
-// q. This is this module's own AGN implementation (see the package doc
-// comment above for why it doesn't port ckks_fv's specific PRNG) using
-// crypto/rand for the underlying entropy source.
+// rubatoGaussianSampler is the exact primitive ckks_fv's own plainRubato
+// uses (RtF_bench_test.go:621-625:
+//   prng, err := utils.NewPRNG()
+//   gaussianSampler := ring.NewGaussianSampler(prng)
+// ), not a re-implementation. An earlier version of this file approximated
+// the noise via Box-Muller over crypto/rand-drawn uniforms; that was a
+// DIFFERENT distribution than the reference's discrete Gaussian sampler and
+// was never verified statistically equivalent -- Rubato's security rests on
+// an LWE-style assumption stated over Gaussian error, so an unverified
+// approximation is a correctness bug, not a performance detail (see
+// toy_correctness/README.md and this package's tests for why neither
+// correctness gate could have caught it). Allocated once, lazily, and
+// reused across calls -- NOT per Encrypt()/per block -- matching the
+// reference's own single-sampler-per-run usage and avoiding per-call
+// allocation in the hot path. NOT goroutine-safe (the underlying sampler
+// holds mutable internal PRNG buffer state, same as upstream); this
+// module's callers (bench/main.go, the test suite) are single-threaded.
+var (
+	rubatoGaussianSamplerOnce sync.Once
+	rubatoGaussianSampler     *ring.GaussianSampler
+)
+
+func getRubatoGaussianSampler() *ring.GaussianSampler {
+	rubatoGaussianSamplerOnce.Do(func() {
+		prng, err := utils.NewPRNG()
+		if err != nil {
+			panic(err)
+		}
+		rubatoGaussianSampler = ring.NewGaussianSampler(prng)
+	})
+	return rubatoGaussianSampler
+}
+
+// noiseAGN adds discrete Gaussian noise to state in place via ckks_fv's own
+// ring.GaussianSampler.AGN -- ported to call the identical primitive, not
+// reimplement it. Matches rubatoAddGaussianNoise exactly
+// (RtF_bench_test.go:766-769: bound := int(6*sigma); gaussianSampler.AGN(
+// state, plainModulus, sigma, bound)). AGN itself only touches
+// state[:len(state)-4] internally (ring_sampler_gaussian.go's AGN:
+// outputsize := len(state)-4) -- callers must pass the full
+// RubatoBlockSize-length state, matching the reference's call convention
+// (noise is added before the blocksize-4 output truncation, not after).
 func noiseAGN(state []uint64, q uint64, sigma float64) {
-	bound := int64(6 * sigma)
-	for i := range state {
-		e := sampleDiscreteGaussian(sigma, bound)
-		if e >= 0 {
-			state[i] = (state[i] + uint64(e)) % q
-		} else {
-			state[i] = (state[i] + q - uint64(-e)%q) % q
-		}
-	}
-}
-
-// sampleDiscreteGaussian draws an integer from a discrete Gaussian
-// approximation (round-to-nearest of a continuous N(0, sigma^2) sample),
-// rejecting draws outside [-bound, bound].
-func sampleDiscreteGaussian(sigma float64, bound int64) int64 {
-	for {
-		u1 := cryptoRandFloat64()
-		u2 := cryptoRandFloat64()
-		if u1 <= 0 {
-			u1 = 1e-300
-		}
-		// Box-Muller transform.
-		z := math.Sqrt(-2*math.Log(u1)) * math.Cos(2*math.Pi*u2)
-		v := int64(math.Round(z * sigma))
-		if v >= -bound && v <= bound {
-			return v
-		}
-	}
-}
-
-// cryptoRandFloat64 returns a uniform float64 in [0, 1) sourced from
-// crypto/rand.
-func cryptoRandFloat64() float64 {
-	const bits = 53
-	n, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), bits))
-	if err != nil {
-		panic(err)
-	}
-	return float64(n.Int64()) / float64(int64(1)<<bits)
+	bound := int(6 * sigma)
+	getRubatoGaussianSampler().AGN(state, q, sigma, bound)
 }
