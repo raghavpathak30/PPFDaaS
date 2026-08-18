@@ -3,6 +3,113 @@
 Full dated history of session updates, newest first. For current
 project status, blockers, and next actions, see `PROJECT_STATE.md`.
 
+## Session Update (2026-08-18) — HERA -> Rubato-128L cipher swap, correctness gates, cross-arm comparison (Prof. Debranjan's assigned task, branch rubato-swap)
+
+Planned, then implemented: added Rubato-128L as a second `CipherBackend`
+alongside HERA-16, fixed two pre-existing defects in HERA's implementation
+discovered along the way, built two correctness gates, and produced a
+same-session cross-cipher measurement. Full detail in
+`artifacts/hera_vs_rubato_transciphering.json`; summary here.
+
+**Mid-task correction, worth recording:** an earlier pass of this session
+mis-investigated repo state. `third_party/` is gitignored and absent from
+this `rubato-swap` worktree by construction (a fresh worktree only
+materializes tracked files) — that reasoning is correct. It was then wrongly
+extended to conclude that the HERA r=4->5 fix, the toy-correctness harness,
+and the r=5 benchmark numbers described in this log's 2026-08-06b/c/d
+entries were "ghost" narrative for work never actually done. They weren't —
+that work existed on `main`, not yet rebased into this worktree, for the
+same structural reason `third_party/` was missing. The user rebased the
+branch onto `main` and corrected this before any further work proceeded.
+Lesson: apply worktree/git-state isolation reasoning exhaustively, not
+selectively, before concluding documentation doesn't match code.
+
+**What existed already (verified directly against files on disk after the
+rebase, not assumed):** `cipher/hera.go` was already at `HeraRounds=5`
+(matching `RtFHeraParams[3]` "128as"), but its round-key derivation was
+still a fixed 5-row table (`heraRC`) whose 5th row was an explicitly-flagged
+unsourced placeholder, via an AES-128-ECB PRF (`heraRoundKey`) — neither of
+which ever matched the `ckks_fv` reference. A HERA toy-correctness harness
+existed and passed, but at `numRound=4` ("80as" config) — not exact parity
+with the shipped `HeraRounds=5`.
+
+**What was built this session:**
+1. Vendored `third_party/` into this worktree (script existed but was
+   itself untracked, gitignored along with its target — copied over from
+   the sibling `BTP` worktree, then run normally).
+2. `cipher/shakeprf.go`: shared `sampleZqx` + SHAKE256-XOF round-key
+   derivation, ported verbatim from `ckks_fv/utils.go` and
+   `fv_hera.go`/`fv_rubato.go` at the pinned SHA
+   `105fc73115b56f1d6ff357029c7682b19a6d8510`.
+3. Rewrote `cipher/hera.go`: replaced `heraRC`/`heraRoundKey` with the
+   SHAKE256(nonce) scheme; replaced `heraMixColumns` (which derived its
+   matrix from `heraRC` per round — never matched HERA's actual spec) with
+   the fixed `[2,3,1,1]` circulant; replaced the fabricated nonce-mixed
+   initial state with HERA's actual fixed public IC state; restructured
+   `encryptBlock`'s round order to match the reference exactly (it
+   previously interleaved AddRoundKey/S-box/Mix differently per round than
+   the reference does).
+4. New `cipher/rubato.go`: Rubato-128L (`RUBATO128L`: n=64, r=2,
+   q=0x1fc0001, σ=1.6356633496458739795537788457309656607510203877762320964302959),
+   sourced the same way — SHAKE256(nonce‖counter) round keys, the
+   blocksize-64 linear layer, the sequential Feistel-square nonlinear
+   layer, client-side-only Gaussian noise (the homomorphic evaluator
+   `mfvRubato` doesn't add it, by design).
+5. **Variant choice, read directly from the paper, not inferred from the
+   abstract:** Grassi et al. (CRYPTO 2023, eprint 2023/822 §6.1/7.1, p.22)
+   state the attack's bound "cannot be established" specifically for
+   Rubato-128L, unlike the other five variants. Rubato-128L is therefore
+   **not covered by this attack's established bound** — that phrasing is
+   deliberate and should not drift toward "secure" or "resists the attack"
+   in any future edit; see the wording in `cipher/backend.go`.
+6. Gate A (known-answer test, `cipher/hera_test.go`/`rubato_test.go`):
+   generated known-answer vectors by running `ckks_fv`'s own
+   `plainHera`/`plainRubato` directly (a temporary, uncommitted scratch test
+   in the gitignored `third_party/` checkout, deleted after use), hardcoded
+   as literal expected values. **Caught a real bug**: Rubato's Feistel layer
+   was reducing mod `HeraModulus` (2^26) instead of `RubatoModulus`
+   (0x1fc0001) via an accidentally-shared `mulMod` helper. Fixed; both
+   ciphers now PASS.
+7. Gate B (toy HE harness, `toy_correctness/`): added
+   `TestRtFHera128asToyCorrectness` (numRound=5, `HeraModDownParams128`,
+   radix=2 — exact parity with the shipped `HeraRounds=5`, unlike the
+   pre-existing r=4 harness) and `TestRtFRubato128LToyCorrectness`
+   (following `benchmarkRtFRubato`'s exact config: full-coefficient packing,
+   `RubatoModDownParams[RUBATO128L]`, `HalfBoot(repack=false)`). Both PASS,
+   LogN 16->10, all moduli reused, tolerance 5e-2: HERA-128as max abs error
+   1.4e-5; Rubato-128L (with real Gaussian noise) 3.4e-5.
+8. `bench/main.go`: added `--cipher=hera|rubato`; `CipherBackend`'s
+   `EvalKeyExpansion` gained a `nonce` parameter (round keys are inherently
+   nonce-dependent under the corrected derivation — the old signature
+   assumed they weren't, which was itself a symptom of the same underlying
+   defect Gate A was built to catch).
+
+**Cross-arm comparison (same session, back-to-back, AC power, powersave
+governor, load avg ~2.5 — [CONFIRMED-RAN]):** Rubato-128L client encrypt
+costs **~1.75-2.25x HERA-16** across a 1/4/8/16-lane sweep. Upload size is
+identical between the two ciphers at every lane count (same wire format) —
+the swap changes client CPU cost only. Full per-lane numbers:
+`artifacts/hera_vs_rubato_transciphering.json`.
+
+**What's still PENDING, unaffected by this task:** the plain-CKKS-vs-RtF
+axis (blocked on `vendor_server`'s stub-only BFV evaluation — pre-existing,
+independent of cipher choice) and many-lane SIMD throughput at the
+homomorphic-evaluation level (only single-lane toy-harness correctness and
+client-cipher-level lane sweeps were measured). A fresh plain-CKKS baseline
+was not re-run this session (requires `vendor_server`/gRPC infrastructure) —
+the prior "~9.0-9.4x" ratio in this log's 2026-08-06c/d entries was measured
+against the pre-fix HERA implementation and should not be combined with the
+numbers above.
+
+**Files changed:** `tools/transciphering/cipher/{backend,hera,shakeprf}.go`
+(edited/rewritten), `cipher/rubato.go` (new), `cipher/{hera,rubato}_test.go`
+(new), `bench/main.go` (edited), `toy_correctness/testdata/ckks_fv_patch/
+rtf_toy_correctness_{hera128as,rubato128l}_test.go` (new),
+`toy_correctness/README.md` (edited), `README.md` (edited),
+`third_party/fetch_rtf.sh` (edited, stages all harness files not just one),
+`artifacts/hera_vs_rubato_transciphering.json` (new), `PROJECT_STATE.md`
+(edited).
+
 ## Session Update (2026-08-06e) — Provenance audit of 2,933 µs: found and corrected a mislabeled backup, confirmed same host/governor (COMPLETE)
 
 User asked me to trace `artifacts/e2e_latency_breakdown_PRIOR.json` and any

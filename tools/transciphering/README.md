@@ -9,9 +9,13 @@ arm of PPFDaaS. This is NOT part of the TCB — it is a research-tool, like
 | Component | Status |
 |---|---|
 | `cipher/backend.go` — CipherBackend interface | COMPLETE |
+| `cipher/shakeprf.go` — shared SHAKE256/`sampleZqx` round-key derivation (HERA + Rubato) | COMPLETE |
 | `cipher/hera.go` — HERA-16, m=16, r=5, t=2^26 | COMPLETE |
-| `bench/main.go` — client CPU + upload-size benchmark | COMPLETE |
-| `results/hera_bench_lane{1,4,8,16}.json` — per-lane benchmarks (n=100) | MEASURED |
+| `cipher/rubato.go` — Rubato-128L, n=64, r=2, q=0x1fc0001 | COMPLETE |
+| `bench/main.go` — client CPU + upload-size benchmark, `--cipher=hera\|rubato` | COMPLETE |
+| `cipher/hera_test.go`, `cipher/rubato_test.go` — known-answer tests vs `ckks_fv`'s own reference | COMPLETE |
+| `results/{hera,rubato}_bench_lane{1,4,8,16}.json` — per-lane benchmarks | MEASURED |
+| `artifacts/hera_vs_rubato_transciphering.json` — cross-cipher comparison | MEASURED |
 
 ## What is PENDING
 
@@ -87,59 +91,81 @@ Until re-attempted successfully, the following columns in
 - `repacking_time_ms` (StC + CKKS modular reduction)
 - `full_rtf_latency_ms` (end-to-end)
 
-## Cipher: HERA-16 (post-attack parameters)
+## Ciphers: HERA-16 and Rubato-128L
 
-| Parameter | Value | Rationale |
+Both are now implemented and benchmarked; either can be selected via
+`bench --cipher=hera|rubato`. Round-key derivation is shared
+(`cipher/shakeprf.go`: SHAKE256-seeded XOF + `sampleZqx` rejection sampling,
+ported verbatim from the pinned `ckks_fv` reference at
+`105fc73115b56f1d6ff357029c7682b19a6d8510`) — this replaces HERA's previous
+fixed round-constant table and AES-ECB-PRF key schedule, neither of which
+matched the reference or ckks_fv's own SHAKE256-nonce-derived scheme. See
+`cipher/hera.go` and `cipher/rubato.go`'s package doc comments for exact
+file/line citations of every constant and matrix.
+
+| Parameter | HERA-16 | Rubato-128L |
 |---|---|---|
-| State size m | 16 | Original HERA-16 spec |
-| Rounds r | 5 | Matches RtFHeraParams[3] ("128as"), the HE-side 128-bit target; original HERA-16 spec used r=4 |
-| Plaintext modulus t | 2^26 | Conservative post-analysis choice |
-| Key size | 256 bits (32 bytes) | AES-256 compatible RNG |
-| Nonce size | 128 bits (16 bytes) | |
-| Security | 128-bit | Under current algebraic analysis |
+| State size | 16 | 64 |
+| Rounds | 5 (matches `RtFHeraParams[3]` "128as") | 2 |
+| Plaintext modulus | 2^26 | 0x1fc0001 |
+| Round-key seed | SHAKE256(nonce) | SHAKE256(nonce‖counter) |
+| Nonlinear layer | cube S-box | sequential Feistel-square |
+| Client-side noise | none | Gaussian, σ≈1.6357 |
+| Key/nonce size | 16 / 16 elements | 64 / 16 elements |
+| Security | 128-bit, under current algebraic analysis | NOT covered by Grassi et al.'s (CRYPTO 2023) attack bound — see below |
 
 **Attack record note (§7.2):**
-- Rubato: broken for ≥25% of modulus choices (Grassi et al., CRYPTO 2023) — 5/6 family members below claimed security. Not used.
+- Rubato: Grassi et al. (CRYPTO 2023, eprint 2023/822 §6.1/7.1) give a key
+  recovery attack with complexity below the claimed security level for five
+  of the six Rubato variants. For Rubato-128L specifically, the paper states
+  the attack's bound "cannot be established" (p.22) — i.e. Rubato-128L is
+  NOT COVERED by this attack's established bound, which is the basis for
+  benchmarking it here rather than the other five variants. This is not the
+  same as proven secure.
 - Elisabeth-4: broken (Cosseron et al.). Not used.
-- HERA: round-key collision weaknesses found; current parameters (m=16, r=5, t=2^26) remain secure.
+- HERA: round-key collision weaknesses found; current parameters (m=16, r=5,
+  t=2^26) remain secure.
 
-## Key measured numbers (from `results/`)
+## Correctness gates (both required before any timing number is trusted)
 
-**Updated this session: HeraRounds changed 4 -> 5** to match `RtFHeraParams[3]`
-("128as"). Timings below are re-measured at r=5
-(`results/hera_bench_lane{1,16}_r5.json`); upload sizes are unchanged, as
-expected — output length never depended on round count. The pre-fix r=4
-numbers are kept in `results/hera_bench_lane{1,4,8,16}.json` and in
-`PROJECT_STATE.md` for the record.
+- **Gate A — known-answer test**: `cipher/hera_test.go` / `rubato_test.go`
+  compare this module's keystream against `ckks_fv`'s own
+  `plainHera`/`plainRubato` reference for fixed inputs. **PASS**, both
+  ciphers. This gate caught a real bug during implementation (Rubato's
+  Feistel layer reducing mod `HeraModulus` instead of `RubatoModulus` via an
+  accidentally-shared helper) before any number was measured.
+- **Gate B — toy-scale HE harness**: `toy_correctness/` runs the full
+  server-side path (cipher-in-BFV → HalfBoot → FV→CKKS repack → CKKS eval →
+  decrypt) at `LogN 16→10`, all moduli reused. **PASS**, all three configs
+  (HERA r=4/"80as", HERA r=5/"128as" — exact parity with this module's
+  `HeraRounds=5` — and Rubato-128L). See `toy_correctness/README.md`.
 
-For a realistic batch (lanes=16, features=256 per transaction):
-- Online upload size: **16,412 bytes** (vs 262,257 bytes CKKS standard = **16× smaller**)
-- Client encrypt time: **~17.5 ms** (mean, plaintext path, n=200, r=5)
-- Key expansion: **~0.06 ms** (amortized offline, plaintext path)
+## Key measured numbers (from `results/` and `artifacts/hera_vs_rubato_transciphering.json`)
 
-For a single transaction (lanes=1, features=256):
-- Online upload size: **1,052 bytes** (vs 262,257 bytes = **249× smaller**)
-- Client encrypt time: **~1.10 ms** (mean, n=200, r=5)
+Same-session, back-to-back HERA-vs-Rubato client-cipher benchmark (AC power,
+powersave governor, load avg ~2.5 — see the artifact for full machine
+state). n=200 measured + 10 warmup per point, 256 features/transaction.
 
-**Same-session client CPU comparison vs plain CKKS:** re-running the
-plain-CKKS client encode+encrypt benchmark (`scripts/e2e_latency_breakdown.py`,
-160-bit chain) back to back with the HERA numbers above gives **~9.0×**
-cheaper client CPU for HERA-16 single-record encrypt (1.10 ms) vs plain-CKKS
-single-record encode+encrypt (~9.8-10.5 ms). This ratio held within ~5%
-across two runs taken under different desktop load (Chrome open vs closed,
-same powersave governor) — the ratio is more stable than either absolute
-number; see `PROJECT_STATE.md` for both runs and why. Do not compare either
-of these timings to the `2,933 µs` figure that appears in
-`docs/RtF_Transciphering_Progress_v3.pptx` slide 3 — that number is from a
-different day and is not comparable.
+| Lanes | HERA mean | Rubato mean | Ratio (Rubato/HERA) | Upload bytes (both, identical) |
+|---|---|---|---|---|
+| 1  | 0.082 ms | 0.172 ms | 2.10x | 1,052 (249x smaller than plain CKKS) |
+| 4  | 0.390 ms | 0.877 ms | 2.25x | 4,124 |
+| 8  | 0.693 ms | 1.231 ms | 1.78x | 8,220 |
+| 16 | 1.213 ms | 2.494 ms | 2.06x | 16,412 (16x smaller than plain CKKS) |
 
-**Caveat:** the round-constant table (`heraRC` in `cipher/hera.go`) only had
-4 published rows (Cho et al. Table 3). Round 5's row is an explicitly-flagged
-unsourced placeholder, adequate for timing but not for correctness — see the
-comment in `cipher/hera.go` for what's needed before this cipher's output can
-be trusted. Separately, this module's round-constant scheme (fixed table) and
-ckks_fv's (nonce-derived via SHAKE256) don't match regardless of round count
-— consistent with the "HE-evaluation path PENDING" status above.
+**Headline: Rubato-128L client encrypt costs ~1.75-2.25x HERA-16**, fairly
+stable across the lane sweep. **Upload size is identical between the two
+ciphers at every lane count** — the cipher swap only changes client CPU
+cost, not the wire-format size reduction vs plain CKKS. Absolute values
+carry the powersave/AC caveat per `PROJECT_STATE.md`; the ratio is the
+defensible number. Full per-lane JSON, correctness-gate results, and the
+plain-CKKS-vs-RtF axis (still PENDING, unrelated to this cipher swap — see
+`PROJECT_STATE.md`) are in `artifacts/hera_vs_rubato_transciphering.json`.
+
+These r=5/Rubato-128L numbers supersede any earlier r=4 HERA numbers
+(`results/hera_bench_lane{1,4,8,16}.json`, kept for the historical record)
+and any prose-only r=5 figures that previously appeared here without a
+backing artifact file.
 
 ## Build / run
 
@@ -147,8 +173,9 @@ ckks_fv's (nonce-derived via SHAKE256) don't match regardless of round count
 # Requires Go 1.25+
 cd tools/transciphering
 go build ./...
-go run ./bench --features=256 --lanes=16 --rounds=100
-go test ./cipher/...   # unit tests (run in-process, no server required)
+go run ./bench --cipher=hera --features=256 --lanes=16 --rounds=100
+go run ./bench --cipher=rubato --features=256 --lanes=16 --rounds=100
+go test ./cipher/...   # known-answer tests (run in-process, no server required)
 ```
 
 ## Threat model summary (full text: docs/spec.md §8)
@@ -156,8 +183,9 @@ go test ./cipher/...   # unit tests (run in-process, no server required)
 1. Bank holds symmetric key `k`; provisions vendor with `Enc_BFV(k)` once
    (amortized offline cost, same provisioning protocol as Phase 1 Galois keys).
 2. Online: bank encrypts 256-feature vector under `k` → ~1 KB upload.
-   Vendor evaluates HERA homomorphically inside BFV, converts to CKKS via
-   StC + modular reduction, runs the existing CKKS circuit unchanged.
+   Vendor evaluates the chosen cipher (HERA or Rubato) homomorphically inside
+   BFV, converts to CKKS via StC + modular reduction, runs the existing CKKS
+   circuit unchanged.
 3. AEAD (AES-128-GCM) wraps every online ciphertext — additive malleability
    of the stream cipher is neutralised.
 4. Nonces are monotonic per session; replay rejection is the bank's obligation.

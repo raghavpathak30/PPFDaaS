@@ -24,44 +24,70 @@ Three CKKS variants coexist:
   since it was found in the 2026-07-27 session.
 
 ### Transciphering / HHE (Phase 7)
-HERA-16 is the currently-implemented symmetric cipher
-(`tools/transciphering/cipher/hera.go`). `CanaryCheckTranscipher` RPC and
-provisioning scaffolding exist in `proto/inference.proto`; vendor-side BFV
-evaluation is stub-only in `vendor_server`. It is **not** pending the KAIST
-`ckks_fv` scheme bridge: the bridge is vendored and pinned at commit
-`105fc73115b56f1d6ff357029c7682b19a6d8510` under `third_party/`
-(gitignored checkout, reproducible via `third_party/fetch_rtf.sh`,
-toolchain documented in `third_party/BUILD_NOTES.md`). It builds clean
-under Go 1.25 with zero source changes — `go vet ./...` and
-`go test -c -run '^$' .` both exit 0 in `ckks_fv/`.
+Two symmetric ciphers are now implemented and benchmarked:
+`tools/transciphering/cipher/hera.go` (HERA-16, m=16, r=5, t=2^26) and
+`cipher/rubato.go` (Rubato-128L, n=64, r=2, q=0x1fc0001), selectable via
+`bench --cipher=hera|rubato`. Both derive round keys via a shared
+SHAKE256-XOF scheme (`cipher/shakeprf.go`) ported verbatim from the pinned
+`ckks_fv` reference — this replaced HERA's prior fixed round-constant table
+(whose 5th row was an admitted unsourced placeholder) and AES-ECB-PRF key
+schedule, neither of which matched the reference. `CanaryCheckTranscipher`
+RPC and provisioning scaffolding exist in `proto/inference.proto`;
+vendor-side BFV evaluation is stub-only in `vendor_server`, for either
+cipher. It is **not** pending the KAIST `ckks_fv` scheme bridge: the bridge
+is vendored and pinned at commit `105fc73115b56f1d6ff357029c7682b19a6d8510`
+under `third_party/` (gitignored checkout, reproducible via
+`third_party/fetch_rtf.sh`, toolchain documented in
+`third_party/BUILD_NOTES.md`). It builds clean under Go 1.25 with zero
+source changes — `go vet ./...` and `go test -c -run '^$' .` both exit 0 in
+`ckks_fv/`.
 
-Two results now exist for the reference path (neither yet integrated into
-`vendor_server`):
-- **Toy correctness: PASS.** `RtFHeraParams[3]` ("128as") deep-copied with
-  only `LogN: 16 -> 10` changed, all moduli reused; full server-side path
-  (HERA-in-BFV transcipher -> HalfBoot -> FV->CKKS repack -> CKKS eval ->
-  decrypt) run end-to-end. Max abs error 2.1e-5 against a 5e-2 tolerance.
-  Caveat: the CKKS stage evaluated a trivial `2x+1` circuit, not the fraud
-  model.
-- **Full-scale: CONFIRMED-RAN.** `hera.Crypt` completed at the real secure
-  LogN 16 / "128as" params on this 15 GB host: 73.7 s total, peak VmHWM
-  9.54 GB, zero swap, under `GOMEMLIMIT=11GiB GOGC=50`. The prior ~60 GB
-  RAM anchor was never itself measured end-to-end; this run supersedes it.
-  Memory is ~97% setup (StC precompute + key material) vs. ~3% `hera.Crypt`;
-  runtime is ~70% `hera.Crypt`, of which ~92% is the cube/S-box step.
+**Correctness gates, both required before any timing number is trusted, and
+both PASS for both ciphers:**
+- **Gate A — known-answer test** (`cipher/hera_test.go`, `rubato_test.go`):
+  this module's keystream vs. `ckks_fv`'s own `plainHera`/`plainRubato`
+  reference for fixed inputs. Caught a real bug during implementation
+  (Rubato's Feistel layer reducing mod the wrong modulus via an
+  accidentally-shared helper) before any measurement.
+- **Gate B — toy-scale HE harness** (`toy_correctness/`): full server-side
+  path (cipher-in-BFV → HalfBoot → FV→CKKS repack → CKKS eval → decrypt) at
+  `LogN 16→10`, all moduli reused. **PASS, all three configs**: HERA
+  r=4/"80as" (pre-existing, max abs error ~2e-5), HERA r=5/"128as" (new,
+  exact parity with `HeraRounds=5`, max abs error 1.4e-5), Rubato-128L (new,
+  includes real Gaussian noise, max abs error 3.4e-5) — all against a 5e-2
+  tolerance. Caveat unchanged: the CKKS stage evaluates a trivial `2x+1`
+  circuit, not the fraud model.
+
+**HERA-vs-Rubato cross-arm comparison (this session, same machine state,
+AC power, powersave governor):** Rubato-128L client encrypt costs
+**~1.75-2.25x HERA-16** across a 1/4/8/16-lane sweep (256 features/txn,
+n=200). Upload size is identical between the two ciphers at every lane
+count — the swap changes client CPU cost only, not the wire-format
+reduction vs. plain CKKS (16x-249x smaller). Full numbers, machine state,
+and correctness-gate detail: `artifacts/hera_vs_rubato_transciphering.json`.
+
+Full-scale (non-toy) RSS instrumentation exists for HERA only (not yet
+re-run for Rubato): **CONFIRMED-RAN.** `hera.Crypt` completed at the real
+secure LogN 16 / "128as" params on this 15 GB host: 73.7 s total, peak
+VmHWM 9.54 GB, zero swap, under `GOMEMLIMIT=11GiB GOGC=50`. Memory is ~97%
+setup (StC precompute + key material) vs. ~3% `hera.Crypt`; runtime is ~70%
+`hera.Crypt`, of which ~92% is the cube/S-box step.
 
 **Real blocker:** integrating the validated reference path into
-`vendor_server` — not hardware procurement. Open items: (1)
-`artifacts/hhe_breakeven.json` — all cells still PENDING; (2)
-batched-reduction correctness at 256-slot blocks (everything verified so
-far is single-block); (3) the toy harness still runs a trivial `2x+1`
-circuit, not the real fraud model; (4)
-`scripts/cloud_transcipher_bench/run_benchmark.sh`'s ~90 GB preflight gate
-is ~9.4x the measured peak and needs revising regardless of whether cloud
-is ever used. Last measured same-session client-CPU ratio, HERA r=5 vs.
-plain-CKKS 160-bit encode+encrypt: **~9.0-9.4x** (varies with desktop
-contention; see `docs/SESSION_LOG.md` 2026-08-06c/d — same-session ratio
-is the trustworthy number, not either absolute value).
+`vendor_server` — not hardware procurement, and not affected by which
+cipher is used. Open items: (1) `artifacts/hhe_breakeven.json` — all cells
+still PENDING, independent of this task; (2) batched-reduction correctness
+at 256-slot blocks (everything verified so far is single-block, for both
+ciphers); (3) the toy harnesses still run a trivial `2x+1` circuit, not the
+real fraud model; (4) `scripts/cloud_transcipher_bench/run_benchmark.sh`'s
+~90 GB preflight gate is ~9.4x the measured HERA peak and needs revising
+regardless of whether cloud is ever used; (5) full-scale RSS instrumentation
+for Rubato-128L has not been run. The prior "~9.0-9.4x HERA vs. plain CKKS"
+client-CPU ratio (`docs/SESSION_LOG.md` 2026-08-06c/d) was measured against
+the pre-fix HERA implementation and should not be combined with the numbers
+above — a fresh plain-CKKS baseline was not re-run this session (requires
+`vendor_server`/gRPC infrastructure, out of scope for this cipher-swap
+measurement pass).
 
 ### Docker / DevSecOps
 No session-log entry covers this arm. `Dockerfile.client`, `compose.prod.yaml`,
@@ -75,11 +101,18 @@ consistency sweep). No entry since.
 
 ## Active blockers and next actions, in priority order
 
-1. **Active workstream**: swap the transciphering cipher HERA -> Rubato,
-   re-measure, and produce a cross-arm comparison (SIMD circuit, HERA vs.
-   Rubato, RtF transciphering vs. plain CKKS path). Alongside this,
-   research SIMD batching efficiency — transactions per batch vs. latency
-   vs. bandwidth/data movement.
+1. **HERA -> Rubato swap: DONE for the client-cipher and toy-HE-harness
+   arms.** Rubato-128L implemented (`cipher/rubato.go`), both correctness
+   gates pass for both ciphers, cross-arm client-CPU comparison measured
+   same-session (`artifacts/hera_vs_rubato_transciphering.json`; see the
+   Transciphering/HHE section above). NOT done: the RtF-transciphering-vs-
+   plain-CKKS axis (blocked on `vendor_server` integration, unrelated to
+   the cipher choice — pre-existing PENDING status, unaffected by this
+   task) and the SIMD-circuit axis at the homomorphic-evaluation level
+   (only client-cipher-level lane sweep and single-lane toy-harness
+   correctness were measured, not many-lane HE throughput). SIMD batching
+   efficiency research (transactions per batch vs. latency vs.
+   bandwidth/data movement) not started.
 2. Degree-2 `degree2_linearizer.py` negative-dimension bug — unfixed, but
    low urgency since it's not on the production dispatch path.
 3. Docker/DevSecOps arm needs an audit pass: reconcile the uncommitted
