@@ -10,8 +10,9 @@
 //   - full RtF end-to-end latency
 //
 // Usage:
-//   go run ./bench [--cipher hera|rubato] [--features N] [--lanes L] [--rounds R]
-//   Defaults: cipher=hera, features=256, lanes=16, rounds=100
+//
+//	go run ./bench [--cipher hera|rubato] [--features N] [--lanes L] [--rounds R]
+//	Defaults: cipher=hera, features=256, lanes=16, rounds=100
 //
 // Output: JSON to stdout + ./results/<cipher>_bench.json
 package main
@@ -27,28 +28,123 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/raghavpathak30/ppfdaas/transciphering/cipher"
 )
 
+// MachineState captures the host conditions the "absolute latencies are not
+// reproducible across sessions" house rule (PROJECT_STATE.md) says matter:
+// governor, power source, load average, and CPU clock. Best-effort — Linux
+// sysfs only; fields are empty/zero if a file isn't readable (e.g. no
+// battery, no root), never fabricated.
+type MachineState struct {
+	CPUGovernor      string  `json:"cpu_governor"`
+	PowerSource      string  `json:"power_source"` // "AC", "battery", or "unknown"
+	LoadAvg1         float64 `json:"load_avg_1"`
+	LoadAvg5         float64 `json:"load_avg_5"`
+	LoadAvg15        float64 `json:"load_avg_15"`
+	CPUCount         int     `json:"cpu_count"`
+	ScalingCurMHzMin float64 `json:"scaling_cur_mhz_min"`
+	ScalingCurMHzMax float64 `json:"scaling_cur_mhz_max"`
+}
+
+func readMachineState() MachineState {
+	ms := MachineState{PowerSource: "unknown"}
+
+	if b, err := os.ReadFile("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"); err == nil {
+		ms.CPUGovernor = strings.TrimSpace(string(b))
+	}
+
+	if b, err := os.ReadFile("/proc/loadavg"); err == nil {
+		fields := strings.Fields(string(b))
+		if len(fields) >= 3 {
+			ms.LoadAvg1, _ = strconv.ParseFloat(fields[0], 64)
+			ms.LoadAvg5, _ = strconv.ParseFloat(fields[1], 64)
+			ms.LoadAvg15, _ = strconv.ParseFloat(fields[2], 64)
+		}
+	}
+
+	// AC/battery: ADP0 (or any AC-like power_supply entry with an "online"
+	// file) wins if present and online=1; otherwise fall back to whether any
+	// battery reports "Discharging".
+	if entries, err := os.ReadDir("/sys/class/power_supply"); err == nil {
+		acOnline := false
+		acFound := false
+		batteryDischarging := false
+		for _, e := range entries {
+			base := "/sys/class/power_supply/" + e.Name()
+			if b, err := os.ReadFile(base + "/online"); err == nil {
+				acFound = true
+				if strings.TrimSpace(string(b)) == "1" {
+					acOnline = true
+				}
+			}
+			if b, err := os.ReadFile(base + "/status"); err == nil {
+				if strings.TrimSpace(string(b)) == "Discharging" {
+					batteryDischarging = true
+				}
+			}
+		}
+		switch {
+		case acFound && acOnline:
+			ms.PowerSource = "AC"
+		case batteryDischarging:
+			ms.PowerSource = "battery"
+		case acFound:
+			ms.PowerSource = "AC" // no battery discharging and an AC node exists but reads 0 -- treat cautiously, still best-effort
+		}
+	}
+
+	ms.CPUCount = 0
+	minMHz, maxMHz := math.Inf(1), math.Inf(-1)
+	for i := 0; ; i++ {
+		path := fmt.Sprintf("/sys/devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq", i)
+		b, err := os.ReadFile(path)
+		if err != nil {
+			break
+		}
+		ms.CPUCount++
+		khz, err := strconv.ParseFloat(strings.TrimSpace(string(b)), 64)
+		if err != nil {
+			continue
+		}
+		mhz := khz / 1000.0
+		if mhz < minMHz {
+			minMHz = mhz
+		}
+		if mhz > maxMHz {
+			maxMHz = mhz
+		}
+	}
+	if ms.CPUCount > 0 {
+		ms.ScalingCurMHzMin = minMHz
+		ms.ScalingCurMHzMax = maxMHz
+	}
+	return ms
+}
+
 type BenchResult struct {
-	Cipher          string    `json:"cipher"`
-	Status          string    `json:"status"`
-	NFeatures       int       `json:"n_features"`
-	NLanes          int       `json:"n_lanes"`
-	NRounds         int       `json:"n_rounds"`
-	Methodology     string    `json:"methodology"`
+	Cipher       string       `json:"cipher"`
+	Status       string       `json:"status"`
+	NFeatures    int          `json:"n_features"`
+	NLanes       int          `json:"n_lanes"`
+	NRounds      int          `json:"n_rounds"`
+	Methodology  string       `json:"methodology"`
+	MachineState MachineState `json:"machine_state"`
+	TimestampUTC string       `json:"timestamp_utc"`
 
 	// Online client-side measurements (plaintext path, MEASURED).
-	OnlineEncryptMeanMs  float64 `json:"online_encrypt_mean_ms"`
+	OnlineEncryptMeanMs   float64 `json:"online_encrypt_mean_ms"`
 	OnlineEncryptMedianMs float64 `json:"online_encrypt_median_ms"`
-	OnlineEncryptP99Ms   float64 `json:"online_encrypt_p99_ms"`
-	OnlineEncryptStdMs   float64 `json:"online_encrypt_std_ms"`
+	OnlineEncryptP99Ms    float64 `json:"online_encrypt_p99_ms"`
+	OnlineEncryptStdMs    float64 `json:"online_encrypt_std_ms"`
 
 	// Upload size (per batch of n_lanes transactions).
-	UploadSymmetricBytes int `json:"upload_symmetric_bytes"`
-	UploadCKKSBytes      int `json:"upload_ckks_standard_bytes"`
+	UploadSymmetricBytes int     `json:"upload_symmetric_bytes"`
+	UploadCKKSBytes      int     `json:"upload_ckks_standard_bytes"`
 	UploadRatioVsCKKS    float64 `json:"upload_ratio_vs_ckks_standard"`
 
 	// Key expansion (amortized offline cost, plaintext path).
@@ -95,6 +191,11 @@ func main() {
 		}
 	}
 
+	// Machine state captured right before the timed online-encrypt loop
+	// (the metric it's meant to explain), not at process start.
+	ms := readMachineState()
+	timestamp := time.Now().UTC().Format(time.RFC3339)
+
 	// --- Online encrypt benchmark ---
 	encTimes := make([]float64, *rounds)
 	var lastCT []uint64
@@ -117,12 +218,14 @@ func main() {
 	uploadCKKS := 262257 // 160-bit standard from artifacts/wire_sizes.json
 
 	res := BenchResult{
-		Cipher:      h.Name(),
-		Status:      "MEASURED",
-		NFeatures:   *features,
-		NLanes:      *lanes,
-		NRounds:     *rounds,
-		Methodology: "plaintext path: " + h.Name() + " stream cipher, client CPU only, no HE evaluation",
+		Cipher:       h.Name(),
+		Status:       "MEASURED",
+		NFeatures:    *features,
+		NLanes:       *lanes,
+		NRounds:      *rounds,
+		Methodology:  "plaintext path: " + h.Name() + " stream cipher, client CPU only, no HE evaluation",
+		MachineState: ms,
+		TimestampUTC: timestamp,
 
 		OnlineEncryptMeanMs:   mean(encTimes),
 		OnlineEncryptMedianMs: percentile(encTimes, 50),
