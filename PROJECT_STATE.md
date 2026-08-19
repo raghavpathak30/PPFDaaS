@@ -95,7 +95,9 @@ numbers substantially, including their direction** — see below.
 session, AC power, powersave governor):** Rubato-128L client encrypt now
 costs **~0.48-0.82x HERA-16 per record** across a 1/4/8/16-lane sweep (256
 features/txn, n=200) — i.e. Rubato is CHEAPER, reversing the first
-(wrong-sampler) measurement of ~1.75-2.25x. Per keystream element (HERA
+(wrong-sampler) measurement of ~1.75-2.25x, which is preserved (not
+deleted) at `artifacts/hera_vs_rubato_transciphering_PRIOR_wrong_noise_sampler.json`
+for exactly this kind of before/after diff. Per keystream element (HERA
 yields 16/block, Rubato 60, confirmed via a same-invocation 7-repetition
 micro-benchmark under low/clean load): **~0.77x with Gaussian noise
 included, ~0.57x without** — also reversed from the prior ~3.05x/~1.19x.
