@@ -432,6 +432,18 @@ print("broken slot0:", acc[0], " correct slot0:", acc2[0],
 - **Rubato:** Grassi et al. (CRYPTO 2023) — key recovery on full Rubato for ≥25% of modulus choices, 5 of 6 family members below claimed security. Choose parameters post-attack.
 - **HERA:** has third-party algebraic cryptanalysis (round-key collisions). Usable as fallback with current parameters.
 - **Elisabeth-4:** broken — do not use.
+- **Addendum (2026-08-19):** the rejection above stands. Separately,
+  Rubato-128L specifically (n=64, r=2, q=`0x1fc0001`, σ≈1.6357 — read from
+  `tools/transciphering/cipher/rubato.go`) was later implemented and
+  benchmarked against HERA-16 as a client-CPU/memory comparison, not a
+  reversal of this decision. Grassi et al.'s paper states its attack bound
+  "cannot be established" for Rubato-128L specifically (p.22) — i.e. this
+  exact variant is **NOT COVERED BY** the published bound, which is a
+  different and weaker claim than "secure." No independent security
+  re-derivation for this parameter set exists in this repo. See
+  `docs/spec.md` §8.8.1 for the full parameter table and citation, and
+  `docs/PAPER_HANDOFF.md` for why this is the open blocker for the paper's
+  security section.
 
 ### 7.3 — [x] Architecture deltas (extend Phase 1)
 - **STATUS:** Done. `docs/spec.md` §8 "Transciphering Threat Model" written in full (§8.1–§8.9): key custody, online protocol, provisioning extension (`ProvisionSymmetricKey` → `CanaryCheckTranscipher` → `PROV_TRANSCIPHER_READY`), nonce-uniqueness/replay-rejection/key-rotation obligations (§8.5), AEAD rationale (§8.7). New `CanaryCheckTranscipher` RPC added to `proto/inference.proto` (regenerated via `protoc`/`grpc_cpp_plugin`, builds clean) alongside (not replacing) the existing `CanaryCheck`/`CanaryConfirm`. PENDING stub implemented in `vendor_server/src/inference_service_160.cpp::CanaryCheckTranscipher` — returns `pending_impl=true`; does not touch any existing RPC or the `PROV_READY` state machine. `cmake --build` confirms all 10 targets (including `vendor_server_160`) build clean with the new stub.
