@@ -325,18 +325,28 @@ entire design rationale (Ha et al., Eurocrypt 2022) and is directionally consist
 client-side numbers above, but is a different cost model — confirming it requires the
 `vendor_server` integration that is this arm's real remaining blocker (see below).
 
-**Toy-scale (LogN=10) memory: Rubato uses ~2.08x HERA's peak RSS, and this is an open,
-unresolved full-scale risk, not a footnote.** The only server-side (homomorphic-evaluation)
-resource evidence available while `vendor_server`'s BFV eval is stub-only is a toy-scale
-proxy (1/64th the real ring degree): HERA r=5/"128as" peaked at **293,332 KB**, Rubato-128L
-at **610,808 KB** — a ratio stable at ~2.0-2.1x across 4 repeated runs under both clean and
-elevated-load conditions (not a one-off). **This matters because HERA alone already peaked
-at 9.54 GB VmHWM on this 15 GB host at the real, full LogN=16 parameters** (see below); toy
-numbers don't necessarily scale linearly, but if Rubato's ~2.08x memory ratio held even
-roughly at full scale, it would materially tighten or blow the same RAM budget that HERA
-already consumes almost entirely. No full-scale Rubato measurement exists yet — this is the
-single most consequential unmeasured number for choosing between the two ciphers at
-production scale, not just a performance nicety.
+**Toy-scale (LogN=10) memory: Rubato uses ~2.08x HERA's peak RSS — but this ratio, like the
+full-scale one below, is confounded by a LogSlots mismatch, not a clean cipher comparison.**
+The only server-side (homomorphic-evaluation) resource evidence available while
+`vendor_server`'s BFV eval is stub-only is a toy-scale proxy (1/64th the real ring degree):
+HERA r=5/"128as" peaked at **293,332 KB**, Rubato-128L at **610,808 KB** — stable at ~2.0-2.1x
+across 4 repeated runs. HERA's toy harness holds `LogSlots=4` fixed regardless of `LogN`;
+Rubato's only available param set uses `LogSlots = LogN-1` (i.e. **9** at toy `LogN=10`), so
+the two toy runs already differ in slot occupancy by 32x, not just cipher. See
+`docs/MEASUREMENT_PROVENANCE.md`'s "PRIMARY FINDING" section for the full trace and why this
+means neither the toy-scale nor the full-scale ratio isolates the cipher's own memory cost.
+
+**Rubato's first full-scale (LogN=16) attempt did not complete** (2026-08-19): SIGKILLed by
+the OOM killer during setup on this ~16 GB host, with a measured lower bound of **13.28 GB
+VmHWM** — already exceeding HERA's entire full-scale peak (9.54 GB) — reached before
+`rubato.Crypt` was ever called. The likely explanation is not a Rubato-specific memory cost:
+Rubato's only available RtF parameter set uses full slot occupancy (`LogSlots=15`, 32,768
+slots) where HERA's full-scale run used a sparse one (`LogSlots=4`, 16 slots) — a 2,048x
+difference in the workload each `GenSlotToCoeffMatFV` (StC precompute) call actually
+processed, traced directly to source. **No comparison between HERA's 9.54 GB and Rubato's
+13.28 GB is supportable — they measure different-sized workloads, not different ciphers.**
+See `docs/RUBATO_FULLSCALE_PLAN.md` for the LogSlots-matched re-run this implies and an
+intermediate-scale rung that fits this host.
 
 **Server side: reference path validated at proof-of-concept scale, not yet integrated into
 `vendor_server`.** The remaining step — homomorphic HERA evaluation inside BFV followed by an
@@ -354,22 +364,29 @@ Results for this reference path:
   transcipher → HalfBoot → FV→CKKS repack → CKKS eval → decrypt). HERA r=5/"128as": max abs
   error 1.4e-5; Rubato-128L: 3.4e-5 (includes real Gaussian noise) — both against a 5e-2
   tolerance. Caveat: the CKKS stage evaluated a trivial `2x+1` circuit, not the fraud model.
-- **Full-scale: CONFIRMED-RAN, HERA only.** `hera.Crypt` completed at the real secure LogN 16
-  / "128as" params on this 15 GB dev host: 73.7 s total, peak RSS 9.54 GB, zero swap, under
+- **Full-scale: CONFIRMED-RAN, HERA only, at LogN 16 / LogSlots 4 (16 usable slots, not full
+  occupancy).** `hera.Crypt` completed at the real secure LogN 16, `RtFHeraParams[3]`
+  ("128as") params on this 15 GB dev host: 73.7 s total, peak RSS 9.54 GB, zero swap, under
   `GOMEMLIMIT=11GiB GOGC=50`. This supersedes the previously-cited ~60 GB literature anchor
-  for HERA at 80-bit security, which was never itself measured end-to-end. **No equivalent
-  full-scale run exists for Rubato-128L** — see the memory-risk note above for why that gap
-  matters more than a typical missing data point.
+  for HERA at 80-bit security, which was never itself measured end-to-end. **Rubato-128L's
+  first full-scale attempt (2026-08-19) did not complete** — SIGKILLed during setup at a
+  measured 13.28 GB VmHWM lower bound, already above HERA's entire peak. This is not
+  evidence Rubato costs more: Rubato's only available param set runs at `LogSlots=15` (full
+  32,768-slot occupancy) against HERA's `LogSlots=4` (16 slots) — a 2,048x difference in
+  workload, not a cipher comparison. See the memory-risk note above and
+  `docs/RUBATO_FULLSCALE_PLAN.md` for the LogSlots-matched re-run this implies.
 
 **The real blocker is integration work, not hardware.** Neither result above is yet wired
 into `vendor_server`, and `artifacts/hhe_breakeven.json`'s `online_transcipher_ms` and
 `repacking_ms` fields remain `"PENDING"` — **there is no end-to-end HHE-vs-CKKS latency
 verdict yet**. Remaining open items: batched-reduction correctness at 256-slot blocks
 (everything above is single-block); the toy harness still runs `2x+1`, not the real fraud
-circuit; and `scripts/cloud_transcipher_bench/run_benchmark.sh`'s ~90 GB preflight gate is
-~9.4x the measured full-scale peak and needs revising. A cloud runbook remains scaffolded at
-`scripts/cloud_transcipher_bench/`, but running it is no longer a prerequisite — the
-full-scale path already completes locally in 74 s. Two literature fallbacks were also
+circuit; and `scripts/cloud_transcipher_bench/run_benchmark.sh`'s ~90 GB preflight gate is unsourced
+(derived from a since-superseded ~60 GB literature anchor, not a measurement in this repo)
+and needs revising — see `docs/RUBATO_FULLSCALE_PLAN.md`. A cloud runbook remains scaffolded
+at `scripts/cloud_transcipher_bench/`, but running it is no longer a prerequisite for
+HERA-128as — that full-scale path already completes locally in 74 s (Rubato-128af's has not:
+see above). Two literature fallbacks were also
 checked for an external server-side number and both dead-ended (RtF Table 5 is unreachable —
 HTTP 403 on every accessible mirror; Presto measures client-side stream-key generation on
 bank hardware, not server-side HE evaluation) — see `docs/spec.md` §8.3 for the full trail.
@@ -442,7 +459,8 @@ python3 tests/benchmark_comparison.py
   - `tools/lattigo_benchmark/` — Lattigo hoisted-BSGS comparison, §7.5.2
   - `tools/transciphering/` — HHE/HERA-16 client-side arm, §8
   - `scripts/cloud_transcipher_bench/` — scaffolded cloud runbook for the server-side
-    transcipher benchmark (no longer a prerequisite; the full-scale path completes locally)
+    transcipher benchmark (no longer a prerequisite for HERA-128as, whose full-scale path
+    completes locally; Rubato-128af's does not — see `docs/RUBATO_FULLSCALE_PLAN.md`)
   - `tools/local_benchmark/` — secret-key-holding 160-bit benchmark context
 - Vendored reference implementations (gitignored checkouts, not part of the deployed TCB):
   - `third_party/openfhe-development/` — vendored OpenFHE checkout, §7.5.1

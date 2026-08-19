@@ -27,7 +27,8 @@ open yourself.
 | Per-keystream-element cost, both ciphers, with and without noise | same artifact, `per_element_normalization`; ns-scale, reconciles arithmetically with the ms-scale per-record figures — see `docs/MEASUREMENT_PROVENANCE.md` |
 | Upload size identical between ciphers at every lane count; ~16–249x smaller than plain CKKS | same artifact; `artifacts/bandwidth_ladder.json` |
 | Toy-scale (LogN=10) peak RSS: HERA 293,332 KB, Rubato 610,808 KB (~2.08x), stable across 4 re-runs | same artifact, `gate_b_resource_usage` |
-| Full-scale (LogN=16, real params) HERA peak VmHWM 9.54 GB, 73.7s wall | `artifacts/hera_crypt_rss_full_run.jsonl`, `artifacts/hera_crypt_rss_checkpoints.jsonl` |
+| Full-scale (LogN=16) HERA peak VmHWM 9.54 GB, 73.7s wall — **at `RtFHeraParams[3]` "128as", LogSlots=4 (16 of 32,768 slots), not full occupancy** | `artifacts/hera_crypt_rss_full_run.jsonl`, `artifacts/hera_crypt_rss_checkpoints.jsonl` |
+| Rubato-128L's first full-scale (LogN=16) attempt did NOT complete — SIGKILLed during setup, measured lower bound 13.28 GB VmHWM, at `RtFRubatoParams[0]` "128af", LogSlots=15 (full 32,768-slot occupancy) | `artifacts/rubato_crypt_rss_full_run.jsonl` (partial trace, committed), `logs/rubato_full_run.log` |
 | Multiplicative depth: HERA-16 = 10 sequential levels, Rubato-128L = 2 | read directly from `ckks_fv/fv_hera.go` and `fv_rubato.go`; CONFIRMED-SOURCE, not measured — see `artifacts/hera_vs_rubato_transciphering.json`'s `multiplicative_depth_argument` |
 | Exact Rubato-128L parameters as implemented | `cipher/rubato.go` lines 78-86: n=64, r=2, q=0x1fc0001, σ≈1.6357 |
 
@@ -44,10 +45,12 @@ toy_correctness/README.md` for the exact commands).
   integrated into the deployed service. `artifacts/hhe_breakeven.json`'s 36
   cells remain `"PENDING"` for exactly this reason and were **not** touched
   by this pass — do not fill them in without an actual `vendor_server` run.
-- **No full-scale (LogN=16) measurement for Rubato-128L at all** — only the
-  toy-scale (LogN=10) numbers above exist. If you need a full-scale
-  Rubato memory/time figure for the paper, it does not exist yet and would
-  need to be run, not estimated by scaling the toy number.
+- **Rubato-128L's full-scale (LogN=16) memory/time figure does not exist as
+  a completed number, but it is now a measured non-completion with a hard
+  lower bound, not silence** (see the table above and the section below).
+  If you need a completed full-scale Rubato figure for the paper, it does
+  not exist yet and would need to be run on a host with more headroom, not
+  estimated by scaling the toy number — see `docs/RUBATO_FULLSCALE_PLAN.md`.
 - **The multiplicative-depth argument (10 vs. 2 levels) is sourced from
   reading the reference implementation, not measured by running it
   homomorphically.** It's a real, citable structural fact, but it is not
@@ -73,6 +76,53 @@ nanosecond and millisecond figures — is `docs/MEASUREMENT_PROVENANCE.md`.
 Read it before citing any HERA-vs-Rubato number; it also documents one
 specific figure (`README.md`'s previous "1.10 ms / 17.5 ms" HERA claim)
 that turned out not to trace to any file in this repo and has been removed.
+
+## The full-scale memory comparison as run is not a HERA-vs-Rubato result — read this before citing either number
+
+This is a 2026-08-19 finding, and it changes what the two full-scale memory
+figures above can be used to say.
+
+**The HERA and Rubato full-scale runs used different CKKS/RtF slot
+occupancies, not just different ciphers.** HERA's 9.54 GB figure was
+measured at `RtFHeraParams[3]` ("128as"), `LogSlots=4` — only 16 of the
+ring's 32,768 available slots hold data. Rubato's run used
+`RtFRubatoParams[0]` ("128af"), `LogSlots=15` — full occupancy, all 32,768
+slots. That is the only Rubato RtF parameter set this checkout has; there is
+no Rubato "128as" analog to run instead. **A 2,048x difference in slot
+occupancy, traced to source** (`GenSlotToCoeffMatFV`'s memory cost is driven
+by `LogSlots` and the RNS level count, not by cipher block size or round
+count — a block-size hypothesis was checked and rejected first; see
+`docs/MEASUREMENT_PROVENANCE.md`'s "PRIMARY FINDING" section for the full
+trace).
+
+**Consequence: do not present the 9.54 GB / 13.28 GB pair as "HERA vs
+Rubato" for memory, and do not present the earlier toy-scale 2.08x RSS
+ratio that way either — it inherits the same mismatch (LogSlots 4 vs 9 at
+toy LogN=10) at smaller magnitude.** As currently measured, this repo has:
+one HERA figure at LogSlots=4, and one Rubato non-completion at LogSlots=15.
+There is no LogSlots-matched full-scale figure for either cipher yet. The
+LogSlots-matched next step — HERA at its own existing `RtFHeraParams[2]`
+("128af", LogSlots=15) — has not been run either; `docs/
+RUBATO_FULLSCALE_PLAN.md` expects it to also not fit on a ~16 GB host, which
+would itself be the more interesting finding (a HalfBoot/StC memory wall at
+full slot occupancy, largely cipher-independent, rather than a
+Rubato-specific cost).
+
+**What this does NOT affect:** the multiplicative-depth argument (10 vs. 2
+levels, read from source, not measured) and the client-side per-record/
+per-element cost comparisons above are unaffected — neither involves
+`GenSlotToCoeffMatFV` or CKKS/RtF slot occupancy at all. Nor does the
+1,052-byte/249x upload-size figure (pure AEAD byte-counting, no CKKS
+parameters involved). Only the full-scale and toy-scale *memory* comparisons
+are affected.
+
+**For the paper: if this arm's memory story is cited at all, cite it as
+"HERA at 16-slot occupancy completed at 9.54 GB; Rubato's only available
+parameter set forces full 32,768-slot occupancy and did not complete on a
+~16 GB host, with a measured 13.28 GB lower bound before OOM" — not as "X
+uses N times more memory than Y."** The performance-comparison-point framing
+below (Rubato-128L as a comparison point, not a proposed production cipher)
+still holds and is unaffected by this finding.
 
 ## Rubato-128L security status — the open blocker for this section
 

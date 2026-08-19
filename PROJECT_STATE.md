@@ -1,4 +1,4 @@
-# PPFDaaS Project State — 2026-08-17
+# PPFDaaS Project State — 2026-08-19
 
 Full dated session-by-session history lives in `docs/SESSION_LOG.md`. This
 file holds only what's true right now.
@@ -135,10 +135,93 @@ numbers, machine state, and correctness-gate detail:
 
 Full-scale (non-toy) RSS instrumentation exists for HERA only (not yet
 re-run for Rubato): **CONFIRMED-RAN.** `hera.Crypt` completed at the real
-secure LogN 16 / "128as" params on this 15 GB host: 73.7 s total, peak
-VmHWM 9.54 GB, zero swap, under `GOMEMLIMIT=11GiB GOGC=50`. Memory is ~97%
-setup (StC precompute + key material) vs. ~3% `hera.Crypt`; runtime is ~70%
-`hera.Crypt`, of which ~92% is the cube/S-box step.
+secure LogN 16, `RtFHeraParams[3]` ("128as", **LogSlots=4** — 16 of 32,768
+slots, not full occupancy; see the 2026-08-19 block below for why this
+matters) params on this 15 GB host: 73.7 s total, peak VmHWM 9.54 GB, zero
+swap, under `GOMEMLIMIT=11GiB GOGC=50`. Memory is ~97% setup (StC precompute
++ key material) vs. ~3% `hera.Crypt`; runtime is ~70% `hera.Crypt`, of which
+~92% is the cube/S-box step.
+
+### 2026-08-19 — Rubato-128L full-scale attempt: measured non-completion, and the LogSlots mismatch this exposed
+
+**CONFIRMED-RAN, did not complete.** `TestRSSCheckpointRubatoCrypt` at real
+secure LogN 16, `RtFRubatoParams[0]` ("128af", the only Rubato RtF param set
+in this checkout, **LogSlots=15** — full 32,768-slot occupancy) was SIGKILLed
+by the kernel OOM killer during setup, between the `slot_to_coeff_mat` and
+next checkpoints. No system reboot occurred (`uptime` showed continuous
+uptime spanning the kill) — the OOM killer took the process (and its shell,
+which is why the originating session's context was lost), not the machine.
+No kernel-level kill record was recoverable (`dmesg`/`journalctl -k` both
+require privileges this session doesn't have; passwordless `sudo` is not
+configured). **Measured lower bound: 13,279,632 KB VmHWM (13.28 GB / 12.66
+GiB)** at the last complete checkpoint, `slot_to_coeff_mat` — reached during
+**setup**, before `rubato.Crypt` was ever invoked. True peak is unknown and
+strictly higher (the process kept running afterward; the trace shows one
+more, truncated/incomplete line). This already exceeds HERA's *entire*
+full-scale peak (9.54 GB) by itself, before `rubato.Crypt` even starts.
+Artifacts: `artifacts/rubato_crypt_rss_full_run.jsonl` (partial, committed,
+not deleted), `logs/rubato_full_run.log`.
+
+**`heap_alloc_kb` at that checkpoint (20,257,175 KB) exceeds `vm_hwm_kb`
+(13,279,632 KB), which is impossible for a live-heap figure to genuinely
+exceed peak RSS.** Checked directly against source
+(`cipher/rss_checkpoint_test.go`, formerly the gitignored
+`rss_checkpoint.go`): both fields are correctly read from
+`runtime.MemStats` and correctly labelled — this is not a code bug. The
+same anomaly occurred independently in HERA's original 2026-08-04
+unconstrained trace (14.4 GB heap_alloc vs 9.0 GB VmHWM at `round_0`,
+documented in `tools/transciphering/RSS_INSTRUMENTATION.md` §2b as an
+unconfirmed "partial swap" hypothesis). Two independent occurrences of the
+same open question, still unconfirmed. **Every conclusion below rests on
+`vm_hwm_kb` alone; `heap_alloc_kb` is not used to support any claim.**
+
+**Root-caused the mechanism, not just the symptom, by reading
+`GenSlotToCoeffMatFV`'s source** (an earlier pass of this session hypothesized
+block size — `RubatoBlockSize=64` vs `HeraStateSize=16`, a 4x match to the
+observed 4.07x StC-memory ratio — before checking; that hypothesis is
+**rejected**: `GenSlotToCoeffMatFV(radix int)` takes only `radix`; block size
+and round count never enter it). **The actual, source-confirmed driver is
+`LogSlots`**: HERA's "128as" uses LogSlots=4 (sparse, 16 slots); Rubato's only
+available param set, "128af", uses LogSlots=15 (full, 32,768 slots) — a
+2,048x difference in slot occupancy, with `modCount` (level count) held
+identical between the two (traced through `halfboot_params.go:32`; both
+param sets' `ResidualModuli`/`DiffScaleModulus` are byte-for-byte identical
+values). **Consequence: HERA's 9.54 GB and Rubato's 13.28 GB-lower-bound are
+measurements of two different workloads, not a cipher-vs-cipher comparison.
+No memory, runtime, or StC-cost claim between the two ciphers is supportable
+from these two runs.** Full trace of the mechanism, the per-phase setup
+comparison, and which other headline numbers (upload size, toy-scale
+correctness, `hhe_breakeven.json`) do or don't inherit this mismatch:
+`docs/MEASUREMENT_PROVENANCE.md`'s "PRIMARY FINDING" section.
+
+**Structural point, evaluated:** does Rubato's depth advantage (2 rounds vs
+HERA's 10 sequential mult-levels) trade against a memory disadvantage? Not
+as this run shows it — the run died in **setup** (StC precompute), which the
+2026-08-04 HERA investigation already found is largely depth-independent
+(HERA's own `hera.Crypt` round loop only cost +278 MB across all 5 rounds;
+~97% of its peak was setup). The memory wall exposed here is a
+HalfBoot/StC-at-full-slot-occupancy property, not a per-round cost — see
+`docs/RUBATO_FULLSCALE_PLAN.md`.
+
+**Fixed the harness-reproducibility defect this exposed.** The `*_test.go`
+that produced both the 2026-08-04 HERA trace and this 2026-08-19 Rubato
+trace lived directly in `third_party/RtF-Transciphering/ckks_fv/`
+(gitignored by design), deleted after each run per
+`RSS_INSTRUMENTATION.md`'s stated convention — meaning neither trace could
+be regenerated from anything in git history, a defect of the same class as
+the unsourced `_r5.json` files (row 21a/21b) already documented in
+`docs/MEASUREMENT_PROVENANCE.md`. Committed a generalized replacement,
+`tools/transciphering/cipher/rss_checkpoint_test.go`, parameterised over
+cipher (HERA/Rubato), LogN, and RtF param-set index via env vars, calling
+`ckks_fv` only through its exported API (no vendored-package patching
+required at this checkpoint granularity). It also writes a new `ParamState`
+struct into every checkpoint record (cipher, param set name/index, LogN,
+LogSlots, modCount, rounds, block size) — the configuration-side
+counterpart to `bench/main.go`'s existing `MachineState` (host side) — so
+this specific class of silent mismatch cannot recur undetected. Gated
+behind `RSS_CHECKPOINT_RUN=1` (skipped by default; `go test ./...` stays
+cheap). **Not run at LogN=16/LogSlots=15 on this host** — see the fullscale
+plan doc for why.
 
 **Real blocker:** integrating the validated reference path into
 `vendor_server` — not hardware procurement, and not affected by which
@@ -147,9 +230,12 @@ still PENDING, independent of this task; (2) batched-reduction correctness
 at 256-slot blocks (everything verified so far is single-block, for both
 ciphers); (3) the toy harnesses still run a trivial `2x+1` circuit, not the
 real fraud model; (4) `scripts/cloud_transcipher_bench/run_benchmark.sh`'s
-~90 GB preflight gate is ~9.4x the measured HERA peak and needs revising
-regardless of whether cloud is ever used; (5) full-scale RSS instrumentation
-for Rubato-128L has not been run. The prior "~9.0-9.4x HERA vs. plain CKKS"
+~90 GB preflight gate is unsourced (derived from a since-superseded ~60 GB
+literature anchor, not from any measurement in this repo) and needs
+revising — see `docs/RUBATO_FULLSCALE_PLAN.md`; (5) full-scale RSS
+instrumentation for Rubato-128L was attempted 2026-08-19 and did NOT
+complete (SIGKILL during setup, 13.28 GB measured lower bound) — see the
+dated block above. The prior "~9.0-9.4x HERA vs. plain CKKS"
 client-CPU ratio (`docs/SESSION_LOG.md` 2026-08-06c/d) was measured against
 the pre-fix HERA implementation and should not be combined with the numbers
 above — a fresh plain-CKKS baseline was not re-run this session (requires
@@ -180,6 +266,16 @@ consistency sweep). No entry since.
    correctness were measured, not many-lane HE throughput). SIMD batching
    efficiency research (transactions per batch vs. latency vs.
    bandwidth/data movement) not started.
+1a. **Rubato-128L full-scale (LogN=16) attempt: measured non-completion
+   (2026-08-19), and a LogSlots parameter-set mismatch found that
+   invalidates the existing HERA-vs-Rubato full-scale comparison as run.**
+   See the dated block above and `docs/MEASUREMENT_PROVENANCE.md`'s "PRIMARY
+   FINDING" section. Next runnable step is a LogSlots-matched HERA re-run at
+   `RtFHeraParams[2]` ("128af", LogSlots=15) — expected to also not fit in
+   ~15 GB, since the memory wall is a HalfBoot/StC-at-full-slot-occupancy
+   property, not cipher-specific — plus an intermediate LogN=12/14 rung to
+   fit a scaling curve. Full plan: `docs/RUBATO_FULLSCALE_PLAN.md`. Do not
+   run either at LogN=16/LogSlots=15 on this host.
 2. Degree-2 `degree2_linearizer.py` negative-dimension bug — unfixed, but
    low urgency since it's not on the production dispatch path.
 3. Docker/DevSecOps arm needs an audit pass: reconcile the uncommitted

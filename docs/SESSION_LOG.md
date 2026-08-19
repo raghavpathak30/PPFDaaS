@@ -3,6 +3,76 @@
 Full dated history of session updates, newest first. For current
 project status, blockers, and next actions, see `PROJECT_STATE.md`.
 
+## Session Update (2026-08-19b) — Recovery from a crashed Rubato-128L full-scale run; LogSlots=4-vs-15 parameter-set mismatch found and traced to source (COMPLETE)
+
+Crash-recovery session. A prior session's attempt at a full-scale (LogN=16)
+Rubato-128L `rubato.Crypt` run, checkpointed with the same RSS
+instrumentation technique used for HERA on 2026-08-04 (see that day's
+block below), exhausted memory and was SIGKILLed by the kernel OOM killer;
+the originating session's shell/context was lost with it. No system reboot
+occurred — `uptime` showed continuous uptime spanning the kill time — so the
+"machine terminated" framing that reached this session was an overstatement;
+what happened is the OOM killer took the process and its shell.
+
+**Triage:** `artifacts/rubato_crypt_rss_full_run.jsonl` survived intact up
+to its 6th checkpoint (`slot_to_coeff_mat`, `vm_hwm_kb=13,279,632`) with a
+7th line truncated mid-write — SIGKILL, not a panic. No kernel-level OOM
+record was recoverable this session (`dmesg`/`journalctl -k` both refuse
+without privileges this session doesn't have; passwordless `sudo` isn't
+configured). `heap_alloc_kb=20,257,175` at that same checkpoint exceeds
+`vm_hwm_kb`, which is impossible for a genuine live-heap figure to do —
+checked against source (`rss_checkpoint.go`, since replaced by
+`cipher/rss_checkpoint_test.go`): both fields are correctly read and
+labelled, not a bug. The same anomaly occurred independently in HERA's
+2026-08-04 unconstrained trace (see that block's §2b) and remains an
+unconfirmed "partial swap" hypothesis both times — not used to support any
+claim in either write-up.
+
+**The actual finding, promoted to primary status:** an initial hypothesis
+attributed the ~4.07x StC-precompute memory ratio (12.4 GB Rubato / 3.05 GB
+HERA) to `RubatoBlockSize=64` vs `HeraStateSize=16` (a matching 4x). Reading
+`GenSlotToCoeffMatFV`'s source (`third_party/RtF-Transciphering/ckks_fv/
+mfv_encoder.go:603`) rejects this: the function takes only `radix`; block
+size and round count never enter it. The actual, source-confirmed driver is
+`LogSlots` — HERA's full-scale run used `RtFHeraParams[3]` ("128as",
+LogSlots=4, 16 slots); Rubato's used `RtFRubatoParams[0]` ("128af",
+LogSlots=15, 32,768 slots) — the only Rubato RtF param set this checkout
+has. `modCount` is identical between the two param sets (traced through
+`halfboot_params.go:32`; both use byte-for-byte identical
+`ResidualModuli`/`DiffScaleModulus` values), isolating LogSlots as the one
+varying input. **Consequence: HERA's 9.54 GB full-scale peak and Rubato's
+13.28 GB lower bound measure workloads 2,048x apart in slot occupancy, not
+two ciphers under the same conditions — no comparison between them is
+supportable as currently measured.** The same mismatch, at smaller
+magnitude (LogSlots 4 vs 9, 32x), was already present — undetected — in the
+existing toy-scale (LogN=10) correctness harnesses and the 2.08x toy-scale
+RSS ratio (rows 12-16, `docs/MEASUREMENT_PROVENANCE.md`); it does not affect
+the 1,052-byte/249x upload-size figure or `hhe_breakeven.json`'s current
+PENDING cells (checked, reported in that document's "PRIMARY FINDING"
+section).
+
+**Fixed the harness-reproducibility defect this exposed.** The instrumented
+`*_test.go` that produced both the 2026-08-04 HERA trace and this
+2026-08-19 Rubato trace lived in `third_party/RtF-Transciphering/ckks_fv/`
+(gitignored), deleted after each run per `RSS_INSTRUMENTATION.md`'s stated
+convention — so neither trace could be regenerated from git history, same
+class of defect as the unsourced `_r5.json` files (see the 2026-08-06b/c/d
+correction below). Committed
+`tools/transciphering/cipher/rss_checkpoint_test.go`: parameterised over
+cipher/LogN/RtF param-set index via env vars, calls `ckks_fv` only through
+its exported API, gated behind `RSS_CHECKPOINT_RUN=1` so `go test ./...`
+stays cheap, and writes a new `ParamState` struct (cipher, param set,
+LogN, LogSlots, modCount, rounds, block size) into every checkpoint —
+config-side counterpart to `bench/main.go`'s `MachineState` — specifically
+so this class of silent mismatch can't recur undetected.
+
+**Not re-run at LogN=16/LogSlots=15 on this host**, per explicit
+instruction. Full write-up: `PROJECT_STATE.md`'s 2026-08-19 dated block,
+`docs/MEASUREMENT_PROVENANCE.md`'s "PRIMARY FINDING" section,
+`docs/RUBATO_FULLSCALE_PLAN.md` (next steps: LogSlots-matched HERA re-run at
+`RtFHeraParams[2]` "128af", plus an intermediate LogN=12/14 rung),
+`docs/PAPER_HANDOFF.md` (updated framing for the paper).
+
 ## Session Update (2026-08-18c) — Review of the noise-sampler fix: one measurement discrepancy chased down, one dependency documented, one figure re-verified
 
 Follow-up to 2026-08-18b, same day, before committing. Three review
@@ -660,6 +730,25 @@ above; kept here, not deleted, per instruction.
 - Slide 5 checked for other round-count-dependent claims (none found beyond
   what was already fixed in the 2026-08-06 block below; slide 9's "four
   stages" is HalfBoot's own repair stages, unrelated to HERA round count)
+
+### Correction (recorded 2026-08-19) — this block's "15.8 ms" is not final; do not read it in isolation
+
+This block's table states 16-lane r=5 as **15.8 ms**
+(`hera_bench_lane16_r5.json`). That file was overwritten the same day by a
+Chrome-closed re-run recorded in the 2026-08-06d block above, which measured
+**17.5 ms** for the identical config and explains *why* the number moved
+(clock-floor noise under `powersave`, not a code change — see that block's
+"Chrome open vs Chrome closed" table). A downstream document
+(`docs/MEASUREMENT_PROVENANCE.md`) briefly misread these as two disagreeing
+figures for the same run rather than two sequential runs, one superseding
+the other; corrected there. **What was never fixed, and is not fixed by
+this note either: neither `hera_bench_lane1_r5.json`/`hera_bench_lane16_r5.json`
+(this block) nor their `_PRIOR_contended` siblings (2026-08-06d) were ever
+committed to git.** Both are absent from this repository's history and
+working tree as of 2026-08-19 — the 15.8 ms and 17.5 ms figures, and the
+~9.4x/~9.0x ratios built on them, are not independently reproducible from
+anything in this repo. See `docs/MEASUREMENT_PROVENANCE.md` rows 21a/21b
+for the full trace.
 
 ## Session Update (2026-08-06) — Progress deck v3: measured numbers folded in, round-count mismatch found (COMPLETE)
 
