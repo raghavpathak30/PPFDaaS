@@ -59,7 +59,14 @@ certs/
 
 # Locally-built third-party dependencies (e.g. OpenFHE source clone, AUDIT.md
 # Phase 2). Not vendored -- cloned and built fresh per environment.
-third_party/
+# NOTE: "third_party/*" (not "third_party/"), so the negations below can take
+# effect -- git does not descend into a directory excluded by the bare form to
+# apply per-file re-includes.
+third_party/*
+# ...except the fetch script and its build notes, which ARE the source of
+# truth for reproducing the pinned checkout above (see third_party/BUILD_NOTES.md).
+!third_party/fetch_rtf.sh
+!third_party/BUILD_NOTES.md
 
 # Stray build outputs not covered above
 tools/local_benchmark/precision_probe
