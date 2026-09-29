@@ -350,8 +350,9 @@ a different cipher (full trace: `docs/MEASUREMENT_PROVENANCE.md`, "PRIMARY FINDI
 The individual full-scale measurements are real, but they cannot be compared with each other:
 
 - **HERA, `RtFHeraParams[3]` "128as", LogN=16, LogSlots=4 (16 slots): full ring, near-empty
-  payload.** `hera.Crypt` completed in 73.7 s with peak VmHWM 9.54 GB under
-  `GOMEMLIMIT=11GiB GOGC=50` on this 15 GB dev host (`artifacts/hera_crypt_rss_full_run.jsonl`,
+  payload.** `hera.Crypt` completed in 73.71 s with peak VmHWM 9.54 GB under
+  `GOMEMLIMIT=11GiB GOGC=50` on this 15 GB dev host (`artifacts/hera_crypt_rss_full_run.jsonl`:
+  `test_start` 2026-08-04T15:28:22.122 → `test_end` 15:29:35.835, +05:30, and
   `vm_hwm_kb: 9543896`; `logs/hera_full_run.log`). **This is not a full-occupancy result** —
   only 16 of the 32,768 available slots carry data. CPU governor and power source were not
   recorded for this run. HERA at `LogSlots=15` has not been run.
