@@ -4471,7 +4471,7 @@ See `tools/transciphering/README.md §Cipher: HERA-16` for the full parameter ta
 
 | Cipher | Decision | Reason |
 |---|---|---|
-| HERA-16 (m=16, r=5, t=2^26; `tools/transciphering/cipher/hera.go:57`) | **SELECTED** | Best-studied HHE cipher for CKKS-adjacent workflows; no attack known to us at these parameters as of 2026-09-29 (no source in this repo analyses HERA r=5 at the 128as/128af params) |
+| HERA-16 (m=16, r=5, t=2^26; `tools/transciphering/cipher/hera.go:57`) | **SELECTED** | No attack known to us at these parameters as of 2026-09-29 (no source in this repo analyses HERA r=5 at the 128as/128af params) |
 | Rubato (family) | NOT SELECTED; Rubato-128L implemented as a benchmarking comparison point only (§8.8.1) | Grassi et al. CRYPTO 2023 — 5/6 family members below claimed security for ≥25% of modulus choices. Rubato-128L is not covered by the Grassi et al. (CRYPTO 2023) attack bound (§8.8.1) |
 | Elisabeth-4 | NOT USED | Broken (Cosseron et al.) |
 | Kreyvium/Trivium | Not considered | Bit-oriented, poor fit for large-modulus CKKS inputs |
@@ -4483,7 +4483,10 @@ can be substituted without changing the transciphering protocol.
 **Symmetric assumption note:** HHE trades bandwidth reduction for a younger,
 less-audited symmetric security assumption. The HERA algebraic cryptanalysis is
 ongoing research (as of 2026); this paper states this trade-off explicitly and
-pins parameters to the conservative post-analysis set.
+pins parameters to `RtFHeraParams[3]` "128as" (r=5) as defined in the vendored
+`ckks_fv` checkout (`third_party/RtF-Transciphering/ckks_fv/rtf_params.go:476`;
+r=5 per `BenchmarkRtFHera128as`, `RtF_bench_test.go:51`; pinned SHA
+`105fc73115b56f1d6ff357029c7682b19a6d8510`).
 
 ### §8.8.1 Rubato-128L benchmarking addendum (2026-08-19)
 

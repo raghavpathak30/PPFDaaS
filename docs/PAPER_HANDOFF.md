@@ -9,8 +9,10 @@ this repo can currently back up, what it cannot, and where to look for each.
 The context you were working from was stale, and you were right not to use
 numbers you couldn't verify. One correction to how that was described to
 you: the `rubato-swap` branch **was pushed** — `git log --oneline
-main..origin/rubato-swap` shows all 21 of its commits (the 20 stated earlier was correct at the time; 57e3499, the commit that wrote it, is the 21st) already sitting on
-`origin`. It was pushed to a **non-default branch**, though, and GitHub's
+main..origin/rubato-swap` shows all 21 of its commits already on `origin`.
+(An earlier version of this doc said 20; that was correct when written —
+57e3499, the commit that corrected it, is the 21st.) It was pushed to a
+**non-default branch**, though, and GitHub's
 repo page renders `main`, which is stale and CKKS-only — that's why a reader
 looking at the repo page sees no trace of any of this work. What's stale is
 `main`, which this branch has not been merged into. Practically, this
