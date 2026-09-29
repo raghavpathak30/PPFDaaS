@@ -23,7 +23,24 @@
 #     package -- NOT installed on the 15GB dev host this was scaffolded on,
 #     which is exactly why this step never ran there)
 #   - ~80 GB free disk (Go module cache + build artifacts)
-#   - >=90 GB free RAM (preflight-checked below; fails fast rather than OOM)
+#   - >=48 GB free RAM (preflight-checked below; fails fast rather than OOM)
+#
+# RAM figure history: this was originally ~90 GB, derived from a ~60 GB
+# literature anchor for HERA at 80-bit security (arXiv:2409.06422v1 §II)
+# that was never itself measured end-to-end in this repo. Superseded
+# 2026-08-19 by an actual measurement (HERA-128as full-scale: 9.54 GB peak,
+# see artifacts/hera_crypt_rss_full_run.jsonl) plus a follow-up finding that
+# the 90 GB figure conflated two different workloads (LogSlots=4 vs
+# LogSlots=15 — see docs/MEASUREMENT_PROVENANCE.md's "PRIMARY FINDING"
+# section). The current 48 GB is ALSO NOT A MEASUREMENT: it is a capacity-
+# planning estimate — Rubato's LogN=16/LogSlots=15 attempt reached a
+# confirmed 13.28 GB floor before OOM-killing partway through setup;
+# projecting the remaining setup cost using HERA's own StC-to-peak growth
+# ratio (2.40x, measured) gives ~32 GB, flagged as likely an underestimate
+# (rotation-key generation cost scales with LogSlots, and that ratio was
+# measured at LogSlots=4). 48 GB = that estimate + margin. Full derivation
+# and the runnable-on-a-15GB-host intermediate rungs that would replace
+# this with a real number: docs/RUBATO_FULLSCALE_PLAN.md.
 
 set -euo pipefail
 
@@ -38,20 +55,22 @@ BENCH_PKG="./ckks_fv/"
 BENCH_TIME="1x"           # one iteration; add -count=3 for stability if RAM allows
 OUTPUT_DIR="${REPO_ROOT}/artifacts"
 TIMESTAMP=$(date -u +%Y%m%d_%H%M%S)
-MIN_FREE_RAM_KB=$((90 * 1024 * 1024)) # ~90 GB, fail fast rather than OOM
+MIN_FREE_RAM_KB=$((48 * 1024 * 1024)) # ~48 GB ESTIMATE, not measured -- see comment block above
 
 # ---------------------------------------------------------------------------
-# 0. Preflight: refuse to run under ~90 GB free RAM
+# 0. Preflight: refuse to run under ~48 GB free RAM
 # ---------------------------------------------------------------------------
 FREE_RAM_KB=$(awk '/MemAvailable/{print $2}' /proc/meminfo)
 if [[ -z "${FREE_RAM_KB}" || "${FREE_RAM_KB}" -lt "${MIN_FREE_RAM_KB}" ]]; then
-  echo "[FAIL] preflight: MemAvailable=${FREE_RAM_KB:-unknown} KB, need >= ${MIN_FREE_RAM_KB} KB (~90 GB)." >&2
-  echo "[FAIL] RAM anchor for HERA 80-bit cipher security is ~60 GB [CONFIRMED-SOURCE:" >&2
-  echo "[FAIL] arXiv:2409.06422v1 §II]; 90 GB leaves margin for OS + Go allocator overhead." >&2
-  echo "[FAIL] Minimum instance: r7i.4xlarge (128 GiB). Refusing to start (fail fast, not OOM)." >&2
+  echo "[FAIL] preflight: MemAvailable=${FREE_RAM_KB:-unknown} KB, need >= ${MIN_FREE_RAM_KB} KB (~48 GB)." >&2
+  echo "[FAIL] This figure is an ESTIMATE, not a measurement -- projected from Rubato's" >&2
+  echo "[FAIL] 2026-08-19 13.28 GB LogN=16/LogSlots=15 OOM floor using HERA's own measured" >&2
+  echo "[FAIL] StC-to-peak growth ratio (2.40x), flagged as likely an underestimate." >&2
+  echo "[FAIL] See docs/RUBATO_FULLSCALE_PLAN.md for the derivation and a runnable-on-a" >&2
+  echo "[FAIL] smaller-host alternative (LogN=12/14 intermediate rungs) before using this path." >&2
   exit 1
 fi
-echo "[OK] preflight: MemAvailable=${FREE_RAM_KB} KB >= ${MIN_FREE_RAM_KB} KB required"
+echo "[OK] preflight: MemAvailable=${FREE_RAM_KB} KB >= ${MIN_FREE_RAM_KB} KB required (ESTIMATE, see docs/RUBATO_FULLSCALE_PLAN.md)"
 
 if ! command -v /usr/bin/time >/dev/null 2>&1; then
   echo "[FAIL] preflight: /usr/bin/time not found. Install GNU time (e.g. 'apt-get install -y time')." >&2

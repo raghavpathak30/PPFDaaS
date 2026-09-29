@@ -1,0 +1,6 @@
+{"gogc_env":"50","gomemlimit_env":"11GiB","heap_alloc_kb":321,"label":"entry","timestamp":"2026-08-19T19:57:33.06971673+05:30","total_alloc_kb":321,"vm_hwm_kb":6692}
+{"gogc_env":"50","gomemlimit_env":"11GiB","heap_alloc_kb":498,"label":"params_ready","timestamp":"2026-08-19T19:57:33.072877428+05:30","total_alloc_kb":498,"vm_hwm_kb":6968}
+{"gogc_env":"50","gomemlimit_env":"11GiB","heap_alloc_kb":115630,"label":"keypair_sparse","timestamp":"2026-08-19T19:57:33.215493799+05:30","total_alloc_kb":116236,"vm_hwm_kb":85680}
+{"gogc_env":"50","gomemlimit_env":"11GiB","heap_alloc_kb":1354425,"label":"encoders_ready","timestamp":"2026-08-19T19:57:33.807776716+05:30","total_alloc_kb":1424765,"vm_hwm_kb":860144}
+{"gogc_env":"50","gomemlimit_env":"11GiB","heap_alloc_kb":1354545,"label":"rotation_indexes_halfboot","timestamp":"2026-08-19T19:57:33.80991537+05:30","total_alloc_kb":1424885,"vm_hwm_kb":860200}
+{"gogc_env":"50","gomemlimit_env":"11GiB","heap_alloc_kb":20257175,"label":"slot_to_coeff_mat","timestamp":"2026-08-19T19:58:33.214285797+05:30","total_alloc_kb":24597242,"vm_hwm_kb":13279632}

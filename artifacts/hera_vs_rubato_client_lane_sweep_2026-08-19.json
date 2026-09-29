@@ -1,0 +1,50 @@
+{
+  "artifact": "hera_vs_rubato_client_lane_sweep_2026-08-19",
+  "generated_utc": "2026-08-19T14:18:13Z",
+  "task": "Follow-up pass: re-run the r=5 HERA-16 vs Rubato-128L client-cipher lane sweep with machine state (governor, AC/battery, load avg, CPU MHz) embedded directly in each result JSON, per instruction. This does NOT redo or replace artifacts/hera_vs_rubato_transciphering.json (2026-08-18) -- that artifact is unmodified and remains canonical for its own session's numbers. This is a second, independent same-session measurement, kept alongside it, not instead of it.",
+  "status_tags_legend": "CONFIRMED-RAN = executed this session, command given. CONFIRMED-SOURCE = verified against ckks_fv source (file+line) or a cited paper. UNVERIFIED = plausible, not independently checked this session. PENDING = not measured, reason stated.",
+
+  "harness_change": {
+    "status": "CONFIRMED-RAN",
+    "description": "tools/transciphering/bench/main.go: added a MachineState struct (readMachineState()) capturing cpu_governor, power_source (AC/battery, from /sys/class/power_supply/*/online and */status), load_avg_{1,5,15} (/proc/loadavg), cpu_count, and scaling_cur_mhz_{min,max} across all cores (/sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq), captured immediately before the timed online-encrypt loop and embedded in every BenchResult JSON going forward. Prior bench output (results/*_r_fixed2.json and earlier) has no machine_state field -- this is a real gap this change closes, not retroactively fixed for old files.",
+    "build_check": "CONFIRMED-RAN: go build ./..., go vet ./..., gofmt -l (clean), go test ./cipher/... all pass after the change."
+  },
+
+  "machine_state_this_sweep": {
+    "status": "CONFIRMED-RAN",
+    "description": "Stable across all 8 runs in this sweep (see per-result machine_state below for exact per-run values) -- governor, power source, and load average did not change mid-sweep; only scaling_cur_freq (an instantaneous powersave-governor sample) varied run to run, which is expected dynamic clocking behavior, not a confound.",
+    "cpu_governor": "powersave",
+    "power_source": "AC",
+    "load_avg_1_range": [1.92, 2.00],
+    "load_avg_5": 1.82,
+    "load_avg_15": "1.83-1.84",
+    "cpu_count": 20,
+    "note": "User was asked and chose to wait for AC power before this sweep ran, specifically because a prior session on this host found battery power caused 650-960 MHz clock clamping vs a 4.9 GHz ceiling. ADP0/online=1 confirmed immediately before running."
+  },
+
+  "by_lane_count": [
+    {"n_lanes": 1,  "hera_mean_ms": 0.11668, "hera_median_ms": 0.104, "rubato_mean_ms": 0.19140, "rubato_median_ms": 0.191, "ratio_rubato_over_hera_mean": 1.640, "ratio_rubato_over_hera_median": 1.837, "upload_bytes_both_ciphers": 1052},
+    {"n_lanes": 4,  "hera_mean_ms": 0.36445, "hera_median_ms": 0.299, "rubato_mean_ms": 0.23429, "rubato_median_ms": 0.193, "ratio_rubato_over_hera_mean": 0.643, "ratio_rubato_over_hera_median": 0.645, "upload_bytes_both_ciphers": 4124},
+    {"n_lanes": 8,  "hera_mean_ms": 0.50367, "hera_median_ms": 0.414, "rubato_mean_ms": 0.56011, "rubato_median_ms": 0.516, "ratio_rubato_over_hera_mean": 1.112, "ratio_rubato_over_hera_median": 1.246, "upload_bytes_both_ciphers": 8220},
+    {"n_lanes": 16, "hera_mean_ms": 1.42664, "hera_median_ms": 1.207, "rubato_mean_ms": 1.17521, "rubato_median_ms": 1.029, "ratio_rubato_over_hera_mean": 0.824, "ratio_rubato_over_hera_median": 0.853, "upload_bytes_both_ciphers": 16412}
+  ],
+
+  "headline": "NOT a clean repeat of 2026-08-18's ~0.48-0.82x. This same-session sweep gives a ratio that swings from 1.64x (Rubato MORE expensive, lane=1) to 0.64x (Rubato cheaper, lane=4) to 1.11x to 0.82x -- non-monotonic and crossing 1.0. This is reported as measured, not smoothed or re-run to get a 'cleaner' number. See comparison_to_2026-08-18 below for why this does not overturn the house rule that same-session ratios are more defensible than absolute latencies -- it does mean single-lane-count ratios at these small n (sub-millisecond per-call times) carry more noise than previously stated, and multi-lane trends should be read as a band, not a point estimate.",
+
+  "comparison_to_2026-08-18": {
+    "status": "CONFIRMED-SOURCE",
+    "description": "artifacts/hera_vs_rubato_transciphering.json's axis_b (2026-08-18, powersave, AC, load 2.16/2.45/2.00, n=200) reported ratio_rubato_over_hera_mean of 0.484/0.723/0.819/0.701 at lanes 1/4/8/16 -- Rubato cheaper at every lane count. This sweep (2026-08-19, powersave, AC, load ~1.9-2.0, n=200, otherwise identical methodology and code) gives 1.640/0.643/1.112/0.824 -- Rubato MORE expensive at lanes 1 and 8, cheaper at 4 and 16. Both artifacts are kept; neither supersedes the other. Candidate cause: at n=200 rounds and sub-millisecond per-call cost (mean 0.08-1.6 ms across both ciphers and lane counts), scheduling jitter, GC pauses, and cache-state noise are a larger fraction of the measured time than the algebraic cost difference between the two ciphers -- consistent with the per-keystream-element micro-benchmark (cipher/block_bench_test.go, ns-resolution, -benchtime=100000x, -count=7) showing a much more stable ~0.57-0.77x Rubato/HERA ratio (see docs/MEASUREMENT_PROVENANCE.md rows 5-7), because that harness isolates the algebra from AEAD/quantization/per-call overhead and runs far more iterations. NOT independently re-verified by re-running the micro-benchmark this pass -- flagged as the more trustworthy per-element number on prior evidence, not re-confirmed today.",
+    "implication": "The per-record, per-lane-count ratio is measurably less stable across same-session-but-different-day runs than this repo previously stated. Do not cite a single by_lane_count ratio from either artifact as THE HERA-vs-Rubato per-record ratio; cite a range, or cite the per-keystream-element micro-benchmark ratio instead, which has much higher statistical power (700,000 iterations vs. 200) and is the more defensible number for a paper."
+  },
+
+  "same_session_hera_vs_plain_ckks_ratio": {
+    "status": "PENDING",
+    "description": "Not attempted this pass. Recomputing this ratio requires a same-session plain-CKKS client encode+encrypt baseline (scripts/e2e_latency_breakdown.py), which requires: (1) the ULB creditcard.csv dataset (scripts/fetch_creditcard_dataset.sh -- requires Kaggle CLI credentials, absent in this environment: no ~/.kaggle/kaggle.json, no kaggle CLI installed); (2) compiler/train_xgboost.py, train_logistic_regression.py, gen_keys_160.py to produce model_weights.bin and keys (gitignored, absent from this working tree, currently not regenerable without step 1); (3) a full C++ build (cmake -B build -S . -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel -- SEAL 4.1.2 and gRPC/protobuf ARE present on this host, confirmed via pkg-config, so this step alone is not blocked); (4) starting vendor_server_160 and running scripts/e2e_latency_breakdown.py against it. Steps 1-2 are the actual blocker: no dataset, no way to fetch one in this environment. This was already flagged out of scope by a prior session for the same reason (PROJECT_STATE.md); re-confirmed here, not re-litigated. The exact run that would produce this number: place data/creditcard.csv manually or via Kaggle credentials, run the three compiler scripts above, build the C++ stack, then scripts/e2e_latency_breakdown.py alongside this session's tools/transciphering/bench sweep, back to back."
+  },
+
+  "raw_result_files": [
+    "tools/transciphering/results/hera_bench_lane{1,4,8,16}_r_fixed3.json",
+    "tools/transciphering/results/rubato_bench_lane{1,4,8,16}_r_fixed3.json",
+    "each with an embedded machine_state block and timestamp_utc, unlike all prior *_r_fixed*.json files"
+  ]
+}

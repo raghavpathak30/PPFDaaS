@@ -3,6 +3,383 @@
 Full dated history of session updates, newest first. For current
 project status, blockers, and next actions, see `PROJECT_STATE.md`.
 
+## Session Update (2026-08-19b) — Recovery from a crashed Rubato-128L full-scale run; LogSlots=4-vs-15 parameter-set mismatch found and traced to source (COMPLETE)
+
+Crash-recovery session. A prior session's attempt at a full-scale (LogN=16)
+Rubato-128L `rubato.Crypt` run, checkpointed with the same RSS
+instrumentation technique used for HERA on 2026-08-04 (see that day's
+block below), exhausted memory and was SIGKILLed by the kernel OOM killer;
+the originating session's shell/context was lost with it. No system reboot
+occurred — `uptime` showed continuous uptime spanning the kill time — so the
+"machine terminated" framing that reached this session was an overstatement;
+what happened is the OOM killer took the process and its shell.
+
+**Triage:** `artifacts/rubato_crypt_rss_full_run.jsonl` survived intact up
+to its 6th checkpoint (`slot_to_coeff_mat`, `vm_hwm_kb=13,279,632`) with a
+7th line truncated mid-write — SIGKILL, not a panic. No kernel-level OOM
+record was recoverable this session (`dmesg`/`journalctl -k` both refuse
+without privileges this session doesn't have; passwordless `sudo` isn't
+configured). `heap_alloc_kb=20,257,175` at that same checkpoint exceeds
+`vm_hwm_kb`, which is impossible for a genuine live-heap figure to do —
+checked against source (`rss_checkpoint.go`, since replaced by
+`cipher/rss_checkpoint_test.go`): both fields are correctly read and
+labelled, not a bug. The same anomaly occurred independently in HERA's
+2026-08-04 unconstrained trace (see that block's §2b) and remains an
+unconfirmed "partial swap" hypothesis both times — not used to support any
+claim in either write-up.
+
+**The actual finding, promoted to primary status:** an initial hypothesis
+attributed the ~4.07x StC-precompute memory ratio (12.4 GB Rubato / 3.05 GB
+HERA) to `RubatoBlockSize=64` vs `HeraStateSize=16` (a matching 4x). Reading
+`GenSlotToCoeffMatFV`'s source (`third_party/RtF-Transciphering/ckks_fv/
+mfv_encoder.go:603`) rejects this: the function takes only `radix`; block
+size and round count never enter it. The actual, source-confirmed driver is
+`LogSlots` — HERA's full-scale run used `RtFHeraParams[3]` ("128as",
+LogSlots=4, 16 slots); Rubato's used `RtFRubatoParams[0]` ("128af",
+LogSlots=15, 32,768 slots) — the only Rubato RtF param set this checkout
+has. `modCount` is identical between the two param sets (traced through
+`halfboot_params.go:32`; both use byte-for-byte identical
+`ResidualModuli`/`DiffScaleModulus` values), isolating LogSlots as the one
+varying input. **Consequence: HERA's 9.54 GB full-scale peak and Rubato's
+13.28 GB lower bound measure workloads 2,048x apart in slot occupancy, not
+two ciphers under the same conditions — no comparison between them is
+supportable as currently measured.** The same mismatch, at smaller
+magnitude (LogSlots 4 vs 9, 32x), was already present — undetected — in the
+existing toy-scale (LogN=10) correctness harnesses and the 2.08x toy-scale
+RSS ratio (rows 12-16, `docs/MEASUREMENT_PROVENANCE.md`); it does not affect
+the 1,052-byte/249x upload-size figure or `hhe_breakeven.json`'s current
+PENDING cells (checked, reported in that document's "PRIMARY FINDING"
+section).
+
+**Fixed the harness-reproducibility defect this exposed.** The instrumented
+`*_test.go` that produced both the 2026-08-04 HERA trace and this
+2026-08-19 Rubato trace lived in `third_party/RtF-Transciphering/ckks_fv/`
+(gitignored), deleted after each run per `RSS_INSTRUMENTATION.md`'s stated
+convention — so neither trace could be regenerated from git history, same
+class of defect as the unsourced `_r5.json` files (see the 2026-08-06b/c/d
+correction below). Committed
+`tools/transciphering/cipher/rss_checkpoint_test.go`: parameterised over
+cipher/LogN/RtF param-set index via env vars, calls `ckks_fv` only through
+its exported API, gated behind `RSS_CHECKPOINT_RUN=1` so `go test ./...`
+stays cheap, and writes a new `ParamState` struct (cipher, param set,
+LogN, LogSlots, modCount, rounds, block size) into every checkpoint —
+config-side counterpart to `bench/main.go`'s `MachineState` — specifically
+so this class of silent mismatch can't recur undetected.
+
+**Not re-run at LogN=16/LogSlots=15 on this host**, per explicit
+instruction. Full write-up: `PROJECT_STATE.md`'s 2026-08-19 dated block,
+`docs/MEASUREMENT_PROVENANCE.md`'s "PRIMARY FINDING" section,
+`docs/RUBATO_FULLSCALE_PLAN.md` (next steps: LogSlots-matched HERA re-run at
+`RtFHeraParams[2]` "128af", plus an intermediate LogN=12/14 rung),
+`docs/PAPER_HANDOFF.md` (updated framing for the paper).
+
+## Session Update (2026-08-18c) — Review of the noise-sampler fix: one measurement discrepancy chased down, one dependency documented, one figure re-verified
+
+Follow-up to 2026-08-18b, same day, before committing. Three review
+questions, all resolved:
+
+**1. Why did the without-noise per-element figure move (248.1 → 146.1
+ns/element) when that code path never touches the noise sampler?**
+Confirmed by reading `encryptBlock`: `if sigma > 0 { noiseAGN(...) }` means
+the Gaussian sampler — old buggy or new correct — is never invoked when
+sigma=0, in either version of the code. So the code on that path is
+byte-identical before and after the fix; the sampler fix cannot explain the
+number moving. Investigated instead of assumed: the original 248.1 figure
+came from a single `go test -bench` invocation at `-benchtime=2000x` with
+no repetition — low statistical power. Re-ran HERA, Rubato-with-noise, and
+Rubato-without-noise together in ONE invocation
+(`-benchtime=100000x -count=7`, `cipher/block_bench_test.go`, now with
+`BenchmarkRubatoBlockNoNoise` as a permanent benchmark instead of a
+throwaway file), under low/clean load (1.19-1.53), AC power, powersave
+governor, 2026-08-18T11:28:27Z-11:28:45Z:
+
+| | ns/block (median of 7) | ns/element |
+|---|---|---|
+| HERA-16 | 4,028 | 251.75 |
+| Rubato-128L, with noise | 11,624 | 193.73 |
+| Rubato-128L, without noise | 8,629 | 143.82 |
+
+Ratios: **0.770x with noise, 0.571x without** — refines the intermediate
+report's 0.695x/0.530x (itself from a less rigorous 5-repetition run), and
+confirms the reversal (Rubato cheaper than HERA) is real, not an artifact
+of the specific 248.1 discrepancy. What changed between the unreliable
+first report and the two rigorous re-measurements since was measurement
+methodology for the without-noise baseline, not the sampler fix — the
+with/without-noise gap is consistently ~35-40% across both rigorous passes,
+smaller than the ~158% the original (unreliable) comparison implied.
+
+**2. `go.mod`'s `replace` directive and its consequences.** Already
+relative (`../../third_party/RtF-Transciphering`), not absolute — no fix
+needed. Confirmed the module now requires `third_party/fetch_rtf.sh` to
+have been run before `go build ./...` succeeds (previously only
+`toy_correctness/`'s staged tests needed that). Documented explicitly in
+`tools/transciphering/README.md`'s "Build / run" section and
+`PROJECT_STATE.md`. Checked whether this breaks Docker or CI: neither
+`Dockerfile.client` nor `Dockerfile.server` invokes any Go toolchain
+command (`go build`/`go mod`/`go run` all absent), and no CI workflow
+exists anywhere in this repo — so nothing automated is affected. Would
+matter if either is added later.
+
+**3. Re-verified Gate B's Rubato peak-RSS figure (610,808 KB), since it's
+the basis for a full-scale memory-risk estimate.** Confirmed by reading the
+harness's imports that it calls `ckks_fv`'s own `plainRubato`/
+`ring.GaussianSampler` directly — no dependency on the client `cipher`
+package at all, so it was never exposed to the noise-sampler bug in
+principle. Re-ran it 3 more times (plus HERA's harness twice) to confirm
+empirically, not just by import-graph argument. Re-run happened to coincide
+with an unrelated `ollama` LLM-server process consuming ~560% CPU on this
+shared host (found via `ps aux`), which inflated wall time (1.26s → 2.2-2.7s
+for HERA, 1.79s → 3.9s for Rubato) — but peak RSS is far less sensitive to
+CPU contention, and landed within a ~3.5% band for HERA (283,028-293,332
+KB) and ~7% for Rubato (610,808-654,328 KB) across all runs, clean-load and
+contended alike. **Confirms the original 610,808 KB figure — it was not
+inflated by the old sampler.** Had the old sampler's overhead reached this
+harness, RSS would have dropped after the fix, not stayed flat or risen
+slightly.
+
+**Files changed:** `cipher/block_bench_test.go`
+(`BenchmarkRubatoBlockNoNoise` made permanent), `README.md` (corrected
+tables, discrepancy explanation, build prerequisite),
+`artifacts/hera_vs_rubato_transciphering.json` (updated
+`per_element_normalization`, `gate_b_resource_usage`, `correction_note`),
+`PROJECT_STATE.md` (corrected figures, build prerequisite, Gate B
+confirmation). No code in `cipher/hera.go` or `cipher/rubato.go` changed
+this pass — this was entirely measurement review and documentation.
+
+## Session Update (2026-08-18b) — Correctness bug in Rubato's noise sampler: found, fixed, re-measured, numbers reversed
+
+Follow-up to the 2026-08-18 entry below, same day. After reporting the
+HERA-vs-Rubato cross-arm comparison, review caught a real correctness bug
+in `cipher/rubato.go` that both correctness gates had missed. This entry
+records what was wrong, why the gates didn't catch it, the fix, and the
+corrected (and substantially different, reversed-direction) numbers.
+
+**The bug:** `noiseAGN` drew Gaussian-shaped noise via a Box-Muller
+transform over `crypto/rand`-sourced uniform floats — an approximation,
+not the reference's actual sampler
+(`ckks_fv/RtF_bench_test.go:659`: `ring.GaussianSampler`, from
+`ldsec/lattigo`'s `ring` package). This approximation was never verified
+statistically equivalent to the reference. Rubato's security rests on an
+LWE-style assumption stated over Gaussian error, so a distributional
+mismatch here is a correctness bug, not a performance detail — the
+symmetric cipher's provable-security argument specifically depends on the
+noise being drawn from the distribution the proof assumes.
+
+**Why neither gate caught it:** Gate A (known-answer test) compares
+Rubato's keystream at `sigma=0`, deliberately bypassing the noise step
+entirely (needed because the reference's own noise draw is
+non-deterministic run-to-run) — the noise sampler is invisible to it by
+construction. Gate B (the toy HE harness) only checks that CKKS's
+approximation tolerance absorbs the noise's *magnitude*; a wrong
+distribution of similar magnitude would pass identically. Neither gate was
+designed to check distribution shape, and this is now documented explicitly
+in both `cipher/rubato_test.go` and `toy_correctness/README.md` so it
+isn't rediscovered by surprise again.
+
+**The fix:**
+1. `noiseAGN` (`cipher/rubato.go`) now calls `ring.GaussianSampler.AGN`
+   directly — the exact reference primitive, not a re-implementation.
+   Required adding `github.com/ldsec/lattigo/v2` as a dependency via a
+   `go.mod` `replace` pointing at the pinned `third_party/RtF-Transciphering`
+   checkout: confirmed by fetching the real, public
+   `github.com/ldsec/lattigo/v2` (v2.4.1) and diffing
+   `ring/ring_sampler_gaussian.go` against the vendored fork's version that
+   `AGN` is a KAIST-CryptLab addition, absent upstream — this dependency
+   can't be satisfied by the public module alone, so `tools/transciphering`
+   now requires `third_party/fetch_rtf.sh` to have been run before it
+   builds (previously only `toy_correctness/`'s tests needed that).
+2. The sampler is now allocated once (`sync.Once`) and reused across calls,
+   not reconstructed per `Encrypt()` — matches the reference's own
+   single-sampler-per-run usage and removes `big.Int` allocation from the
+   hot path (the old approximation's `crypto/rand.Int` calls were, it turns
+   out, the dominant cost — see below).
+3. Added `TestRubatoNoiseStatistics` (`cipher/rubato_test.go`): draws
+   30,000 noise samples, checks empirical mean near 0 and std dev within
+   15% of `RubatoSigma`, and every draw within the reference's `6*sigma`
+   bound. Not a distribution proof, but sized to catch a gross substitution
+   (a uniform sampler over a comparable width would show a std dev off by
+   >3x). **PASS**: mean -0.019, std dev 1.4-1.5% off sigma across repeated
+   runs.
+
+**Re-measured, same session, after the fix — the numbers reversed:**
+
+| | Before (wrong sampler) | After (fixed) |
+|---|---|---|
+| Per-record ratio (Rubato/HERA), lanes 1-16 | ~1.75-2.25x (Rubato pricier) | ~0.48-0.82x (Rubato cheaper) |
+| Per-element ratio, with noise | ~3.05x | ~0.70x |
+| Per-element ratio, without noise | ~1.19x | ~0.53x |
+
+The old wrong sampler's own overhead (711 allocs/op, mostly
+`crypto/rand.Int` calls) was the dominant driver of Rubato's measured cost,
+not Rubato's algebra — with the real, much cheaper reference sampler (199
+allocs/op), Rubato measures cheaper than HERA both per record and per
+keystream element. Absolute values also shifted substantially between the
+two measurement passes at similar load average, consistent with this
+host's already-documented powersave-governor volatility — direction
+(Rubato now cheaper across all four lane points, both per-record and
+per-element metrics) is the load-bearing finding, not the exact magnitude.
+
+**Artifact handling:** the original `artifacts/hera_vs_rubato_transciphering.json`
+was copied, unmodified, to
+`hera_vs_rubato_transciphering_PRIOR_wrong_noise_sampler.json` (kept for
+the record, matching this project's `_PRIOR`-suffix convention), and the
+canonical filename now holds the corrected data plus a `correction_note`
+section explaining the discrepancy. `PROJECT_STATE.md` and
+`tools/transciphering/README.md` were both updated in place (they're prose
+documentation, not canonical artifacts, so this project's
+never-overwrite-artifacts rule doesn't apply to them the same way — but the
+correction is stated explicitly in both rather than silently replacing the
+numbers).
+
+**Files changed:** `tools/transciphering/cipher/rubato.go` (noise sampler
+rewritten), `cipher/rubato_test.go` (limitation notes added,
+`TestRubatoNoiseStatistics` added), `cipher/block_bench_test.go` (unchanged
+code, re-run), `go.mod`/`go.sum` (new `replace` + dependency),
+`toy_correctness/README.md` (Gate B limitation note added), `README.md`
+(corrected tables, limitation note), `artifacts/hera_vs_rubato_transciphering.json`
+(rewritten with corrected numbers + `correction_note`),
+`artifacts/hera_vs_rubato_transciphering_PRIOR_wrong_noise_sampler.json`
+(new, preserves the invalidated version), `PROJECT_STATE.md` (corrected).
+
+## Session Update (2026-08-18) — HERA -> Rubato-128L cipher swap, correctness gates, cross-arm comparison (Prof. Debranjan's assigned task, branch rubato-swap)
+
+Planned, then implemented: added Rubato-128L as a second `CipherBackend`
+alongside HERA-16, fixed two pre-existing defects in HERA's implementation
+discovered along the way, built two correctness gates, and produced a
+same-session cross-cipher measurement. Full detail in
+`artifacts/hera_vs_rubato_transciphering.json`; summary here.
+
+**Mid-task correction, worth recording:** an earlier pass of this session
+mis-investigated repo state. `third_party/` is gitignored and absent from
+this `rubato-swap` worktree by construction (a fresh worktree only
+materializes tracked files) — that reasoning is correct. It was then wrongly
+extended to conclude that the HERA r=4->5 fix, the toy-correctness harness,
+and the r=5 benchmark numbers described in this log's 2026-08-06b/c/d
+entries were "ghost" narrative for work never actually done. They weren't —
+that work existed on `main`, not yet rebased into this worktree, for the
+same structural reason `third_party/` was missing. The user rebased the
+branch onto `main` and corrected this before any further work proceeded.
+Lesson: apply worktree/git-state isolation reasoning exhaustively, not
+selectively, before concluding documentation doesn't match code.
+
+**What existed already (verified directly against files on disk after the
+rebase, not assumed):** `cipher/hera.go` was already at `HeraRounds=5`
+(matching `RtFHeraParams[3]` "128as"), but its round-key derivation was
+still a fixed 5-row table (`heraRC`) whose 5th row was an explicitly-flagged
+unsourced placeholder, via an AES-128-ECB PRF (`heraRoundKey`) — neither of
+which ever matched the `ckks_fv` reference. A HERA toy-correctness harness
+existed and passed, but at `numRound=4` ("80as" config) — not exact parity
+with the shipped `HeraRounds=5`.
+
+**What was built this session:**
+1. Vendored `third_party/` into this worktree (script existed but was
+   itself untracked, gitignored along with its target — copied over from
+   the sibling `BTP` worktree, then run normally).
+2. `cipher/shakeprf.go`: shared `sampleZqx` + SHAKE256-XOF round-key
+   derivation, ported verbatim from `ckks_fv/utils.go` and
+   `fv_hera.go`/`fv_rubato.go` at the pinned SHA
+   `105fc73115b56f1d6ff357029c7682b19a6d8510`.
+3. Rewrote `cipher/hera.go`: replaced `heraRC`/`heraRoundKey` with the
+   SHAKE256(nonce) scheme; replaced `heraMixColumns` (which derived its
+   matrix from `heraRC` per round — never matched HERA's actual spec) with
+   the fixed `[2,3,1,1]` circulant; replaced the fabricated nonce-mixed
+   initial state with HERA's actual fixed public IC state; restructured
+   `encryptBlock`'s round order to match the reference exactly (it
+   previously interleaved AddRoundKey/S-box/Mix differently per round than
+   the reference does).
+4. New `cipher/rubato.go`: Rubato-128L (`RUBATO128L`: n=64, r=2,
+   q=0x1fc0001, σ=1.6356633496458739795537788457309656607510203877762320964302959),
+   sourced the same way — SHAKE256(nonce‖counter) round keys, the
+   blocksize-64 linear layer, the sequential Feistel-square nonlinear
+   layer, client-side-only Gaussian noise (the homomorphic evaluator
+   `mfvRubato` doesn't add it, by design).
+5. **Variant choice, read directly from the paper, not inferred from the
+   abstract:** Grassi et al. (CRYPTO 2023, eprint 2023/822 §6.1/7.1, p.22)
+   state the attack's bound "cannot be established" specifically for
+   Rubato-128L, unlike the other five variants. Rubato-128L is therefore
+   **not covered by this attack's established bound** — that phrasing is
+   deliberate and should not drift toward "secure" or "resists the attack"
+   in any future edit; see the wording in `cipher/backend.go`.
+6. Gate A (known-answer test, `cipher/hera_test.go`/`rubato_test.go`):
+   generated known-answer vectors by running `ckks_fv`'s own
+   `plainHera`/`plainRubato` directly (a temporary, uncommitted scratch test
+   in the gitignored `third_party/` checkout, deleted after use), hardcoded
+   as literal expected values. **Caught a real bug**: Rubato's Feistel layer
+   was reducing mod `HeraModulus` (2^26) instead of `RubatoModulus`
+   (0x1fc0001) via an accidentally-shared `mulMod` helper. Fixed; both
+   ciphers now PASS.
+7. Gate B (toy HE harness, `toy_correctness/`): added
+   `TestRtFHera128asToyCorrectness` (numRound=5, `HeraModDownParams128`,
+   radix=2 — exact parity with the shipped `HeraRounds=5`, unlike the
+   pre-existing r=4 harness) and `TestRtFRubato128LToyCorrectness`
+   (following `benchmarkRtFRubato`'s exact config: full-coefficient packing,
+   `RubatoModDownParams[RUBATO128L]`, `HalfBoot(repack=false)`). Both PASS,
+   LogN 16->10, all moduli reused, tolerance 5e-2: HERA-128as max abs error
+   1.4e-5; Rubato-128L (with real Gaussian noise) 3.4e-5.
+8. `bench/main.go`: added `--cipher=hera|rubato`; `CipherBackend`'s
+   `EvalKeyExpansion` gained a `nonce` parameter (round keys are inherently
+   nonce-dependent under the corrected derivation — the old signature
+   assumed they weren't, which was itself a symptom of the same underlying
+   defect Gate A was built to catch).
+
+**Cross-arm comparison (same session, back-to-back, AC power, powersave
+governor, load avg ~2.5 — [CONFIRMED-RAN]):** Rubato-128L client encrypt
+costs **~1.75-2.25x HERA-16** across a 1/4/8/16-lane sweep. Upload size is
+identical between the two ciphers at every lane count (same wire format) —
+the swap changes client CPU cost only. Full per-lane numbers:
+`artifacts/hera_vs_rubato_transciphering.json`.
+
+**What's still PENDING, unaffected by this task:** the plain-CKKS-vs-RtF
+axis (blocked on `vendor_server`'s stub-only BFV evaluation — pre-existing,
+independent of cipher choice) and many-lane SIMD throughput at the
+homomorphic-evaluation level (only single-lane toy-harness correctness and
+client-cipher-level lane sweeps were measured). A fresh plain-CKKS baseline
+was not re-run this session (requires `vendor_server`/gRPC infrastructure) —
+the prior "~9.0-9.4x" ratio in this log's 2026-08-06c/d entries was measured
+against the pre-fix HERA implementation and should not be combined with the
+numbers above.
+
+**Files changed:** `tools/transciphering/cipher/{backend,hera,shakeprf}.go`
+(edited/rewritten), `cipher/rubato.go` (new), `cipher/{hera,rubato}_test.go`
+(new), `bench/main.go` (edited), `toy_correctness/testdata/ckks_fv_patch/
+rtf_toy_correctness_{hera128as,rubato128l}_test.go` (new),
+`toy_correctness/README.md` (edited), `README.md` (edited),
+`third_party/fetch_rtf.sh` (edited, stages all harness files not just one),
+`artifacts/hera_vs_rubato_transciphering.json` (new), `PROJECT_STATE.md`
+(edited).
+
+**Addendum (same session) — three follow-ups requested before write-up:**
+
+1. **Per-element, not just per-record, ratio.** Added
+   `cipher/block_bench_test.go` (`BenchmarkHERABlock`,
+   `BenchmarkRubatoBlock`) to isolate single-block keystream-generation cost
+   from AEAD-wrap overhead and multi-block batching effects.
+   [CONFIRMED-RAN]: HERA 3,350 ns/block ÷ 16 elements = 209.4 ns/element;
+   Rubato 38,377 ns/block ÷ 60 elements = 639.6 ns/element (with noise) —
+   **3.05x per element**, vs. the 2.10x per-record figure. Re-ran with
+   `sigma=0`: Rubato drops to 14,887 ns/block = 248.1 ns/element — **1.19x
+   per element without noise**. ~61% of Rubato's per-block cost in this
+   implementation is its Gaussian noise sampler (`noiseAGN`, `crypto/rand`
+   per draw), not its algebra.
+2. **Gate B wall-time/RSS.** [CONFIRMED-RAN] via a compiled test binary +
+   `/proc/<pid>/status` VmHWM polling (same substitution as the original
+   275 MB figure — no `time -v` on this host). HERA r=5/"128as": 1.262s,
+   293,332 KB peak. Rubato-128L: 1.791s, 610,808 KB peak. Explicitly
+   labelled toy-scale (LogN=10) proxy, not compared to the full-scale
+   73.7s/9.54GB HERA figure recorded elsewhere in this file.
+3. **Multiplicative-depth argument.** [CONFIRMED-SOURCE, read directly from
+   `fv_hera.go`/`fv_rubato.go`]: HERA's cube S-box is 2 sequential
+   mults/round × 5 rounds = 10 multiplicative levels; Rubato's
+   Feistel-square is 1 mult/round (squarings of different state elements
+   are mutually independent, hence parallel, not sequential) × 2 rounds = 2
+   levels. ~5x fewer sequential ciphertext multiplications for Rubato — the
+   actual design rationale for its noise mechanism. Documented in
+   `tools/transciphering/README.md`'s new "Multiplicative depth" section
+   and `artifacts/hera_vs_rubato_transciphering.json`'s
+   `multiplicative_depth_argument`, both stating plainly that the
+   client-side numbers above don't test this, and that confirming it
+   requires the still-blocked `vendor_server` integration.
+
 ## Session Update (2026-08-06e) — Provenance audit of 2,933 µs: found and corrected a mislabeled backup, confirmed same host/governor (COMPLETE)
 
 User asked me to trace `artifacts/e2e_latency_breakdown_PRIOR.json` and any
@@ -353,6 +730,25 @@ above; kept here, not deleted, per instruction.
 - Slide 5 checked for other round-count-dependent claims (none found beyond
   what was already fixed in the 2026-08-06 block below; slide 9's "four
   stages" is HalfBoot's own repair stages, unrelated to HERA round count)
+
+### Correction (recorded 2026-08-19) — this block's "15.8 ms" is not final; do not read it in isolation
+
+This block's table states 16-lane r=5 as **15.8 ms**
+(`hera_bench_lane16_r5.json`). That file was overwritten the same day by a
+Chrome-closed re-run recorded in the 2026-08-06d block above, which measured
+**17.5 ms** for the identical config and explains *why* the number moved
+(clock-floor noise under `powersave`, not a code change — see that block's
+"Chrome open vs Chrome closed" table). A downstream document
+(`docs/MEASUREMENT_PROVENANCE.md`) briefly misread these as two disagreeing
+figures for the same run rather than two sequential runs, one superseding
+the other; corrected there. **What was never fixed, and is not fixed by
+this note either: neither `hera_bench_lane1_r5.json`/`hera_bench_lane16_r5.json`
+(this block) nor their `_PRIOR_contended` siblings (2026-08-06d) were ever
+committed to git.** Both are absent from this repository's history and
+working tree as of 2026-08-19 — the 15.8 ms and 17.5 ms figures, and the
+~9.4x/~9.0x ratios built on them, are not independently reproducible from
+anything in this repo. See `docs/MEASUREMENT_PROVENANCE.md` rows 21a/21b
+for the full trace.
 
 ## Session Update (2026-08-06) — Progress deck v3: measured numbers folded in, round-count mismatch found (COMPLETE)
 

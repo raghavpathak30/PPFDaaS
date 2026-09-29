@@ -4485,6 +4485,47 @@ less-audited symmetric security assumption. The HERA algebraic cryptanalysis is
 ongoing research (as of 2026); this paper states this trade-off explicitly and
 pins parameters to the conservative post-analysis set.
 
+### §8.8.1 Rubato-128L benchmarking addendum (2026-08-19)
+
+The table above records the Phase 7.2 decision to reject Rubato outright;
+that decision and its reasoning **stand unchanged**. Separately, a specific
+Rubato variant — Rubato-128L — was later implemented and benchmarked
+(`tools/transciphering/cipher/rubato.go`) as a client-CPU/memory comparison
+point against HERA-16, not as a reversal of the rejection. This subsection
+states exactly what parameter set was implemented and whether it is covered
+by the Grassi et al. attack bound cited above.
+
+**Parameters as implemented, read directly from
+`tools/transciphering/cipher/rubato.go` (lines 78-86), which in turn cites
+`third_party/RtF-Transciphering/ckks_fv/fv_rubato.go:48-53`,
+`RubatoParams[RUBATO128L]` at the pinned checkout
+`105fc73115b56f1d6ff357029c7682b19a6d8510`:**
+
+| Parameter | Value |
+|---|---|
+| Block (state) size n | 64 |
+| Rounds r | 2 |
+| Plaintext modulus q | `0x1fc0001` (not a power of two; NTT-friendly prime) |
+| Gaussian noise std dev σ | 1.6356633496458739795537788457309656607510203877762320964302959 |
+| Output length | n−4 = 60 elements |
+
+**Bound coverage:** Grassi et al. (CRYPTO 2023, eprint 2023/822, §6.1/7.1,
+p.22) give a key-recovery attack with complexity below the claimed security
+level for five of the six Rubato family members, for ≥25% of modulus
+choices. For Rubato-128L specifically, the paper states the attack's bound
+**"cannot be established."** Read literally, that is a statement about which
+variants the published analysis covers, not an independent security proof
+for the excluded one.
+
+**This repo can only support the following claim: Rubato-128L as
+implemented above is NOT COVERED BY the Grassi et al. published bound.**
+That is a different claim from "Rubato-128L IS SECURE," and only the first
+is currently supported by sources available in this repo — no independent
+security re-derivation for this exact (n=64, r=2, q=0x1fc0001) parameter set
+has been performed here. **This is the single open blocker for this
+section's use in a paper's security argument** — see
+`docs/PAPER_HANDOFF.md`.
+
 ## §8.9 Bandwidth comparison
 
 From Phase 7 measurements (`tools/transciphering/results/`):

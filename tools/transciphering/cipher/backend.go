@@ -11,8 +11,15 @@
 //   - AEAD (AES-128-GCM) wraps every online ciphertext to defeat the additive
 //     malleability of stream ciphers. Nonces are monotonic per session.
 //
-// Cipher choice (§7.2): HERA-16, post-attack parameters.
-//   - Rubato: broken (Grassi et al. CRYPTO 2023, 5/6 family members).
+// Cipher choice (§7.2): HERA-16 and Rubato128L, both benchmarked.
+//   - Rubato: Grassi et al. (CRYPTO 2023, eprint 2023/822) give a key
+//     recovery attack with complexity below the claimed security level for
+//     five of the six Rubato variants (§6-7). For Rubato-128L specifically,
+//     the paper states the attack's bound "cannot be established" (p.22,
+//     §6.1/7.1) — i.e. Rubato-128L is NOT COVERED by this attack's
+//     established bound. That is not the same as proven secure; it is the
+//     basis for benchmarking Rubato-128L here rather than the other five
+//     variants.
 //   - Elisabeth-4: broken (Cosseron et al.).
 //   - HERA-16 (m=16, r=5, t=2^26): algebraic analysis found round-key
 //     collisions but current parameters remain secure. r=5 matches
@@ -37,10 +44,10 @@ type CipherBackend interface {
 	// Name returns the cipher identifier (e.g. "HERA-16").
 	Name() string
 
-	// KeySize returns the required key length in bytes.
+	// KeySize returns the required key length in Z_t elements.
 	KeySize() int
 
-	// NonceSize returns the required nonce length in bytes.
+	// NonceSize returns the required nonce length in Z_t elements.
 	NonceSize() int
 
 	// Modulus returns the plaintext modulus t (all operations are mod t).
@@ -48,19 +55,23 @@ type CipherBackend interface {
 
 	// Encrypt applies the stream cipher to plaintext, producing a
 	// ciphertext of identical length. Both slices must be over Z_t.
-	// Nonce must be NonceSize() bytes; key must be KeySize() bytes.
+	// Nonce must be NonceSize() elements; key must be KeySize() elements.
 	Encrypt(key, nonce, plaintext []uint64) ([]uint64, error)
 
 	// EvalKeyExpansion returns the per-round key schedule expanded from
-	// the key material. In the plaintext path this is a direct evaluation;
-	// in the HE path the key is an encrypted BFV ciphertext and the round
-	// keys are evaluated homomorphically.
+	// the key material, for block 0 of the given nonce (i.e. the same round
+	// keys Encrypt would use for the first block). In the plaintext path
+	// this is a direct evaluation; in the HE path the key is an encrypted
+	// BFV ciphertext and the round keys are evaluated homomorphically.
+	// nonce seeds the round-key derivation (both HERA and Rubato derive
+	// round keys from a SHAKE256-based XOF — see cipher/shakeprf.go) and
+	// must be NonceSize() elements.
 	//
 	// PENDING (RtF FV->CKKS path): the HE context parameter is nil in
 	// the plaintext benchmark; a non-nil value would carry the BFV
-	// evaluator once the KAIST ckks_fv scheme bridge is available.
+	// evaluator once vendor_server integration lands.
 	// See README.md "PENDING: RtF Scheme Bridge".
-	EvalKeyExpansion(key []uint64, heCtx interface{}) ([][]uint64, error)
+	EvalKeyExpansion(key, nonce []uint64, heCtx interface{}) ([][]uint64, error)
 
 	// OnlineCiphertextBytes returns the byte length of one online
 	// ciphertext for n uint64 plaintext elements (upload-size formula).
