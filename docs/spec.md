@@ -4471,8 +4471,8 @@ See `tools/transciphering/README.md §Cipher: HERA-16` for the full parameter ta
 
 | Cipher | Decision | Reason |
 |---|---|---|
-| HERA-16 (m=16, r=4, t=2^26) | **SELECTED** | Best-studied HHE cipher for CKKS-adjacent workflows; current parameters secure |
-| Rubato | NOT USED | Broken: Grassi et al. CRYPTO 2023 — 5/6 family members below claimed security for ≥25% of modulus choices |
+| HERA-16 (m=16, r=5, t=2^26; `tools/transciphering/cipher/hera.go:57`) | **SELECTED** | Best-studied HHE cipher for CKKS-adjacent workflows; current parameters secure |
+| Rubato (family) | NOT SELECTED; Rubato-128L implemented as a benchmarking comparison point only (§8.8.1) | Grassi et al. CRYPTO 2023 — 5/6 family members below claimed security for ≥25% of modulus choices. Rubato-128L is not covered by the Grassi et al. (CRYPTO 2023) attack bound (§8.8.1) |
 | Elisabeth-4 | NOT USED | Broken (Cosseron et al.) |
 | Kreyvium/Trivium | Not considered | Bit-oriented, poor fit for large-modulus CKKS inputs |
 
@@ -4487,11 +4487,14 @@ pins parameters to the conservative post-analysis set.
 
 ### §8.8.1 Rubato-128L benchmarking addendum (2026-08-19)
 
-The table above records the Phase 7.2 decision to reject Rubato outright;
-that decision and its reasoning **stand unchanged**. Separately, a specific
-Rubato variant — Rubato-128L — was later implemented and benchmarked
-(`tools/transciphering/cipher/rubato.go`) as a client-CPU/memory comparison
-point against HERA-16, not as a reversal of the rejection. This subsection
+Phase 7.2 originally set the whole Rubato family aside on the basis of
+Grassi et al. That attack applies to five of the six family members; it does
+not establish a bound for Rubato-128L. Rubato-128L was later implemented
+(`tools/transciphering/cipher/rubato.go`), passes its known-answer test
+against the pinned `ckks_fv` reference (`TestRubatoKnownAnswer`) and the
+toy-scale HE correctness harness, and is benchmarked as a comparison point
+against HERA-16. HERA-16 remains the selected cipher; this is not a reversal
+of that selection. This subsection
 states exactly what parameter set was implemented and whether it is covered
 by the Grassi et al. attack bound cited above.
 

@@ -3,6 +3,47 @@
 Full dated session-by-session history lives in `docs/SESSION_LOG.md`. This
 file holds only what's true right now.
 
+## 2026-09-29 — `rubato-swap` merged into `main`; README corrections
+
+`origin/rubato-swap` (21 commits) merged into `main` with `--no-ff`; no
+conflicts (`main` was a direct ancestor). README corrections made on merged
+`main`:
+- HERA 9.54 GB / 73.7 s run now stated as `RtFHeraParams[3]` "128as",
+  LogSlots=4 (16 slots): full ring, near-empty payload, not full occupancy.
+- Rubato-128L (n=64, r=2) stated as implemented, passing KAT + toy
+  correctness; security framed only as "not covered by the Grassi et al.
+  (CRYPTO 2023) attack bound". `docs/spec.md` §8.8 table and §8.8.1 intro
+  aligned (Rubato row no longer "Broken / NOT USED"; HERA row r=4 → r=5).
+- Every HERA-vs-Rubato memory comparison (toy ~2.08x RSS, full-scale
+  peaks, ~4.07x StC delta) marked INVALID (LogSlots 4 vs 9 toy, 4 vs 15
+  full scale). Valid results kept: same-session client per-element/
+  per-record encrypt, identical upload size, ~249x/~16x upload reduction;
+  depth 10 vs 2 labelled as read from source, not measured.
+- Blocker framing replaced: RAM is again a blocker at real slot occupancy,
+  and integration is also still missing. Removed "not hardware" / "cloud run
+  no longer a prerequisite".
+- Rounded figures replaced by the exact artifact values; bare `cipher/...`
+  paths fixed in README, `docs/PAPER_HANDOFF.md`,
+  `docs/MEASUREMENT_PROVENANCE.md`; the two docs added to the README layout.
+
+Open items (current):
+1. `vendor_server` BFV eval stub-only (`inference_service_160.cpp:263-287`);
+   all 36 `artifacts/hhe_breakeven.json` cells PENDING for
+   `online_transcipher_ms` / `repacking_ms`. No end-to-end HHE-vs-CKKS
+   latency verdict.
+2. RAM at real occupancy: Rubato-128L "128af" (LogSlots=15) OOM-killed on
+   the 15 GB host (13.28 GB VmHWM lower bound, true peak unknown); HERA at
+   LogSlots=15 untested.
+3. Next experiment: LogSlots-matched HERA `RtFHeraParams[2]` "128af" vs
+   Rubato "128af" (`docs/RUBATO_FULLSCALE_PLAN.md`).
+4. Batched-reduction correctness at 256-slot blocks; toy harness still runs
+   `2x+1`, not the fraud circuit.
+5. Degree-2 fallback still broken (negative-dimension `ValueError`).
+
+Note: the dated 2026-08-19 block below still lists the ~90 GB preflight
+gate as unsourced; that was since replaced by a labelled ~48 GB estimate
+(commit `6244ecb`, `scripts/cloud_transcipher_bench/run_benchmark.sh`).
+
 ## Current status per arm
 
 ### CKKS core

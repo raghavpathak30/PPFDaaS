@@ -25,7 +25,7 @@ two absolute numbers from different days happen to match.
 | 2 | HERA-16 per-record encrypt, 16 lanes | ms | 16 transactions batched, 4096 features total | mean 1.6412 / median 1.534 | same artifact, `by_lane_count[3]`; identical to `results/hera_bench_lane16_r_fixed2.json` | 2026-08-18 | powersave | AC | 2.16/2.45/2.00 |
 | 3 | Rubato-128L per-record encrypt, 1 lane | ms | 1 transaction, 256 features, full `Encrypt()` incl. AEAD + noise | mean 0.0792 / median 0.058 | same artifact, `by_lane_count[0]` | 2026-08-18 | powersave | AC | 2.16/2.45/2.00 |
 | 4 | Rubato-128L per-record encrypt, 16 lanes | ms | 16 transactions batched | mean 1.1504 / median 0.975 | same artifact, `by_lane_count[3]` | 2026-08-18 | powersave | AC | 2.16/2.45/2.00 |
-| 5 | HERA-16 per-keystream-element | ns | 1 of 16 elements yielded by one HERA block, algebra only (dedicated micro-benchmark, no AEAD) | 251.75 | same artifact → `per_element_normalization`; `cipher/block_bench_test.go: BenchmarkHERABlock` | 2026-08-18T11:28:27Z | powersave | AC | 1.19–1.53 |
+| 5 | HERA-16 per-keystream-element | ns | 1 of 16 elements yielded by one HERA block, algebra only (dedicated micro-benchmark, no AEAD) | 251.75 | same artifact → `per_element_normalization`; `tools/transciphering/cipher/block_bench_test.go: BenchmarkHERABlock` | 2026-08-18T11:28:27Z | powersave | AC | 1.19–1.53 |
 | 6 | Rubato-128L per-keystream-element, with noise | ns | 1 of 60 elements yielded by one Rubato block, incl. the Gaussian noise draw (what `Encrypt()` actually runs) | 193.73 | same artifact; `BenchmarkRubatoBlock` | 2026-08-18T11:28:27Z | powersave | AC | 1.19–1.53 |
 | 7 | Rubato-128L per-keystream-element, no noise | ns | same, noise step skipped (algebra only) | 143.82 | same artifact; `BenchmarkRubatoBlockNoNoise` | 2026-08-18T11:28:27Z | powersave | AC | 1.19–1.53 |
 | 8 | HERA-16 per-record, 1 lane (PRIOR, wrong sampler) | ms | same as #1, but Rubato's noise was Box-Muller/`crypto.rand`, not the reference AGN sampler — kept for the record, not citable | mean 0.0821 / median 0.075 | `artifacts/hera_vs_rubato_transciphering_PRIOR_wrong_noise_sampler.json` | 2026-08-17 | powersave | AC | 2.53/2.40/2.13 |
@@ -45,7 +45,7 @@ two absolute numbers from different days happen to match.
 | 21b | HERA-16 r=5 per-record, 1/16 lanes, Chrome-closed re-run — same caveat as 21a | µs | same measurement, re-run same day with Chrome closed | HERA: mean 1,096.3 (1 lane) / 17,517.5 (16 lanes). Plain-CKKS 160-bit: mean 9,842.7 / median 10,465.9. Ratio 8.98× (mean) / 9.11× (median) | HERA side: `docs/SESSION_LOG.md` 2026-08-06d prose table only — cites `hera_bench_lane1_r5.json` / `hera_bench_lane16_r5.json` (the same filenames, overwritten in place), **also never committed**, absent from git history and the working tree. Plain-CKKS side: `artifacts/e2e_latency_breakdown.json` (committed, confirmed: `mean_us=9842.67`, `median_us=10465.85`) | artifact timestamp 2026-08-05T19:41:27Z UTC | powersave | same battery-UNVERIFIED caveat as 21a | 0.97 (1-min only) |
 | 22 | Rubato-128L full LogN=16 attempt — **DID NOT COMPLETE** | KB (VmHWM) | measured lower bound only, reached during setup, before `rubato.Crypt` was ever called | SIGKILL between checkpoints `slot_to_coeff_mat` and the next (unlabelled) one; last complete checkpoint `vm_hwm_kb=13,279,632` (13.28 GB / 12.66 GiB) | `artifacts/rubato_crypt_rss_full_run.jsonl` (6 complete lines + 1 truncated), `logs/rubato_full_run.log` (2 lines, no PASS/FAIL) | 2026-08-19T19:58:33+05:30 | powersave (inherited from session default, not re-confirmed for this specific run) | not recorded | not recorded |
 | 23 | HERA vs Rubato setup-phase RSS, side by side | KB (VmHWM) | same checkpoint labels, both from a real full-LogN=16 run, **different param sets — see the LogSlots finding below before comparing these** | see table under "Per-phase setup comparison" below | `artifacts/hera_crypt_rss_full_run.jsonl`, `artifacts/rubato_crypt_rss_full_run.jsonl` | 2026-08-04 / 2026-08-19 | powersave | AC (HERA), not recorded (Rubato) | not recorded |
-| 24 | `heap_alloc_kb` exceeding `vm_hwm_kb` at the same checkpoint | KB | open, unconfirmed anomaly, reproduced independently in two different runs of two different ciphers | HERA: 14.4 GB heap_alloc vs 9.0 GB VmHWM at `round_0` (2026-08-04, unconstrained pre-fix trace). Rubato: 20,257,175 KB heap_alloc vs 13,279,632 KB VmHWM at `slot_to_coeff_mat` (2026-08-19) | `artifacts/hera_crypt_rss_checkpoints.jsonl`; `artifacts/rubato_crypt_rss_full_run.jsonl`; source-checked against `cipher/rss_checkpoint_test.go` (both fields correctly read/labelled, not a code bug) | 2026-08-04 / 2026-08-19 | n/a | n/a | n/a |
+| 24 | `heap_alloc_kb` exceeding `vm_hwm_kb` at the same checkpoint | KB | open, unconfirmed anomaly, reproduced independently in two different runs of two different ciphers | HERA: 14.4 GB heap_alloc vs 9.0 GB VmHWM at `round_0` (2026-08-04, unconstrained pre-fix trace). Rubato: 20,257,175 KB heap_alloc vs 13,279,632 KB VmHWM at `slot_to_coeff_mat` (2026-08-19) | `artifacts/hera_crypt_rss_checkpoints.jsonl`; `artifacts/rubato_crypt_rss_full_run.jsonl`; source-checked against `tools/transciphering/cipher/rss_checkpoint_test.go` (both fields correctly read/labelled, not a code bug) | 2026-08-04 / 2026-08-19 | n/a | n/a | n/a |
 | 25 | Row 17's HERA harness — was unreproducible, now fixed | n/a | the `*_test.go` that produced row 17 and row 22 lived in `third_party/RtF-Transciphering/ckks_fv/`, gitignored, deleted after each run | n/a | superseded by `tools/transciphering/cipher/rss_checkpoint_test.go`, committed 2026-08-19 | 2026-08-19 | n/a | n/a | n/a |
 
 ## PRIMARY FINDING (2026-08-19): the HERA-vs-Rubato full-scale comparison ran at mismatched LogSlots — 4 vs 15, not a cipher difference
@@ -56,8 +56,8 @@ a footnote to the Rubato-128L OOM below — read this section first.
 
 ### Block-size hypothesis: considered and rejected
 
-`RubatoBlockSize = 64` (`cipher/rubato.go:78`) vs `HeraStateSize = 16`
-(`cipher/hera.go:56`) is a real 4x difference, and the observed StC-precompute
+`RubatoBlockSize = 64` (`tools/transciphering/cipher/rubato.go:78`) vs `HeraStateSize = 16`
+(`tools/transciphering/cipher/hera.go:56`) is a real 4x difference, and the observed StC-precompute
 memory ratio between the two full-scale runs (12.4 GB Rubato / 3.05 GB HERA
 ≈ 4.07x — see the per-phase table below) is numerically close enough that it
 looked like the explanation. It is not. Read directly from source
@@ -331,7 +331,7 @@ own `correction_note` and in `PROJECT_STATE.md`.
 candidate causes, in order of plausibility, are:
 
 1. **Different code**, not just different session: rows 20/21a/21b predate
-   the 2026-08-18 rewrite of `cipher/hera.go`'s round-key derivation (fixed
+   the 2026-08-18 rewrite of `tools/transciphering/cipher/hera.go`'s round-key derivation (fixed
    `heraRC` table + AES-128-ECB PRF → SHAKE256-XOF), which is a structurally
    different keystream computation, not a parameter tweak.
 2. **Different measurement session** entirely (2026-07-21 / 2026-08-05 vs.

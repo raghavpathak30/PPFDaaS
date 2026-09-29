@@ -19,13 +19,18 @@ whatever you were working from, or pull it directly, rather than taking any
 figure in this handoff on trust.** Every number below carries a path you can
 open yourself.
 
+**Update 2026-09-29:** `rubato-swap` has since been merged into `main`
+(`--no-ff` merge commit "Merge rubato-swap: Rubato-128L arm, scope
+corrections, provenance fixes"), so `main` now carries this work. The
+paragraph above describes the state as of 2026-08-19.
+
 ## What is measured
 
 | Claim | Artifact / source |
 |---|---|
-| HERA-16 and Rubato-128L both pass a known-answer test against `ckks_fv`'s own reference keystream | `cipher/hera_test.go`, `cipher/rubato_test.go`; re-run 2026-08-19, both PASS |
+| HERA-16 and Rubato-128L both pass a known-answer test against `ckks_fv`'s own reference keystream | `tools/transciphering/cipher/hera_test.go`, `tools/transciphering/cipher/rubato_test.go`; re-run 2026-08-19, both PASS |
 | Both pass a toy-scale (LogN 16→10) full-pipeline HE correctness harness | `toy_correctness/testdata/ckks_fv_patch/*.go`; re-run 2026-08-19: HERA r=5 max abs err 2.49e-5, Rubato-128L 3.40e-5, both vs. 5e-2 tolerance |
-| Rubato-128L's Gaussian noise sampler statistically matches its target σ | `cipher/rubato_test.go: TestRubatoNoiseStatistics`; re-run 2026-08-19: stddev 1.1–1.3% off target across two runs |
+| Rubato-128L's Gaussian noise sampler statistically matches its target σ | `tools/transciphering/cipher/rubato_test.go: TestRubatoNoiseStatistics`; re-run 2026-08-19: stddev 1.1–1.3% off target across two runs |
 | Per-record client-encrypt cost, HERA vs. Rubato, 1/4/8/16-lane sweep | `artifacts/hera_vs_rubato_transciphering.json`; Rubato is 0.48–0.82x HERA's cost (cheaper) |
 | Per-keystream-element cost, both ciphers, with and without noise | same artifact, `per_element_normalization`; ns-scale, reconciles arithmetically with the ms-scale per-record figures to within a 1.2–2.5x band (AEAD/quantization/per-call overhead) — see `docs/MEASUREMENT_PROVENANCE.md`'s "Do the per-element and per-record figures reconcile?" section for the full arithmetic |
 | Upload size identical between ciphers at every lane count; ~16–249x smaller than plain CKKS | same artifact; `artifacts/bandwidth_ladder.json` |
@@ -33,7 +38,7 @@ open yourself.
 | Full-scale (LogN=16) HERA peak VmHWM 9.54 GB, 73.7s wall — **at `RtFHeraParams[3]` "128as", LogSlots=4 (16 of 32,768 slots), not full occupancy** | `artifacts/hera_crypt_rss_full_run.jsonl`, `artifacts/hera_crypt_rss_checkpoints.jsonl` |
 | Rubato-128L's first full-scale (LogN=16) attempt did NOT complete — SIGKILLed during setup, measured lower bound 13.28 GB VmHWM, at `RtFRubatoParams[0]` "128af", LogSlots=15 (full 32,768-slot occupancy) | `artifacts/rubato_crypt_rss_full_run.jsonl` (partial trace, committed), `logs/rubato_full_run.log` |
 | Multiplicative depth: HERA-16 = 10 sequential levels, Rubato-128L = 2 | read directly from `ckks_fv/fv_hera.go` and `fv_rubato.go`; CONFIRMED-SOURCE, not measured — see `artifacts/hera_vs_rubato_transciphering.json`'s `multiplicative_depth_argument` |
-| Exact Rubato-128L parameters as implemented | `cipher/rubato.go` lines 78-86: n=64, r=2, q=0x1fc0001, σ≈1.6357 |
+| Exact Rubato-128L parameters as implemented | `tools/transciphering/cipher/rubato.go` lines 78-86: n=64, r=2, q=0x1fc0001, σ≈1.6357 |
 
 Every one of these is reproducible: `third_party/fetch_rtf.sh` then
 `go test ./cipher/...` and the toy-correctness harnesses under
@@ -134,7 +139,7 @@ This is the one item in this handoff that is not a measurement gap but an
 repo state and a citable security paragraph for Rubato-128L:
 
 - The parameter set actually implemented and benchmarked is Rubato-128L:
-  **n=64, r=2, q=0x1fc0001, σ≈1.6357** (`cipher/rubato.go` lines 78-86).
+  **n=64, r=2, q=0x1fc0001, σ≈1.6357** (`tools/transciphering/cipher/rubato.go` lines 78-86).
 - Grassi et al. (CRYPTO 2023, eprint 2023/822, §6.1/7.1, p.22) give a
   key-recovery attack breaking five of the six Rubato family members for
   ≥25% of modulus choices. For Rubato-128L specifically, the paper states
@@ -153,4 +158,4 @@ requires either an independent cryptanalytic argument (out of scope for
 this repo as it stands) or reframing Rubato-128L strictly as a performance/
 feasibility comparison point against HERA-16, not as a proposed production
 cipher choice — which is exactly how `PPFDaaS_REMEDIATION_PLAN.md` §7.2 and
-`cipher/rubato.go`'s own package doc already frame it.
+`tools/transciphering/cipher/rubato.go`'s own package doc already frame it.
