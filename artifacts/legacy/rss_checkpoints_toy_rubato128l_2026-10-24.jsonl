@@ -1,0 +1,12 @@
+{"gogc_env":"","gomemlimit_env":"","heap_alloc_kb":541575,"label":"crypt_entry","timestamp":"2026-10-24T16:46:56.969793688+05:30","total_alloc_kb":1201594,"vm_hwm_kb":488420}
+{"gogc_env":"","gomemlimit_env":"","heap_alloc_kb":554110,"label":"init","timestamp":"2026-10-24T16:46:56.980217275+05:30","total_alloc_kb":1214128,"vm_hwm_kb":502044}
+{"gogc_env":"","gomemlimit_env":"","heap_alloc_kb":571079,"label":"round_0","timestamp":"2026-10-24T16:46:57.007960596+05:30","total_alloc_kb":1231098,"vm_hwm_kb":519388}
+{"gogc_env":"","gomemlimit_env":"","heap_alloc_kb":596530,"label":"round_1_linlayer","timestamp":"2026-10-24T16:46:57.040762938+05:30","total_alloc_kb":1256549,"vm_hwm_kb":545428}
+{"gogc_env":"","gomemlimit_env":"","heap_alloc_kb":614549,"label":"round_1_feistel","timestamp":"2026-10-24T16:46:57.264877565+05:30","total_alloc_kb":1274568,"vm_hwm_kb":566352}
+{"gogc_env":"","gomemlimit_env":"","heap_alloc_kb":614555,"label":"round_1_modswitch","timestamp":"2026-10-24T16:46:57.266039142+05:30","total_alloc_kb":1274574,"vm_hwm_kb":566356}
+{"gogc_env":"","gomemlimit_env":"","heap_alloc_kb":367500,"label":"round_1","timestamp":"2026-10-24T16:46:57.29605584+05:30","total_alloc_kb":1291556,"vm_hwm_kb":570152}
+{"gogc_env":"","gomemlimit_env":"","heap_alloc_kb":392951,"label":"round_2_linlayer","timestamp":"2026-10-24T16:46:57.322429961+05:30","total_alloc_kb":1317007,"vm_hwm_kb":570216}
+{"gogc_env":"","gomemlimit_env":"","heap_alloc_kb":410970,"label":"round_2_feistel","timestamp":"2026-10-24T16:46:57.557149315+05:30","total_alloc_kb":1335026,"vm_hwm_kb":570228}
+{"gogc_env":"","gomemlimit_env":"","heap_alloc_kb":410976,"label":"round_2_modswitch","timestamp":"2026-10-24T16:46:57.561949922+05:30","total_alloc_kb":1335032,"vm_hwm_kb":570228}
+{"gogc_env":"","gomemlimit_env":"","heap_alloc_kb":433464,"label":"round_2_finlinlayer","timestamp":"2026-10-24T16:46:57.589248765+05:30","total_alloc_kb":1357520,"vm_hwm_kb":570244}
+{"gogc_env":"","gomemlimit_env":"","heap_alloc_kb":447925,"label":"round_2","timestamp":"2026-10-24T16:46:57.610312464+05:30","total_alloc_kb":1371981,"vm_hwm_kb":570248}
