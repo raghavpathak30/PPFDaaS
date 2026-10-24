@@ -89,6 +89,87 @@ type ParamState struct {
 	ModCount  int `json:"mod_count"`
 	Rounds    int `json:"rounds"`
 	BlockSize int `json:"block_size"`
+
+	// The setup choices the upstream benchmark makes per param set, recorded so
+	// a trace shows which configuration it ran (an index-2 HERA run once used
+	// the sparse 128as setup; see TestRSSSetupMatchesUpstream).
+	FullCoeffs        bool `json:"full_coeffs"`         // SetLogFVSlots(LogN) vs SetLogFVSlots(LogSlots)
+	NumNonces         int  `json:"num_nonces"`          // N if FullCoeffs else Slots
+	ExtraRotationKeys bool `json:"extra_rotation_keys"` // the Slots/2 rotation key, sparse packing only
+	OutputBlockSize   int  `json:"output_block_size"`   // keystream outputs per block
+	Radix             int  `json:"radix"`
+}
+
+// rssSetup is the per-param-set configuration of the upstream benchmarks
+// (third_party/RtF-Transciphering/ckks_fv/RtF_bench_test.go: benchmarkRtFHera
+// :84, benchmarkRtFRubato :311). It is derived from the param set rather than
+// branched on by hand: FullCoeffs is LogSlots == LogN-1 of the UNMODIFIED
+// entry, and everything else follows from it exactly as in the benchmarks.
+type rssSetup struct {
+	FullCoeffs        bool
+	Radix             int
+	NumNonces         int
+	ExtraRotationKeys bool
+	OutputBlockSize   int
+}
+
+// heraBenchRadix: the radix argument of BenchmarkRtFHera128f/128s/128af/128as
+// (RtF_bench_test.go:35-52): 2, 0, 2, 2.
+var heraBenchRadix = []int{2, 0, 2, 2}
+
+// heraRSSSetup resolves the setup for RtFHeraParams[index]. hb is the entry
+// after any LogN override, used only for the nonce count.
+func heraRSSSetup(index int, hb *ckks_fv.HalfBootParameters) rssSetup {
+	orig := ckks_fv.RtFHeraParams[index]
+	full := orig.LogSlots == orig.LogN-1
+	n := 1 << uint(hb.LogSlots)
+	if full {
+		n = 1 << uint(hb.LogN)
+	}
+	return rssSetup{FullCoeffs: full, Radix: heraBenchRadix[index], NumNonces: n,
+		ExtraRotationKeys: !full, OutputBlockSize: 16}
+}
+
+// rubatoRSSSetup: benchmarkRtFRubato always uses full coefficients, radix 2,
+// N nonces, no extra rotation key; 60 of the 64 block ciphertexts are outputs
+// (fv_rubato.go Crypt: finAddRoundKey(blocksize-4)).
+func rubatoRSSSetup(hb *ckks_fv.HalfBootParameters, blocksize int) rssSetup {
+	return rssSetup{FullCoeffs: true, Radix: 2, NumNonces: 1 << uint(hb.LogN),
+		ExtraRotationKeys: false, OutputBlockSize: blocksize - 4}
+}
+
+func (s rssSetup) paramState(ps ParamState) ParamState {
+	ps.FullCoeffs, ps.NumNonces, ps.ExtraRotationKeys = s.FullCoeffs, s.NumNonces, s.ExtraRotationKeys
+	ps.OutputBlockSize, ps.Radix = s.OutputBlockSize, s.Radix
+	return ps
+}
+
+// RtF parameter-set names by index, in rtf_params.go order. "f"/"s" = full-
+// coefficient (LogSlots = LogN-1) vs sparse packing; a leading "a" = arcsine
+// SineEval (ArcSineDeg != 0). TestRSSParamSetNamesMatchIndex derives the name
+// from the actual parameters and fails if this table and the index disagree.
+var (
+	heraParamSetNames   = []string{"128f", "128s", "128af", "128as"}
+	rubatoParamSetNames = []string{"128af"}
+)
+
+func paramSetName(names []string, kind string, index int) string {
+	if index < 0 || index >= len(names) {
+		panic(fmt.Sprintf("%s param index %d out of range (have %d sets)", kind, index, len(names)))
+	}
+	return names[index]
+}
+
+// derivedParamSetName reads the name off the parameters themselves, not the index.
+func derivedParamSetName(hb *ckks_fv.HalfBootParameters) string {
+	name := "128"
+	if hb.ArcSineDeg != 0 {
+		name += "a"
+	}
+	if hb.LogSlots == hb.LogN-1 {
+		return name + "f"
+	}
+	return name + "s"
 }
 
 func readVmHWMKB() int64 {
@@ -202,24 +283,29 @@ func TestRSSCheckpointHeraCrypt(t *testing.T) {
 	}
 
 	const numRound = 5
-	const radix = 2
 	paramIndex := envIntOrDefault("RSS_HERA_PARAM_INDEX", 3)
 
 	hb := ckks_fv.RtFHeraParams[paramIndex].Copy()
+	fullCoeffs := hb.LogSlots == hb.LogN-1 // decided on the unmodified entry
 	if logN := envIntOrDefault("RSS_LOGN_OVERRIDE", 0); logN != 0 {
 		hb.LogN = logN
+		if fullCoeffs {
+			hb.LogSlots = logN - 1 // full-coefficient sets need LogSlots = LogN-1; Params() panics otherwise
+		}
 	}
+	setup := heraRSSSetup(paramIndex, hb)
+	radix := setup.Radix
 
-	ps := ParamState{
+	ps := setup.paramState(ParamState{
 		Cipher:     "hera",
-		ParamSet:   "128as", // this checkout's only HeraModDownParams128-compatible "as" entry at index 3
+		ParamSet:   paramSetName(heraParamSetNames, "hera", paramIndex),
 		ParamIndex: paramIndex,
 		LogN:       hb.LogN,
 		LogSlots:   hb.LogSlots,
 		ModCount:   modCountOf(hb),
 		Rounds:     numRound,
 		BlockSize:  16,
-	}
+	})
 	w := newCheckpointWriter(t, ps)
 	w.checkpoint("entry")
 
@@ -227,7 +313,11 @@ func TestRSSCheckpointHeraCrypt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("params: %v", err)
 	}
-	params.SetLogFVSlots(params.LogSlots()) // fullCoeffs=false, matches "128as" sparse packing
+	if setup.FullCoeffs { // benchmarkRtFHera: fullCoeffs ? LogFVSlots=LogN : LogFVSlots=LogSlots
+		params.SetLogFVSlots(params.LogN())
+	} else {
+		params.SetLogFVSlots(params.LogSlots())
+	}
 	w.checkpoint("params_ready")
 
 	heraModDown := ckks_fv.HeraModDownParams128[paramIndex].CipherModDown
@@ -249,7 +339,9 @@ func TestRSSCheckpointHeraCrypt(t *testing.T) {
 
 	rotationsStC := kgen.GenRotationIndexesForSlotsToCoeffsMat(pDcds)
 	rotations := append(rotationsHalfBoot, rotationsStC...)
-	rotations = append(rotations, params.Slots()/2)
+	if setup.ExtraRotationKeys { // benchmarkRtFHera: only if !fullCoeffs
+		rotations = append(rotations, params.Slots()/2)
+	}
 	rotkeys := kgen.GenRotationKeysForRotations(rotations, true, sk)
 	w.checkpoint("rotation_keys")
 
@@ -263,8 +355,11 @@ func TestRSSCheckpointHeraCrypt(t *testing.T) {
 	for i := 0; i < 16; i++ {
 		key[i] = uint64(i + 1)
 	}
-	nonces := make([][]byte, params.Slots())
-	for i := 0; i < params.Slots(); i++ {
+	if setup.NumNonces != map[bool]int{true: params.N(), false: params.Slots()}[setup.FullCoeffs] {
+		t.Fatalf("setup.NumNonces=%d disagrees with params (N=%d, Slots=%d, full=%v)", setup.NumNonces, params.N(), params.Slots(), setup.FullCoeffs)
+	}
+	nonces := make([][]byte, setup.NumNonces)
+	for i := 0; i < setup.NumNonces; i++ {
 		nonces[i] = make([]byte, 64)
 		if _, err := rand.Read(nonces[i]); err != nil {
 			t.Fatalf("rand.Read: %v", err)
@@ -300,7 +395,6 @@ func TestRSSCheckpointRubatoCrypt(t *testing.T) {
 	}
 
 	const rubatoParam = ckks_fv.RUBATO128L
-	const radix = 2
 	paramIndex := envIntOrDefault("RSS_RUBATO_PARAM_INDEX", 0)
 
 	hb := ckks_fv.RtFRubatoParams[paramIndex].Copy()
@@ -308,22 +402,24 @@ func TestRSSCheckpointRubatoCrypt(t *testing.T) {
 		hb.LogN = logN
 		hb.LogSlots = logN - 1 // "128af" is full-coefficient packing; Params() panics otherwise
 	}
+	setup := rubatoRSSSetup(hb, ckks_fv.RubatoParams[rubatoParam].Blocksize)
+	radix := setup.Radix
 
 	blocksize := ckks_fv.RubatoParams[rubatoParam].Blocksize
 	numRound := ckks_fv.RubatoParams[rubatoParam].NumRound
 	plainModulus := ckks_fv.RubatoParams[rubatoParam].PlainModulus
 	rubatoModDown := ckks_fv.RubatoModDownParams[rubatoParam].CipherModDown
 
-	ps := ParamState{
+	ps := setup.paramState(ParamState{
 		Cipher:     "rubato",
-		ParamSet:   "128af",
+		ParamSet:   paramSetName(rubatoParamSetNames, "rubato", paramIndex),
 		ParamIndex: paramIndex,
 		LogN:       hb.LogN,
 		LogSlots:   hb.LogSlots,
 		ModCount:   modCountOf(hb),
 		Rounds:     numRound,
 		BlockSize:  blocksize,
-	}
+	})
 	w := newCheckpointWriter(t, ps)
 	w.checkpoint("entry")
 
@@ -364,8 +460,8 @@ func TestRSSCheckpointRubatoCrypt(t *testing.T) {
 	for i := 0; i < blocksize; i++ {
 		key[i] = uint64(i + 1)
 	}
-	nonces := make([][]byte, params.N())
-	for i := 0; i < params.N(); i++ {
+	nonces := make([][]byte, setup.NumNonces)
+	for i := 0; i < setup.NumNonces; i++ {
 		nonces[i] = make([]byte, 8)
 		if _, err := rand.Read(nonces[i]); err != nil {
 			t.Fatalf("rand.Read (nonce): %v", err)
@@ -391,4 +487,73 @@ func TestRSSCheckpointRubatoCrypt(t *testing.T) {
 
 	w.checkpoint("exit")
 	t.Logf("Rubato-128L rubato.Crypt completed, blocksize=%d numRound=%d LogN=%d LogSlots=%d", blocksize, numRound, params.LogN(), params.LogSlots())
+}
+
+// TestRSSParamSetNamesMatchIndex guards the param_set label written into every
+// checkpoint record: for each index, the name in the table must equal the name
+// derived from the real RtFHeraParams / RtFRubatoParams entry (arcsine or not,
+// full or sparse packing). Regression: HERA index 2 ("128af", LogSlots 15) was
+// once recorded as "128as" because the label was a hardcoded string.
+func TestRSSParamSetNamesMatchIndex(t *testing.T) {
+	if len(heraParamSetNames) != len(ckks_fv.RtFHeraParams) {
+		t.Fatalf("heraParamSetNames has %d entries, RtFHeraParams has %d", len(heraParamSetNames), len(ckks_fv.RtFHeraParams))
+	}
+	if len(rubatoParamSetNames) != len(ckks_fv.RtFRubatoParams) {
+		t.Fatalf("rubatoParamSetNames has %d entries, RtFRubatoParams has %d", len(rubatoParamSetNames), len(ckks_fv.RtFRubatoParams))
+	}
+	for i, hb := range ckks_fv.RtFHeraParams {
+		if got, want := paramSetName(heraParamSetNames, "hera", i), derivedParamSetName(hb); got != want {
+			t.Errorf("HERA index %d: labelled %q but parameters (ArcSineDeg=%d, LogN=%d, LogSlots=%d) are %q", i, got, hb.ArcSineDeg, hb.LogN, hb.LogSlots, want)
+		}
+	}
+	for i, hb := range ckks_fv.RtFRubatoParams {
+		if got, want := paramSetName(rubatoParamSetNames, "rubato", i), derivedParamSetName(hb); got != want {
+			t.Errorf("Rubato index %d: labelled %q but parameters (ArcSineDeg=%d, LogN=%d, LogSlots=%d) are %q", i, got, hb.ArcSineDeg, hb.LogN, hb.LogSlots, want)
+		}
+	}
+}
+
+// TestRSSSetupMatchesUpstream fails if a RSS test would run a param set with
+// the wrong packing. Expected values are read off the upstream benchmarks
+// (RtF_bench_test.go): BenchmarkRtFHera128f -> (idx 0, radix 2, fullCoeffs),
+// 128s -> (1, radix 0, sparse), 128af -> (2, radix 2, fullCoeffs), 128as ->
+// (3, radix 2, sparse); fullCoeffs => SetLogFVSlots(LogN), N nonces, no
+// Slots/2 rotation key; sparse => SetLogFVSlots(LogSlots), Slots nonces, plus
+// that rotation key. benchmarkRtFRubato: always full, radix 2, N nonces.
+// Regression: HERA index 2 was run with the sparse (128as) settings.
+func TestRSSSetupMatchesUpstream(t *testing.T) {
+	type want struct {
+		full  bool
+		radix int
+	}
+	heraWant := []want{{true, 2}, {false, 0}, {true, 2}, {false, 2}}
+	for i, w := range heraWant {
+		hb := ckks_fv.RtFHeraParams[i]
+		got := heraRSSSetup(i, hb)
+		wantNonces := 1 << uint(hb.LogSlots)
+		if w.full {
+			wantNonces = 1 << uint(hb.LogN)
+		}
+		if got.FullCoeffs != w.full || got.Radix != w.radix || got.NumNonces != wantNonces ||
+			got.ExtraRotationKeys != !w.full || got.OutputBlockSize != 16 {
+			t.Errorf("HERA index %d (%s): got %+v, want full=%v radix=%d nonces=%d extraRot=%v outputs=16",
+				i, heraParamSetNames[i], got, w.full, w.radix, wantNonces, !w.full)
+		}
+	}
+	// Index 2 explicitly: the case that was wrong.
+	if g := heraRSSSetup(2, ckks_fv.RtFHeraParams[2]); !g.FullCoeffs || g.NumNonces != 65536 || g.ExtraRotationKeys {
+		t.Errorf("HERA index 2 (128af) must be full-coefficient, 65536 nonces, no extra rotation key; got %+v", g)
+	}
+	// Under a LogN override the full sets keep LogSlots = LogN-1 and N tracks LogN.
+	ov := ckks_fv.RtFHeraParams[2].Copy()
+	ov.LogN, ov.LogSlots = 12, 11
+	if g := heraRSSSetup(2, ov); !g.FullCoeffs || g.NumNonces != 4096 || g.ExtraRotationKeys {
+		t.Errorf("HERA index 2 at LogN=12: got %+v, want full, 4096 nonces, no extra rotation key", g)
+	}
+	rb := ckks_fv.RtFRubatoParams[0]
+	blocksize := ckks_fv.RubatoParams[ckks_fv.RUBATO128L].Blocksize
+	if g := rubatoRSSSetup(rb, blocksize); !g.FullCoeffs || g.Radix != 2 || g.NumNonces != 1<<uint(rb.LogN) ||
+		g.ExtraRotationKeys || g.OutputBlockSize != 60 {
+		t.Errorf("Rubato-128L: got %+v, want full, radix 2, N nonces, no extra rotation key, 60 outputs", g)
+	}
 }

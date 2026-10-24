@@ -394,9 +394,9 @@ Commit first: `GIT_SHA` is only meaningful for a clean tree.
 scripts/dgx/run_transcipher.sh <job> <target> [args]
 ```
 
-Targets: `kat`, `toy`, `toy-repeat`, `bench`, `rss`, `test <cipher|ckks_fv> <filter>`.
+Targets: `kat`, `toy`, `toy-repeat`, `bench`, `rss`, `e2e`, `test <cipher|ckks_fv> <filter>`.
 Env: `CIPHER`, `LOGN`, `PARAM_INDEX`, `RSS_CHECKPOINT_RUN`, `REPS`, `CPUS`,
-`NODE`, `MEM_LIMIT`, `IMAGE`, `RESULTS_ROOT`, `WAIT`, `FORCE` (documented at the
+`NODE`, `MEM_LIMIT`, `GOGC`, `GOMEMLIMIT`, `IMAGE`, `RESULTS_ROOT`, `WAIT`, `FORCE` (documented at the
 top of the script). Examples:
 
 ```
@@ -425,6 +425,98 @@ harness's output: `<cipher>_bench.json` (bench), `rss_checkpoints.jsonl`
 (rss), `toy_error_repetition.json` (toy-repeat). Absolute latencies on a shared
 host are subject to the house rule (same-session paired ratios only); the
 state files are there so a number can be judged against the load it ran under.
+
+### Full-scale online path (`e2e`)
+
+`scripts/dgx/run_transcipher.sh <job> e2e` runs the server-side online path for
+**one batch**, per stage, at 128af (LogN 16, LogSlots 15) for HERA
+(`RtFHeraParams[2]`, r=5, radix 2) then Rubato-128L (`RtFRubatoParams[0]`, r=2,
+radix 2); `CIPHER=hera|rubato` runs one. Output: `e2e_<cipher>.json`.
+Env: `LOGN` (default 16), `REPS` (per-stage repetitions, default 5),
+`PARAM_INDEX` (HERA only: 2 = 128af default, 3 = 128as), `GOGC`, `GOMEMLIMIT`,
+`MEM_LIMIT`. Size the container first: setup alone is on the order of the RSS
+traces in `docs/MEASUREMENT_PROVENANCE.md`, and those were taken at LogSlots 4.
+
+Why a new harness rather than the upstream benchmarks. `BenchmarkRtFHera128af`
+and `BenchmarkRtFRubato128L` (`ckks_fv/RtF_bench_test.go:45`, `:80`; both run
+`benchmarkRtFHera` / `benchmarkRtFRubato`, 128af, full coefficients, radix 2)
+time, with `b.N = 1` and one sample each:
+
+| Sub-benchmark | What it times |
+|---|---|
+| `Offline Latency` | `Crypt` + `SlotsToCoeffs` + `ModSwitchMany` for keystream ct 0 |
+| `Offline Throughput` | StC + ModSwitch for the remaining ciphertexts |
+| `Online Lat x1` | `Sub` + `TransformToNTT` + `SetScale` + `HalfBoot` for ct 0 |
+
+Everything before the first `b.Run` (key generation, rotation/relin keys,
+`NewHalfBootstrapper`, StC matrices, client-side plaintext and keystream,
+`EncKey`) is **not timed**. Not covered: the 2x+1 CKKS circuit, repetitions,
+JSON output, VmHWM/total_alloc, and any separation of the FV->CKKS step from
+`HalfBoot` (it is inside it; there is no separate FV->CKKS call). So
+`ckks_fv/rtf_e2e_test.go` (staged by `fetch_rtf.sh` from
+`toy_correctness/testdata/ckks_fv_patch/`) reuses the benchmarks' setup and calls,
+times setup stages apart from the five per-batch stages (`keystream_crypt`,
+`stc_modswitch`, `sub_ntt_setscale`, `halfboot`, `ckks_eval_2x_plus_1`), repeats each
+`REPS` times (median/min/max, plus every run), and checks the result by decrypting
+(untimed; fails above 5e-2).
+
+What the numbers mean. The four per-output stages are **measured for output 0
+only** and **extrapolated** to the whole block; `keystream_crypt` is measured for
+the whole block. With `block_outputs` read from source (HERA: `len(Crypt result)` =
+16; Rubato-128L: `Blocksize-4` = 60 of the 64 ciphertexts `Crypt` returns, since
+`finAddRoundKey(blocksize-4)` only finishes those) and stage medians:
+
+```
+per_batch_online_ms       = keystream_crypt + block_outputs * (stc_modswitch + sub_ntt_setscale
+                                                              + halfboot + ckks_eval_2x_plus_1)
+elements_per_batch        = block_outputs * values_per_input_ct     (65,536 at 128af full scale)
+per_element_online_us     = per_batch_online_ms * 1000 / elements_per_batch
+per_transaction_online_ms = per_element_online_us / 1000 * FEATURES_PER_TXN   (env, default 256)
+transactions_per_batch    = elements_per_batch / FEATURES_PER_TXN
+```
+
+The raw stage timings stay in the JSON. `per_batch_client_dependent_ms` and
+`per_transaction_client_dependent_ms` apply the same formula without
+`keystream_crypt` and `stc_modswitch`, which depend only on the nonces and can run
+before the upload. The model is sequential: no parallelism across outputs.
+
+Do outputs 1..k cost the same as output 0? They should: every output ciphertext
+leaves `Crypt` at the same level and scale, and StC, Sub, HalfBoot and the CKKS
+circuit then act on identical shapes. That is checked, not assumed:
+`last_output_check` (on by default, `E2E_CHECK_LAST_OUTPUT=0` to skip) re-runs the
+four stages once on the last output and records its error and the ratio to output
+0's median. It is a single run per stage, so small stages (StC, eval) are noisy;
+HalfBoot dominates and was within 3% at toy scale. Not checked: effects of running
+all 16 / 60 outputs back to back (memory pressure, GC, cache), which the
+extrapolation cannot see. Also recorded: `vm_hwm_kb_end`, `total_alloc_kb_end`,
+`gogc_env`, `gomemlimit_env`, `param_state`; `vm_hwm_kb_after` per stage is the
+process peak so far, not a per-stage peak. The VmHWM of a real 16- or 60-output run
+will be higher than recorded here, since only outputs 0 and the last are held.
+
+### Are the RSS tests faithful to upstream?
+
+`rss` (`cipher/rss_checkpoint_test.go`) takes its setup from the param set via
+`heraRSSSetup` / `rubatoRSSSetup`, mirroring `benchmarkRtFHera` / `benchmarkRtFRubato`
+(`RtF_bench_test.go:84`, `:311`): full-coefficient sets (HERA 128f/128af, Rubato)
+use `SetLogFVSlots(LogN)`, N nonces and no extra `Slots/2` rotation key; sparse sets
+(128s/128as) use `SetLogFVSlots(LogSlots)`, Slots nonces and that extra key. The
+choice is recorded in every trace's `param_state` (`full_coeffs`, `num_nonces`,
+`extra_rotation_keys`, `output_block_size`, `radix`), and `TestRSSSetupMatchesUpstream`
+fails if HERA index 2 would run with sparse settings. Before 2026-10-24 the HERA test
+ran every index with the sparse settings, so any earlier index-2 trace is not a
+128af run (the committed `artifacts/hera_crypt_rss_*.jsonl` are index 3 and unaffected).
+
+Still different from the benchmarks, for Rubato-128L and HERA alike: the RSS tests
+stop after `Crypt` and do not build what the benchmark builds around it, so their
+VmHWM is a lower bound for the benchmark's:
+- no `HalfBootstrapper` (`NewHalfBootstrapper`, which holds its own matrices);
+- no client side: no CKKS encoder/decryptor, no random data, no plaintext keystream
+  for the N nonces, no `outputsize` ring-T plaintexts / FV plaintexts;
+- no StC + ModSwitch, `Sub`/NTT, or `HalfBoot` afterwards.
+Setup that does match: parameters, `SetPlainModulus` (Rubato), `SetLogFVSlots`,
+sparse key pair, rotation indexes and keys, relin key, `NewMFVEvaluator`, key,
+nonces (8 bytes) and counter for Rubato, `NewMFV{Hera,Rubato}`, `EncKey`, `Crypt`.
+Use the `e2e` target, which builds all of it, for a benchmark-comparable peak.
 
 ### RSS checkpoint lines
 
