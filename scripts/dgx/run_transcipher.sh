@@ -40,6 +40,7 @@ JOB="$1"; TARGET="$2"; shift 2
 
 IMAGE="${IMAGE:-ppfdaas-transcipher-bench:latest}"
 NODE="${NODE:-0}"
+CIPHER_GIVEN="${CIPHER:-}"   # e2e distinguishes "unset" (both ciphers) from an explicit choice
 CIPHER="${CIPHER:-hera}"
 RESULTS_ROOT="${RESULTS_ROOT:-${HOME}/results}"
 RDIR="${RESULTS_ROOT}/${JOB}"
@@ -74,7 +75,7 @@ case "${TARGET}" in
     [[ -n "${REPS:-}" ]] && CMD+=("-test.count=${REPS}")
     CMD+=(-test.timeout 12h "$@") ;;
   e2e)  # full server-side online path for one batch: Crypt, StC, Sub, HalfBoot, 2x+1
-    add_env E2E_CIPHERS "${CIPHER:-hera rubato}"        # CIPHER=hera|rubato for one; default both
+    add_env E2E_CIPHERS "${CIPHER_GIVEN:-hera rubato}"        # CIPHER=hera|rubato for one; default both
     [[ -n "${LOGN:-}" ]] && add_env E2E_LOGN "${LOGN}"    # default 16 (LogSlots 15 for 128af)
     [[ -n "${PARAM_INDEX:-}" ]] && add_env E2E_HERA_PARAM_INDEX "${PARAM_INDEX}"
     [[ -n "${REPS:-}" ]] && add_env E2E_REPS "${REPS}"    # per-stage repetitions, default 5
