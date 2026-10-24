@@ -394,9 +394,9 @@ Commit first: `GIT_SHA` is only meaningful for a clean tree.
 scripts/dgx/run_transcipher.sh <job> <target> [args]
 ```
 
-Targets: `kat`, `toy`, `toy-repeat`, `bench`, `rss`, `test <cipher|ckks_fv> <filter>`.
+Targets: `kat`, `toy`, `toy-repeat`, `bench`, `rss`, `e2e`, `test <cipher|ckks_fv> <filter>`.
 Env: `CIPHER`, `LOGN`, `PARAM_INDEX`, `RSS_CHECKPOINT_RUN`, `REPS`, `CPUS`,
-`NODE`, `MEM_LIMIT`, `IMAGE`, `RESULTS_ROOT`, `WAIT`, `FORCE` (documented at the
+`NODE`, `MEM_LIMIT`, `GOGC`, `GOMEMLIMIT`, `IMAGE`, `RESULTS_ROOT`, `WAIT`, `FORCE` (documented at the
 top of the script). Examples:
 
 ```
@@ -425,6 +425,56 @@ harness's output: `<cipher>_bench.json` (bench), `rss_checkpoints.jsonl`
 (rss), `toy_error_repetition.json` (toy-repeat). Absolute latencies on a shared
 host are subject to the house rule (same-session paired ratios only); the
 state files are there so a number can be judged against the load it ran under.
+
+### Full-scale online path (`e2e`)
+
+`scripts/dgx/run_transcipher.sh <job> e2e` runs the server-side online path for
+**one batch**, per stage, at 128af (LogN 16, LogSlots 15) for HERA
+(`RtFHeraParams[2]`, r=5, radix 2) then Rubato-128L (`RtFRubatoParams[0]`, r=2,
+radix 2); `CIPHER=hera|rubato` runs one. Output: `e2e_<cipher>.json`.
+Env: `LOGN` (default 16), `REPS` (per-stage repetitions, default 5),
+`PARAM_INDEX` (HERA only: 2 = 128af default, 3 = 128as), `GOGC`, `GOMEMLIMIT`,
+`MEM_LIMIT`. Size the container first: setup alone is on the order of the RSS
+traces in `docs/MEASUREMENT_PROVENANCE.md`, and those were taken at LogSlots 4.
+
+Why a new harness rather than the upstream benchmarks. `BenchmarkRtFHera128af`
+and `BenchmarkRtFRubato128L` (`ckks_fv/RtF_bench_test.go:45`, `:80`; both run
+`benchmarkRtFHera` / `benchmarkRtFRubato`, 128af, full coefficients, radix 2)
+time, with `b.N = 1` and one sample each:
+
+| Sub-benchmark | What it times |
+|---|---|
+| `Offline Latency` | `Crypt` + `SlotsToCoeffs` + `ModSwitchMany` for keystream ct 0 |
+| `Offline Throughput` | StC + ModSwitch for the remaining ciphertexts |
+| `Online Lat x1` | `Sub` + `TransformToNTT` + `SetScale` + `HalfBoot` for ct 0 |
+
+Everything before the first `b.Run` (key generation, rotation/relin keys,
+`NewHalfBootstrapper`, StC matrices, client-side plaintext and keystream,
+`EncKey`) is **not timed**. Not covered: the 2x+1 CKKS circuit, repetitions,
+JSON output, VmHWM/total_alloc, and any separation of the FV->CKKS step from
+`HalfBoot` (it is inside it; there is no separate FV->CKKS call). So
+`ckks_fv/rtf_e2e_test.go` (staged by `fetch_rtf.sh` from
+`toy_correctness/testdata/ckks_fv_patch/`) reuses the benchmarks' setup and calls,
+times setup stages apart from the five per-batch stages (`keystream_crypt`,
+`stc_modswitch`, `sub_ntt_setscale`, `halfboot`, `ckks_eval_2x_plus_1`), repeats each
+`REPS` times (median/min/max, plus every run), and checks the result by decrypting
+(untimed; fails above 5e-2).
+
+What the numbers mean:
+- `per_transaction_online_ms` = sum of stage medians / `slots` (2^15 at 128af).
+  `per_transaction_client_dependent_ms` uses only the three stages that need the
+  client's ciphertext; `keystream_crypt` and `stc_modswitch` depend on the nonces
+  alone and can run before the upload.
+- Only output element 0 of the cipher is processed (1 of 16 for HERA, 1 of 60 for
+  Rubato), as in the upstream benchmarks. One input ciphertext holds N = 65,536
+  coefficient values, which `HalfBoot(…, false)` returns as two CKKS ciphertexts of
+  `slots` each; the 2x+1 stage runs on both. Whether "a transaction" is one slot or
+  one coefficient is a definition the JSON states in `per_transaction_note`; divide by
+  `n_coeffs_per_input_ct` for the latter. Processing all 16 / 60 output elements
+  multiplies the Crypt/StC/Sub/HalfBoot work accordingly and is not done here.
+- `vm_hwm_kb_end`, `total_alloc_kb_end`, `gogc_env`, `gomemlimit_env`, `param_state`
+  are recorded; `vm_hwm_kb_after` per stage is the process peak so far, not a
+  per-stage peak.
 
 ### RSS checkpoint lines
 

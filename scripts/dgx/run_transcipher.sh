@@ -12,6 +12,8 @@
 #             toy-repeat               toy harness N times per cipher
 #             bench                    client plaintext benchmark (args -> bench flags)
 #             rss                      committed RSS checkpoint test for $CIPHER
+#             e2e                      full-scale server online path, one batch, per stage
+#                                      (CIPHER unset = hera then rubato at 128af; writes e2e_<cipher>.json)
 #             test <cipher|ckks_fv> <filter> [flags]   any test binary + filter
 #
 # Environment (all optional):
@@ -20,7 +22,8 @@
 #   PARAM_INDEX=<n>           -> RSS_HERA_PARAM_INDEX / RSS_RUBATO_PARAM_INDEX (by $CIPHER)
 #   RSS_CHECKPOINT_RUN=0|1    default 1 for `rss`, unset otherwise
 #   REPS=<n>                  toy-repeat: runs per cipher (TOY_REPEAT_N, default 30);
-#                             bench: -rounds; rss/test: -test.count
+#                             bench: -rounds; rss/test: -test.count; e2e: repetitions per stage (default 5)
+#   GOGC, GOMEMLIMIT          passed into the container when set
 #   CPUS=<list>               --cpuset-cpus (default: all CPUs of NUMA node $NODE)
 #   NODE=<n>                  NUMA node for default CPUS and --cpuset-mems (default 0)
 #   MEM_LIMIT=<e.g. 64g>      optional --memory (recommended on a shared host)
@@ -51,6 +54,8 @@ NCPUS="$(echo "${CPUS}" | awk -F, '{n=0; for(i=1;i<=NF;i++){split($i,a,"-"); n+=
 # ---- build the container command + env --------------------------------------
 ENVARGS=(-e "GOMAXPROCS=${NCPUS}")
 add_env() { ENVARGS+=(-e "$1=$2"); }
+[[ -n "${GOGC:-}" ]] && add_env GOGC "${GOGC}"
+[[ -n "${GOMEMLIMIT:-}" ]] && add_env GOMEMLIMIT "${GOMEMLIMIT}"
 CMD=()
 case "${TARGET}" in
   kat|toy) CMD=("${TARGET}") ;;
@@ -67,7 +72,13 @@ case "${TARGET}" in
     add_env RSS_CHECKPOINT_RUN "${RSS_CHECKPOINT_RUN:-1}"
     [[ -n "${LOGN:-}" ]] && add_env RSS_LOGN_OVERRIDE "${LOGN}"
     [[ -n "${REPS:-}" ]] && CMD+=("-test.count=${REPS}")
-    CMD+=(-test.timeout 30m "$@") ;;
+    CMD+=(-test.timeout 12h "$@") ;;
+  e2e)  # full server-side online path for one batch: Crypt, StC, Sub, HalfBoot, 2x+1
+    add_env E2E_CIPHERS "${CIPHER:-hera rubato}"        # CIPHER=hera|rubato for one; default both
+    [[ -n "${LOGN:-}" ]] && add_env E2E_LOGN "${LOGN}"    # default 16 (LogSlots 15 for 128af)
+    [[ -n "${PARAM_INDEX:-}" ]] && add_env E2E_HERA_PARAM_INDEX "${PARAM_INDEX}"
+    [[ -n "${REPS:-}" ]] && add_env E2E_REPS "${REPS}"    # per-stage repetitions, default 5
+    CMD=(e2e) ;;
   test)
     [[ $# -ge 2 ]] || usage
     CMD=(test "$1" "$2"); shift 2

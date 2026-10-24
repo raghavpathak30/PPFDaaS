@@ -91,6 +91,34 @@ type ParamState struct {
 	BlockSize int `json:"block_size"`
 }
 
+// RtF parameter-set names by index, in rtf_params.go order. "f"/"s" = full-
+// coefficient (LogSlots = LogN-1) vs sparse packing; a leading "a" = arcsine
+// SineEval (ArcSineDeg != 0). TestRSSParamSetNamesMatchIndex derives the name
+// from the actual parameters and fails if this table and the index disagree.
+var (
+	heraParamSetNames   = []string{"128f", "128s", "128af", "128as"}
+	rubatoParamSetNames = []string{"128af"}
+)
+
+func paramSetName(names []string, kind string, index int) string {
+	if index < 0 || index >= len(names) {
+		panic(fmt.Sprintf("%s param index %d out of range (have %d sets)", kind, index, len(names)))
+	}
+	return names[index]
+}
+
+// derivedParamSetName reads the name off the parameters themselves, not the index.
+func derivedParamSetName(hb *ckks_fv.HalfBootParameters) string {
+	name := "128"
+	if hb.ArcSineDeg != 0 {
+		name += "a"
+	}
+	if hb.LogSlots == hb.LogN-1 {
+		return name + "f"
+	}
+	return name + "s"
+}
+
 func readVmHWMKB() int64 {
 	f, err := os.Open("/proc/self/status")
 	if err != nil {
@@ -212,7 +240,7 @@ func TestRSSCheckpointHeraCrypt(t *testing.T) {
 
 	ps := ParamState{
 		Cipher:     "hera",
-		ParamSet:   "128as", // this checkout's only HeraModDownParams128-compatible "as" entry at index 3
+		ParamSet:   paramSetName(heraParamSetNames, "hera", paramIndex),
 		ParamIndex: paramIndex,
 		LogN:       hb.LogN,
 		LogSlots:   hb.LogSlots,
@@ -316,7 +344,7 @@ func TestRSSCheckpointRubatoCrypt(t *testing.T) {
 
 	ps := ParamState{
 		Cipher:     "rubato",
-		ParamSet:   "128af",
+		ParamSet:   paramSetName(rubatoParamSetNames, "rubato", paramIndex),
 		ParamIndex: paramIndex,
 		LogN:       hb.LogN,
 		LogSlots:   hb.LogSlots,
@@ -391,4 +419,28 @@ func TestRSSCheckpointRubatoCrypt(t *testing.T) {
 
 	w.checkpoint("exit")
 	t.Logf("Rubato-128L rubato.Crypt completed, blocksize=%d numRound=%d LogN=%d LogSlots=%d", blocksize, numRound, params.LogN(), params.LogSlots())
+}
+
+// TestRSSParamSetNamesMatchIndex guards the param_set label written into every
+// checkpoint record: for each index, the name in the table must equal the name
+// derived from the real RtFHeraParams / RtFRubatoParams entry (arcsine or not,
+// full or sparse packing). Regression: HERA index 2 ("128af", LogSlots 15) was
+// once recorded as "128as" because the label was a hardcoded string.
+func TestRSSParamSetNamesMatchIndex(t *testing.T) {
+	if len(heraParamSetNames) != len(ckks_fv.RtFHeraParams) {
+		t.Fatalf("heraParamSetNames has %d entries, RtFHeraParams has %d", len(heraParamSetNames), len(ckks_fv.RtFHeraParams))
+	}
+	if len(rubatoParamSetNames) != len(ckks_fv.RtFRubatoParams) {
+		t.Fatalf("rubatoParamSetNames has %d entries, RtFRubatoParams has %d", len(rubatoParamSetNames), len(ckks_fv.RtFRubatoParams))
+	}
+	for i, hb := range ckks_fv.RtFHeraParams {
+		if got, want := paramSetName(heraParamSetNames, "hera", i), derivedParamSetName(hb); got != want {
+			t.Errorf("HERA index %d: labelled %q but parameters (ArcSineDeg=%d, LogN=%d, LogSlots=%d) are %q", i, got, hb.ArcSineDeg, hb.LogN, hb.LogSlots, want)
+		}
+	}
+	for i, hb := range ckks_fv.RtFRubatoParams {
+		if got, want := paramSetName(rubatoParamSetNames, "rubato", i), derivedParamSetName(hb); got != want {
+			t.Errorf("Rubato index %d: labelled %q but parameters (ArcSineDeg=%d, LogN=%d, LogSlots=%d) are %q", i, got, hb.ArcSineDeg, hb.LogN, hb.LogSlots, want)
+		}
+	}
 }
