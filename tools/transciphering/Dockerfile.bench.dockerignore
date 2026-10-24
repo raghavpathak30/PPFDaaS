@@ -1,0 +1,17 @@
+# Build context filter for Dockerfile.bench (BuildKit reads
+# <Dockerfile>.dockerignore). Allow-list: only what the build reads.
+*
+!third_party/fetch_rtf.sh
+!third_party/patches
+!tools/transciphering
+
+# Inside tools/transciphering: no local results, no editor/build debris.
+tools/transciphering/results
+**/.venv
+**/data
+**/artifacts
+**/build
+**/*.test
+**/__pycache__
+# The checkout is fetched fresh inside the image, never copied from the host.
+**/RtF-Transciphering

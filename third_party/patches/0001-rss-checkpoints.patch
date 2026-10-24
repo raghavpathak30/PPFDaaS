@@ -80,10 +80,10 @@ index 1055d73..6bd3f11 100644
  
 diff --git a/ckks_fv/rss_checkpoint.go b/ckks_fv/rss_checkpoint.go
 new file mode 100644
-index 0000000..277cff1
+index 0000000..0c0ed10
 --- /dev/null
 +++ b/ckks_fv/rss_checkpoint.go
-@@ -0,0 +1,90 @@
+@@ -0,0 +1,91 @@
 +package ckks_fv
 +
 +// RSS checkpoint instrumentation (PPFDaaS patch 0001-rss-checkpoints.patch).
@@ -149,6 +149,7 @@ index 0000000..277cff1
 +	runtime.ReadMemStats(&ms)
 +
 +	rec := map[string]interface{}{
++		"source":         "ckks_fv_internal",
 +		"label":          label,
 +		"timestamp":      time.Now().Format(time.RFC3339Nano),
 +		"vm_hwm_kb":      readVmHWMKB(),

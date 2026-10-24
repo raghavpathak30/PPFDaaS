@@ -53,7 +53,7 @@ does not apply to this checkout as of this pinned SHA and this Go version.
 
 | Patch | sha256 | What it does |
 |---|---|---|
-| `0001-rss-checkpoints.patch` | `2c53a76d3569c37adc43b838e47d0f8e6d0540ea5b3afd7b19f9d538df405ba1` | Adds `ckks_fv/rss_checkpoint.go` and 12 `checkpointRSS(...)` calls each in `mfvRubato.Crypt` (`fv_rubato.go`) and `mfvHera.Crypt` (`fv_hera.go`): `crypt_entry`, `init`, `round_0`, per-round `_linlayer` / `_feistel` (Rubato) or `_cube` (HERA) / `_modswitch` / `round_<r>`, final `_finlinlayer`, `round_<N>`. `checkpointRSS` returns immediately unless `RSS_CHECKPOINT_RUN=1`; output path is `$RSS_CHECKPOINT_PATH`, default `/results/rss_checkpoints.jsonl`. |
+| `0001-rss-checkpoints.patch` | `e7aa4d974aefd7e009d629844538a7367f0b50124b82b96f7b82ddafbd9eb8c1` | Adds `ckks_fv/rss_checkpoint.go` and 12 `checkpointRSS(...)` calls each in `mfvRubato.Crypt` (`fv_rubato.go`) and `mfvHera.Crypt` (`fv_hera.go`): `crypt_entry`, `init`, `round_0`, per-round `_linlayer` / `_feistel` (Rubato) or `_cube` (HERA) / `_modswitch` / `round_<r>`, final `_finlinlayer`, `round_<N>`. Each JSON line carries `"source":"ckks_fv_internal"` (the committed Go test's lines have none, so they can be told apart; revised 2026-10-24, earlier sha 2c53a76d…). `checkpointRSS` returns immediately unless `RSS_CHECKPOINT_RUN=1`; output path is `$RSS_CHECKPOINT_PATH`, default `/results/rss_checkpoints.jsonl`. |
 
 Verified 2026-10-24 against a fresh clone in a temporary directory: patch
 applies cleanly to 105fc73; `go vet` and `go test ./...` for
