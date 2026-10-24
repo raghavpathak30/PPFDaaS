@@ -1,0 +1,177 @@
+diff --git a/ckks_fv/fv_hera.go b/ckks_fv/fv_hera.go
+index 13eac37..2467bcf 100644
+--- a/ckks_fv/fv_hera.go
++++ b/ckks_fv/fv_hera.go
+@@ -241,23 +241,35 @@ func (hera *mfvHera) Crypt(nonce [][]byte, kCt []*Ciphertext, heraModDown []int)
+ 		panic(errorString)
+ 	}
+ 
++	checkpointRSS("crypt_entry")
+ 	for st := 0; st < 16; st++ {
+ 		hera.mkCt[st] = kCt[st].CopyNew().Ciphertext()
+ 	}
+ 	hera.init(nonce)
++	checkpointRSS("init")
+ 
+ 	hera.addRoundKey(0, false)
++	checkpointRSS("round_0")
+ 	for r := 1; r < hera.numRound; r++ {
+ 		hera.linLayer()
++		checkpointRSS(fmt.Sprintf("round_%d_linlayer", r))
+ 		hera.cube()
++		checkpointRSS(fmt.Sprintf("round_%d_cube", r))
+ 		hera.modSwitch(heraModDown[r])
++		checkpointRSS(fmt.Sprintf("round_%d_modswitch", r))
+ 		hera.addRoundKey(r, false)
++		checkpointRSS(fmt.Sprintf("round_%d", r))
+ 	}
+ 	hera.linLayer()
++	checkpointRSS(fmt.Sprintf("round_%d_linlayer", hera.numRound))
+ 	hera.cube()
++	checkpointRSS(fmt.Sprintf("round_%d_cube", hera.numRound))
+ 	hera.modSwitch(heraModDown[hera.numRound])
++	checkpointRSS(fmt.Sprintf("round_%d_modswitch", hera.numRound))
+ 	hera.linLayer()
++	checkpointRSS(fmt.Sprintf("round_%d_finlinlayer", hera.numRound))
+ 	hera.addRoundKey(hera.numRound, true)
++	checkpointRSS(fmt.Sprintf("round_%d", hera.numRound))
+ 	return hera.stCt
+ }
+ 
+diff --git a/ckks_fv/fv_rubato.go b/ckks_fv/fv_rubato.go
+index 1055d73..6bd3f11 100644
+--- a/ckks_fv/fv_rubato.go
++++ b/ckks_fv/fv_rubato.go
+@@ -307,23 +307,35 @@ func (rubato *mfvRubato) Crypt(nonce [][]byte, counter []byte, kCt []*Ciphertext
+ 		panic(errorString)
+ 	}
+ 
++	checkpointRSS("crypt_entry")
+ 	for i := 0; i < rubato.blocksize; i++ {
+ 		rubato.mkCt[i] = kCt[i].CopyNew().Ciphertext()
+ 	}
+ 	rubato.init(nonce, counter)
++	checkpointRSS("init")
+ 
+ 	rubato.addRoundKey(0, false)
++	checkpointRSS("round_0")
+ 	for r := 1; r < rubato.numRound; r++ {
+ 		rubato.linLayer()
++		checkpointRSS(fmt.Sprintf("round_%d_linlayer", r))
+ 		rubato.feistel()
++		checkpointRSS(fmt.Sprintf("round_%d_feistel", r))
+ 		rubato.modSwitch(rubatoModDown[r])
++		checkpointRSS(fmt.Sprintf("round_%d_modswitch", r))
+ 		rubato.addRoundKey(r, false)
++		checkpointRSS(fmt.Sprintf("round_%d", r))
+ 	}
+ 	rubato.linLayer()
++	checkpointRSS(fmt.Sprintf("round_%d_linlayer", rubato.numRound))
+ 	rubato.feistel()
++	checkpointRSS(fmt.Sprintf("round_%d_feistel", rubato.numRound))
+ 	rubato.modSwitch(rubatoModDown[rubato.numRound])
++	checkpointRSS(fmt.Sprintf("round_%d_modswitch", rubato.numRound))
+ 	rubato.finLinLayer()
++	checkpointRSS(fmt.Sprintf("round_%d_finlinlayer", rubato.numRound))
+ 	rubato.finAddRoundKey(rubato.blocksize - 4)
++	checkpointRSS(fmt.Sprintf("round_%d", rubato.numRound))
+ 	return rubato.stCt
+ }
+ 
+diff --git a/ckks_fv/rss_checkpoint.go b/ckks_fv/rss_checkpoint.go
+new file mode 100644
+index 0000000..0c0ed10
+--- /dev/null
++++ b/ckks_fv/rss_checkpoint.go
+@@ -0,0 +1,91 @@
++package ckks_fv
++
++// RSS checkpoint instrumentation (PPFDaaS patch 0001-rss-checkpoints.patch).
++//
++// checkpointRSS is a no-op unless RSS_CHECKPOINT_RUN=1, so builds that carry
++// this patch but are timing a run are not perturbed (one bool test per call).
++// When enabled it appends one JSON line per call to $RSS_CHECKPOINT_PATH
++// (default /results/rss_checkpoints.jsonl, the container's results mount),
++// flushed immediately so a SIGKILL does not lose prior checkpoints.
++//
++// The same env var and path are honoured by the committed harness
++// tools/transciphering/cipher/rss_checkpoint_test.go; when both are active
++// they append to the same file and the lines interleave. Lines from this
++// file carry no param_state field.
++
++import (
++	"bufio"
++	"encoding/json"
++	"fmt"
++	"os"
++	"path/filepath"
++	"runtime"
++	"strconv"
++	"strings"
++	"time"
++)
++
++var rssCheckpointEnabled = os.Getenv("RSS_CHECKPOINT_RUN") == "1"
++
++var rssCheckpointPath = func() string {
++	if p := os.Getenv("RSS_CHECKPOINT_PATH"); p != "" {
++		return p
++	}
++	return "/results/rss_checkpoints.jsonl"
++}()
++
++func readVmHWMKB() int64 {
++	f, err := os.Open("/proc/self/status")
++	if err != nil {
++		return -1
++	}
++	defer f.Close()
++	sc := bufio.NewScanner(f)
++	for sc.Scan() {
++		line := sc.Text()
++		if strings.HasPrefix(line, "VmHWM:") {
++			fields := strings.Fields(line)
++			if len(fields) >= 2 {
++				if v, err := strconv.ParseInt(fields[1], 10, 64); err == nil {
++					return v
++				}
++			}
++		}
++	}
++	return -1
++}
++
++func checkpointRSS(label string) {
++	if !rssCheckpointEnabled {
++		return
++	}
++	var ms runtime.MemStats
++	runtime.ReadMemStats(&ms)
++
++	rec := map[string]interface{}{
++		"source":         "ckks_fv_internal",
++		"label":          label,
++		"timestamp":      time.Now().Format(time.RFC3339Nano),
++		"vm_hwm_kb":      readVmHWMKB(),
++		"heap_alloc_kb":  int64(ms.HeapAlloc / 1024),
++		"total_alloc_kb": int64(ms.TotalAlloc / 1024),
++		"gomemlimit_env": os.Getenv("GOMEMLIMIT"),
++		"gogc_env":       os.Getenv("GOGC"),
++	}
++	b, err := json.Marshal(rec)
++	if err != nil {
++		fmt.Fprintf(os.Stderr, "checkpointRSS: marshal error: %v\n", err)
++		return
++	}
++
++	_ = os.MkdirAll(filepath.Dir(rssCheckpointPath), 0755)
++	f, err := os.OpenFile(rssCheckpointPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
++	if err != nil {
++		fmt.Fprintf(os.Stderr, "checkpointRSS: open error: %v\n", err)
++		return
++	}
++	defer f.Close()
++	f.Write(b)
++	f.Write([]byte("\n"))
++	f.Sync()
++}

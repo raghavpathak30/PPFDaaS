@@ -66,7 +66,7 @@ Three CKKS variants coexist:
 
 ### Transciphering / HHE (Phase 7)
 Two symmetric ciphers are now implemented and benchmarked:
-`tools/transciphering/cipher/hera.go` (HERA-16, m=16, r=5, t=2^26) and
+`tools/transciphering/cipher/hera.go` (HERA-16, m=16, r=5, t=0x1fc0001 = 33292289; was wrongly 2^26 until 2026-10-24, see docs/SESSION_LOG.md) and
 `cipher/rubato.go` (Rubato-128L, n=64, r=2, q=0x1fc0001), selectable via
 `bench --cipher=hera|rubato`. Both derive round keys via a shared
 SHAKE256-XOF scheme (`cipher/shakeprf.go`) ported verbatim from the pinned

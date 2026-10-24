@@ -4277,7 +4277,7 @@ sensitive material and re-provisioned on symmetric key rotation (§8.5).
 
 ```
 Bank (online, per request):
-  1. Quantize feature vector f ∈ R^256 → z ∈ Z_t^256  (scale = 2^26, t = 2^26)
+  1. Quantize feature vector f ∈ R^256 → z ∈ Z_t^256  (t = 33292289 = 0x1fc0001, a 25-bit prime; the quantisation scale must be < t)
   2. Encrypt: ct_sym = HERA16.Encrypt(k, nonce, z)       (~1 KB)
   3. Wrap with AEAD: msg = AES-128-GCM( k[:16], nonce[:12], ct_sym )
   4. Upload (msg, nonce) to vendor
@@ -4471,7 +4471,7 @@ See `tools/transciphering/README.md §Cipher: HERA-16` for the full parameter ta
 
 | Cipher | Decision | Reason |
 |---|---|---|
-| HERA-16 (m=16, r=5, t=2^26; `tools/transciphering/cipher/hera.go:57`) | **SELECTED** | No attack known to us at these parameters as of 2026-09-29 (no source in this repo analyses HERA r=5 at the 128as/128af params) |
+| HERA-16 (m=16, r=5, t=0x1fc0001; `HeraModulus` in `tools/transciphering/cipher/hera.go`) | **SELECTED** | No attack known to us at these parameters as of 2026-09-29 (no source in this repo analyses HERA r=5 at the 128as/128af params) |
 | Rubato (family) | NOT SELECTED; Rubato-128L implemented as a benchmarking comparison point only (§8.8.1) | Grassi et al. CRYPTO 2023 — 5/6 family members below claimed security for ≥25% of modulus choices. Rubato-128L is not covered by the Grassi et al. (CRYPTO 2023) attack bound (§8.8.1) |
 | Elisabeth-4 | NOT USED | Broken (Cosseron et al.) |
 | Kreyvium/Trivium | Not considered | Bit-oriented, poor fit for large-modulus CKKS inputs |

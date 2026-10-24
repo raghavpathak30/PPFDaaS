@@ -1,0 +1,79 @@
+# syntax=docker/dockerfile:1
+#
+# Benchmark image for the transciphering arm (HERA-16 / Rubato-128L).
+# Build from the REPO ROOT (the context must contain third_party/fetch_rtf.sh,
+# third_party/patches/ and tools/transciphering/):
+#
+#   docker build -f tools/transciphering/Dockerfile.bench \
+#     --build-arg GIT_SHA="$(git rev-parse HEAD)" \
+#     --build-arg PATCH_SHA256="$(sha256sum third_party/patches/0001-rss-checkpoints.patch | cut -d' ' -f1)" \
+#     --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+#     -t ppfdaas-transcipher-bench .
+#
+# The build context is filtered by Dockerfile.bench.dockerignore (BuildKit
+# picks it up next to this file; it takes precedence over the repo-root
+# .dockerignore, which serves the other images).
+
+# golang:1.25-bookworm (go1.25.14), pinned by index digest, resolved 2026-10-24.
+FROM golang:1.25-bookworm@sha256:3b4a11519ad929d1e1d261a12cff056f0c85b735253d7d861346b9c6f8b36437 AS build
+
+ARG RTF_SHA=105fc73115b56f1d6ff357029c7682b19a6d8510
+ARG PATCH_SHA256=
+
+ENV CGO_ENABLED=0 GOFLAGS=-trimpath
+
+WORKDIR /src
+COPY third_party/fetch_rtf.sh third_party/fetch_rtf.sh
+COPY third_party/patches third_party/patches
+COPY tools/transciphering tools/transciphering
+
+# Clones the pinned RtF checkout (the script verifies the SHA, then applies
+# third_party/patches/*.patch in order and stages the toy harnesses). The
+# asserts make a mismatch with the build args fatal instead of silent.
+RUN bash third_party/fetch_rtf.sh \
+ && test "$(git -C third_party/RtF-Transciphering rev-parse HEAD)" = "${RTF_SHA}" \
+ && if [ -n "${PATCH_SHA256}" ]; then \
+      echo "${PATCH_SHA256}  third_party/patches/0001-rss-checkpoints.patch" | sha256sum -c -; \
+    fi \
+ && rm -rf third_party/RtF-Transciphering/.git
+
+WORKDIR /src/tools/transciphering
+RUN go vet ./... \
+ && mkdir -p /out \
+ && go test -c -ldflags='-s -w' -o /out/cipher.test ./cipher \
+ && go build -ldflags='-s -w' -o /out/bench ./bench \
+ && go build -ldflags='-s -w' -o /out/toyrep ./toyrep
+
+# The toy_correctness harnesses live in the patched ckks_fv package (staged
+# there by fetch_rtf.sh), so they compile into the ckks_fv test binary.
+WORKDIR /src/third_party/RtF-Transciphering/ckks_fv
+RUN go vet . \
+ && go test -c -ldflags='-s -w' -o /out/ckks_fv.test .
+
+# debian:bookworm-slim, pinned by index digest, resolved 2026-10-24.
+FROM debian:bookworm-slim@sha256:7ff6ba31527b9e336162fa061746c366c4b2032f4d2cff2078bea43f78efe3f8
+
+ARG GIT_SHA=unknown
+ARG RTF_SHA=105fc73115b56f1d6ff357029c7682b19a6d8510
+ARG PATCH_SHA256=unknown
+ARG BUILD_DATE=unknown
+
+LABEL org.opencontainers.image.title="ppfdaas-transcipher-bench" \
+      org.opencontainers.image.revision="${GIT_SHA}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      ppfdaas.repo_sha="${GIT_SHA}" \
+      ppfdaas.rtf_sha="${RTF_SHA}" \
+      ppfdaas.rtf_patch_sha256="${PATCH_SHA256}" \
+      ppfdaas.build_date="${BUILD_DATE}"
+
+# Binaries only. /results is world-writable so an arbitrary --user can write
+# to it when nothing is mounted; the wrapper mounts a host dir there.
+COPY --from=build /out/ /opt/bench/
+COPY tools/transciphering/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN mkdir /results && chmod 1777 /results
+
+ENV RESULTS_DIR=/results
+VOLUME /results
+WORKDIR /results
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["kat"]

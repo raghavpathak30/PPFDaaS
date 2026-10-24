@@ -161,6 +161,7 @@ func main() {
 	features := flag.Int("features", 256, "features per transaction")
 	lanes := flag.Int("lanes", 16, "transactions per batch (batch occupancy)")
 	rounds := flag.Int("rounds", 100, "benchmark rounds")
+	outDir := flag.String("outdir", "results", "directory the <cipher>_bench.json result is written to (the container passes /results)")
 	flag.Parse()
 
 	h, err := selectCipher(*cipherName)
@@ -250,10 +251,10 @@ func main() {
 	out, _ := json.MarshalIndent(res, "", "  ")
 	fmt.Println(string(out))
 
-	if err := os.MkdirAll("results", 0755); err != nil {
+	if err := os.MkdirAll(*outDir, 0755); err != nil {
 		log.Fatalf("mkdir results: %v", err)
 	}
-	path := filepath.Join("results", *cipherName+"_bench.json")
+	path := filepath.Join(*outDir, *cipherName+"_bench.json")
 	if err := os.WriteFile(path, out, 0644); err != nil {
 		log.Fatalf("write %s: %v", path, err)
 	}

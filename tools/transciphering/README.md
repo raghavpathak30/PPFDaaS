@@ -10,7 +10,7 @@ arm of PPFDaaS. This is NOT part of the TCB — it is a research-tool, like
 |---|---|
 | `cipher/backend.go` — CipherBackend interface | COMPLETE |
 | `cipher/shakeprf.go` — shared SHAKE256/`sampleZqx` round-key derivation (HERA + Rubato) | COMPLETE |
-| `cipher/hera.go` — HERA-16, m=16, r=5, t=2^26 | COMPLETE |
+| `cipher/hera.go` — HERA-16, m=16, r=5, t=0x1fc0001 | COMPLETE |
 | `cipher/rubato.go` — Rubato-128L, n=64, r=2, q=0x1fc0001 | COMPLETE |
 | `bench/main.go` — client CPU + upload-size benchmark, `--cipher=hera\|rubato` | COMPLETE |
 | `cipher/hera_test.go`, `cipher/rubato_test.go` — known-answer tests vs `ckks_fv`'s own reference | COMPLETE |
@@ -107,7 +107,7 @@ file/line citations of every constant and matrix.
 |---|---|---|
 | State size | 16 | 64 |
 | Rounds | 5 (matches `RtFHeraParams[3]` "128as") | 2 |
-| Plaintext modulus | 2^26 | 0x1fc0001 |
+| Plaintext modulus | 0x1fc0001 (= `RtFHeraParams[2,3].PlainModulus`) | 0x1fc0001 |
 | Round-key seed | SHAKE256(nonce) | SHAKE256(nonce‖counter) |
 | Nonlinear layer | cube S-box | sequential Feistel-square |
 | Client-side noise | none | Gaussian, σ≈1.6357 |
@@ -124,7 +124,7 @@ file/line citations of every constant and matrix.
   same as proven secure.
 - Elisabeth-4: broken (Cosseron et al.). Not used.
 - HERA: round-key collision weaknesses found; current parameters (m=16, r=5,
-  t=2^26) remain secure.
+  t=0x1fc0001) remain secure.
 
 ## Correctness gates (both required before any timing number is trusted)
 
@@ -343,6 +343,108 @@ this module (checked: neither `Dockerfile.client` nor `Dockerfile.server`
 runs any Go toolchain command, and no CI workflow exists at all) — so this
 prerequisite doesn't break an existing automated pipeline. It would matter
 if either is ever added later.
+
+## Running on the DGX
+
+Container for the transciphering arm on the shared RHEL 7.9 college server
+(Docker 26.1.4, x86_64, 2-socket / 2-NUMA-node host). Files:
+`tools/transciphering/Dockerfile.bench` (+ `Dockerfile.bench.dockerignore`,
+`docker-entrypoint.sh`) and the host wrapper `scripts/dgx/run_transcipher.sh`.
+
+**Tested where:** built and run on the dev host (Docker 26.1.5, Debian, single
+NUMA node, so `--cpuset-mems` was only exercised with node 0). Not yet run on
+the RHEL 7.9 host itself; first use there should start with `kat`.
+
+### What the image is
+
+Multi-stage: `golang:1.25-bookworm` and `debian:bookworm-slim`, both pinned by
+digest in the Dockerfile. The build stage runs `third_party/fetch_rtf.sh`
+(verifies RtF SHA `105fc73`, applies `third_party/patches/*.patch`, stages the
+toy harnesses), then `go vet`, then builds `cipher.test`, `ckks_fv.test` (this
+contains the toy_correctness harnesses), `bench` and `toyrep`. The runtime
+stage holds only those binaries (~13 MB) on Debian slim: about 88 MB
+uncompressed, about 35 MB as `docker save | gzip`. It has no source, git
+history, credentials or SSH keys. Labels: `ppfdaas.repo_sha`,
+`ppfdaas.rtf_sha`, `ppfdaas.rtf_patch_sha256`, `ppfdaas.build_date`.
+
+The build needs network access to github.com and the Go module proxy. If the
+server cannot reach them, build on a dev machine and ship the image:
+
+```
+docker save ppfdaas-transcipher-bench | gzip > bench.tar.gz     # dev host
+gunzip -c bench.tar.gz | docker load                            # server
+```
+
+Build (from the repo root; the context is an allow-list, see the
+`.dockerignore` file next to the Dockerfile):
+
+```
+docker build -f tools/transciphering/Dockerfile.bench \
+  --build-arg GIT_SHA="$(git rev-parse HEAD)" \
+  --build-arg PATCH_SHA256="$(sha256sum third_party/patches/0001-rss-checkpoints.patch | cut -d' ' -f1)" \
+  --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  -t ppfdaas-transcipher-bench .
+```
+
+Commit first: `GIT_SHA` is only meaningful for a clean tree.
+
+### Running a job
+
+```
+scripts/dgx/run_transcipher.sh <job> <target> [args]
+```
+
+Targets: `kat`, `toy`, `toy-repeat`, `bench`, `rss`, `test <cipher|ckks_fv> <filter>`.
+Env: `CIPHER`, `LOGN`, `PARAM_INDEX`, `RSS_CHECKPOINT_RUN`, `REPS`, `CPUS`,
+`NODE`, `MEM_LIMIT`, `IMAGE`, `RESULTS_ROOT`, `WAIT`, `FORCE` (documented at the
+top of the script). Examples:
+
+```
+scripts/dgx/run_transcipher.sh kat-1 kat
+REPS=30 scripts/dgx/run_transcipher.sh toy-30 toy-repeat
+CIPHER=hera REPS=100 NODE=1 scripts/dgx/run_transcipher.sh hera-bench-n1 bench
+CIPHER=rubato LOGN=12 MEM_LIMIT=64g scripts/dgx/run_transcipher.sh rubato-rss-12 rss
+```
+
+It runs `docker run -d --name <job> --user $(id -u):$(id -g)
+--cpuset-cpus <cpus> --cpuset-mems <node>` with `-v ~/results/<job>:/results`,
+`--cap-drop ALL`, `--security-opt no-new-privileges`, and never `--privileged`. Default pin:
+all CPUs of NUMA node 0 and memory node 0, so a job stays on one socket; change
+with `NODE=1` or an explicit `CPUS=`. `GOMAXPROCS` is set to the pinned CPU
+count. Jobs detach and survive logout; `docker logs -f <job>` follows one, and
+`~/results/<job>/exit_code` appears when it is done (the container is then
+removed; its log is saved as `container.log`). On a shared host set `MEM_LIMIT`
+for the full-scale RSS runs, and check `free -g` first (the 13.28 GB Rubato
+lower bound and 9.54 GB HERA peak in `docs/MEASUREMENT_PROVENANCE.md` were at
+LogSlots=4, not 15).
+
+Results dir contents: `machine_state_start.json` / `machine_state_end.json`
+(host load average, lscpu summary, CPU MHz for the pinned CPUs, `free -g`,
+image ID and labels, cpuset, timestamps), `exit_code`, `container.log`, and each
+harness's output: `<cipher>_bench.json` (bench), `rss_checkpoints.jsonl`
+(rss), `toy_error_repetition.json` (toy-repeat). Absolute latencies on a shared
+host are subject to the house rule (same-session paired ratios only); the
+state files are there so a number can be judged against the load it ran under.
+
+### RSS checkpoint lines
+
+`rss` writes two kinds of lines into one `rss_checkpoints.jsonl`: the committed Go
+test's (`cipher/rss_checkpoint_test.go`, with `param_state`) and the RtF patch's
+finer per-round sub-step lines, tagged `"source":"ckks_fv_internal"`. The patch's
+`checkpointRSS` is a no-op unless `RSS_CHECKPOINT_RUN=1`. `LOGN` applies to the
+`rss` target only; the toy harness is fixed at LogN=10.
+
+### Toy-error repetition (`toy-repeat`)
+
+Runs the LogN=10 toy harness `REPS` times (default 30) for HERA-128as and
+Rubato-128L and writes per-run max |got-want| plus min/median/max. The paper's
+single values (HERA 1.39e-5, Rubato 3.42e-5) come from one run each. Run to run
+the value varies because **nothing is seeded**: the HE secret/public keys come
+from a `KeyedPRNG` seeded with `crypto/rand`, the message data from
+`utils.RandFloat64` (`crypto/rand`), the per-slot nonces (and Rubato's counter)
+from `crypto/rand`, and Rubato's Gaussian noise from `utils.NewPRNG()`. Only the
+symmetric key (`key[i]=i+1`) is fixed. Report the median and range, not a single
+draw.
 
 ## Threat model summary (full text: docs/spec.md §8)
 

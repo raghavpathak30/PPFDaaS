@@ -3,6 +3,33 @@
 Full dated history of session updates, newest first. For current
 project status, blockers, and next actions, see `PROJECT_STATE.md`.
 
+## Session Update (2026-10-24) — CORRECTION: HERA client plaintext modulus was 2^26, must be 0x1fc0001
+
+Branch `fix/hera-plain-modulus`. A review noticed `cipher/hera.go` used t = 2^26
+(a power of two) while HERA is defined over a prime field. Verified in code:
+
+- `HeraModulus = 1<<26` was really used for all arithmetic (round-key sampling in
+  `shakeprf.go`, round-key adds, linear layer, cube S-box `mulMod`, ciphertext add),
+  not just in comments.
+- ckks_fv at pinned SHA 105fc73 uses `PlainModulus: 33292289` (0x1fc0001, 25-bit prime)
+  for `RtFHeraParams[2]` (128af, `rtf_params.go:414`) and `[3]` (128as, `:482`); indices
+  0/1 use 268042241. 0x1fc0001 is also Rubato-128L's q.
+- Why the KAT passed: `TestHERAKnownAnswer` compared against `plainHera(..., 1<<26)`,
+  i.e. the reference run at the same wrong modulus. It only proved the port matched at
+  2^26. Entries above that say Gate A "PASS" for HERA are true but did not cover the modulus.
+
+Fix: `HeraModulus` = const `uint64(0x1fc0001)` (const, not var, so HERA and Rubato get
+the same compiler strength-reduction and timings stay comparable). KAT regenerated at
+`RtFHeraParams[3].PlainModulus` by the committed generator
+`cipher/testdata/hera_kat_gen_test.go`; the old 2^26 vector is kept as a negative check.
+New `TestHeraModulusMatchesCkksFV` pins the const to `RtFHeraParams[2,3]`, prime, not a
+power of two. Both tests fail if the const is set back to `1<<26`. `rubato.go` untouched;
+its comment at line 295 ("HeraModulus (2^26)") is now stale and was left as instructed.
+
+Wire size unchanged (`4n+28`, whole-uint32 elements): 1,052 B / 16,412 B. All HERA client
+timings and the quantisation margin must be re-measured: see
+`docs/MEASUREMENT_PROVENANCE.md` row 26. No artifacts or earlier log entries edited.
+
 ## Session Update (2026-08-19b) — Recovery from a crashed Rubato-128L full-scale run; LogSlots=4-vs-15 parameter-set mismatch found and traced to source (COMPLETE)
 
 Crash-recovery session. A prior session's attempt at a full-scale (LogN=16)

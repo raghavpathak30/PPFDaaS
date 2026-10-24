@@ -43,3 +43,25 @@ does not apply to this checkout as of this pinned SHA and this Go version.
   measurement (HERA only, 9.54 GB peak VmHWM).
 - Full-scale Rubato-128L evaluation: not attempted; no full-scale measurement
   exists for this cipher at all, toy-scale only.
+
+## Patches (added 2026-10-24)
+
+`fetch_rtf.sh` verifies the pinned SHA, then applies every
+`third_party/patches/*.patch` in lexical order (a patch that fails
+`git apply --check` aborts the script). The checkout is therefore pinned SHA
++ patches + the staged toy harnesses; nothing else may be hand-edited in it.
+
+| Patch | sha256 | What it does |
+|---|---|---|
+| `0001-rss-checkpoints.patch` | `e7aa4d974aefd7e009d629844538a7367f0b50124b82b96f7b82ddafbd9eb8c1` | Adds `ckks_fv/rss_checkpoint.go` and 12 `checkpointRSS(...)` calls each in `mfvRubato.Crypt` (`fv_rubato.go`) and `mfvHera.Crypt` (`fv_hera.go`): `crypt_entry`, `init`, `round_0`, per-round `_linlayer` / `_feistel` (Rubato) or `_cube` (HERA) / `_modswitch` / `round_<r>`, final `_finlinlayer`, `round_<N>`. Each JSON line carries `"source":"ckks_fv_internal"` (the committed Go test's lines have none, so they can be told apart; revised 2026-10-24, earlier sha 2c53a76d…). `checkpointRSS` returns immediately unless `RSS_CHECKPOINT_RUN=1`; output path is `$RSS_CHECKPOINT_PATH`, default `/results/rss_checkpoints.jsonl`. |
+
+Verified 2026-10-24 against a fresh clone in a temporary directory: patch
+applies cleanly to 105fc73; `go vet` and `go test ./...` for
+`tools/transciphering` (with `-modfile` pointing the `replace` at that clone)
+pass, incl. the HERA and Rubato KATs; the HERA-128as and Rubato-128L toy
+(LogN=10) harnesses pass. With the flag unset no file is written; with
+`RSS_CHECKPOINT_RUN=1` the two toy tests wrote 24 HERA + 12 Rubato lines.
+The 2026-08-04 HERA / 2026-08-19 Rubato full-scale traces predate this patch
+(they came from hand-patched, gitignored copies; per RSS_INSTRUMENTATION.md the HERA
+one used the same `_linlayer/_cube/_modswitch` sub-step labels) and were not
+regenerated or checked against this patch's placement.

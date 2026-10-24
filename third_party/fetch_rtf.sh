@@ -12,17 +12,23 @@
 
 set -euo pipefail
 
-REPO_URL="https://github.com/KAIST-CryptLab/RtF-Transciphering"
+# REPO_URL / RTF_CLONE_DIR may be overridden from the environment (e.g. to
+# verify into a fresh temporary directory); defaults are the normal layout.
+REPO_URL="${RTF_REPO_URL:-https://github.com/KAIST-CryptLab/RtF-Transciphering}"
 # Pinned commit on the default branch (master), recorded 2026-07-27.
 PINNED_SHA="105fc73115b56f1d6ff357029c7682b19a6d8510"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLONE_DIR="${SCRIPT_DIR}/RtF-Transciphering"
+CLONE_DIR="${RTF_CLONE_DIR:-${SCRIPT_DIR}/RtF-Transciphering}"
 
 if [[ -d "${CLONE_DIR}/.git" ]]; then
   echo "[INFO] ${CLONE_DIR} already exists; fetching and checking out pinned SHA"
   git -C "${CLONE_DIR}" fetch --depth=1 origin "${PINNED_SHA}"
   git -C "${CLONE_DIR}" checkout --detach FETCH_HEAD
+  # The checkout is disposable (this script is the source of truth): drop any
+  # previous patch/harness state so the patches below apply to a pristine tree.
+  git -C "${CLONE_DIR}" reset --hard -q "${PINNED_SHA}"
+  git -C "${CLONE_DIR}" clean -fdq
 else
   rm -rf "${CLONE_DIR}"
   echo "[INFO] Cloning ${REPO_URL} ..."
@@ -36,7 +42,17 @@ if [[ "${ACTUAL_SHA}" != "${PINNED_SHA}" ]]; then
   exit 1
 fi
 
-echo "[OK] third_party/RtF-Transciphering pinned at ${ACTUAL_SHA}"
+echo "[OK] ${CLONE_DIR} pinned at ${ACTUAL_SHA}"
+
+# ---------------------------------------------------------------------------
+# Apply every patch in third_party/patches/, in lexical order, on top of the
+# pinned (verified above) SHA. A patch that does not apply cleanly is fatal.
+for patch in "${SCRIPT_DIR}"/patches/*.patch; do
+  [[ -e "${patch}" ]] || continue
+  git -C "${CLONE_DIR}" apply --check "${patch}"
+  git -C "${CLONE_DIR}" apply "${patch}"
+  echo "[OK] applied $(basename "${patch}") (sha256 $(sha256sum "${patch}" | cut -d' ' -f1))"
+done
 
 # ---------------------------------------------------------------------------
 # Stage the PPFDaaS toy correctness harnesses (tracked source, see

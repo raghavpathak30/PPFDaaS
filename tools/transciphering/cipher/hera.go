@@ -17,8 +17,13 @@ import (
 //   - Rounds r = 5 (matches RtFHeraParams[3] "128as", the HE-side 128-bit
 //     target in third_party/RtF-Transciphering/ckks_fv/rtf_params.go. The
 //     original HERA-16 spec used r=4; this module matches the server.)
-//   - Plaintext modulus t = 2^26 (26-bit; chosen conservatively to stay within
-//     the safe range identified by the algebraic cryptanalysis)
+//   - Plaintext modulus t = 33292289 = 0x1fc0001 (25-bit prime), the
+//     PlainModulus of RtFHeraParams[2] ("128af") and [3] ("128as") at
+//     third_party/RtF-Transciphering/ckks_fv/rtf_params.go:414,482. It is a
+//     compile-time const (like RubatoModulus) so the compiler can strength-
+//     reduce `% HeraModulus`; TestHeraModulusMatchesCkksFV pins it to the
+//     reference value. An earlier version used t = 2^26, which is not
+//     prime and not what ckks_fv uses -- see docs/SESSION_LOG.md.
 //   - Key: HeraStateSize (16) field elements in [0, t), matching ckks_fv's
 //     own `key []uint64` (NOT an AES-shaped byte key -- see below).
 //   - Nonce: 16 field elements in [0, t), packed into bytes to seed a
@@ -53,16 +58,15 @@ import (
 // >0 appends a big-endian counter to the XOF seed, reusing the SHAKE256
 // primitive rather than inventing a new formula. See encryptBlock.
 const (
-	HeraStateSize = 16 // m
-	HeraRounds    = 5  // r
-	HeraModBits   = 26 // log2(t)
-	HeraModulus   = uint64(1) << HeraModBits // t = 2^26
+	HeraStateSize = 16                // m
+	HeraRounds    = 5                 // r
+	HeraModulus   = uint64(0x1fc0001) // t = 33292289 (25-bit prime); == RtFHeraParams[2,3].PlainModulus
 
 	heraKeyElems   = HeraStateSize // key is HeraStateSize field elements, matching ckks_fv's key []uint64
 	heraNonceElems = 16            // nonce is 16 field elements, packed to bytes to seed the XOF
 )
 
-// HERA16 is the HERA stream cipher with m=16, r=5, t=2^26.
+// HERA16 is the HERA stream cipher with m=16, r=5, t=0x1fc0001.
 type HERA16 struct{}
 
 // NewHERA16 returns a new HERA-16 backend.
@@ -73,8 +77,9 @@ func (HERA16) KeySize() int    { return heraKeyElems }
 func (HERA16) NonceSize() int  { return heraNonceElems }
 func (HERA16) Modulus() uint64 { return HeraModulus }
 
-// OnlineCiphertextBytes: n uint64 elements × 4 bytes each (packed at 26 bits,
-// rounded up to 4 bytes) + 28 bytes AEAD overhead (12 nonce + 16 tag).
+// OnlineCiphertextBytes: n uint64 elements × 4 bytes each (each 25-bit
+// element is stored in a whole uint32, not bit-packed) + 28 bytes AEAD
+// overhead (12 nonce + 16 tag).
 func (HERA16) OnlineCiphertextBytes(n int) int {
 	return n*4 + 28
 }
@@ -99,7 +104,7 @@ func (h HERA16) Encrypt(key, nonce, plaintext []uint64) ([]uint64, error) {
 		ct[i] = (plaintext[i] + ks[i]) % HeraModulus
 	}
 
-	// Serialize ct as packed uint32 (26 bits fit in 32 bits).
+	// Serialize ct as packed uint32 (25 bits fit in 32 bits).
 	raw := make([]byte, len(ct)*4)
 	for i, v := range ct {
 		binary.LittleEndian.PutUint32(raw[i*4:], uint32(v))
@@ -269,7 +274,7 @@ func heraLinLayer(state [HeraStateSize]uint64) [HeraStateSize]uint64 {
 
 // mulMod computes (a * b) mod HeraModulus without overflow.
 func mulMod(a, b uint64) uint64 {
-	// Both a, b < 2^26; product < 2^52 — fits in uint64.
+	// Both a, b < 2^25; product < 2^50 — fits in uint64.
 	return (a * b) % HeraModulus
 }
 

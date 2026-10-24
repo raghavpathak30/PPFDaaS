@@ -67,6 +67,8 @@ third_party/*
 # truth for reproducing the pinned checkout above (see third_party/BUILD_NOTES.md).
 !third_party/fetch_rtf.sh
 !third_party/BUILD_NOTES.md
+!third_party/patches/
+!third_party/patches/*.patch
 
 # Stray build outputs not covered above
 tools/local_benchmark/precision_probe

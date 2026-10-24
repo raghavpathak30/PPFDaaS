@@ -275,7 +275,7 @@ re-runs.
 The HHE arm replaces the bank's CKKS ciphertext upload with a symmetric-cipher online phase,
 keeping the server-side HE computation identical; the vendor's TCB is unchanged (§8.1). Two
 ciphers are implemented and benchmarked, selectable via `bench --cipher=hera|rubato`:
-**HERA-16** (m=16, r=5, t=2^26 — the selected cipher, §8.8) and **Rubato-128L** (n=64, r=2,
+**HERA-16** (m=16, r=5, t=0x1fc0001 = 33292289, per `tools/transciphering/cipher/hera.go` `HeraModulus` — the selected cipher, §8.8) and **Rubato-128L** (n=64, r=2,
 q=0x1fc0001, per `tools/transciphering/cipher/rubato.go:78-80`), implemented afterward as a
 benchmarking comparison point, not as a reversal of the HERA-16 selection.
 
