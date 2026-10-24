@@ -21,7 +21,7 @@
 //     basis for benchmarking Rubato-128L here rather than the other five
 //     variants.
 //   - Elisabeth-4: broken (Cosseron et al.).
-//   - HERA-16 (m=16, r=5, t=2^26): algebraic analysis found round-key
+//   - HERA-16 (m=16, r=5, t=0x1fc0001): algebraic analysis found round-key
 //     collisions but current parameters remain secure. r=5 matches
 //     RtFHeraParams[3] ("128as"), the HE-side 128-bit target — the
 //     original HERA-16 spec used r=4. Best-studied HHE cipher for

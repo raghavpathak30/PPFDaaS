@@ -47,6 +47,44 @@ two absolute numbers from different days happen to match.
 | 23 | HERA vs Rubato setup-phase RSS, side by side | KB (VmHWM) | same checkpoint labels, both from a real full-LogN=16 run, **different param sets — see the LogSlots finding below before comparing these** | see table under "Per-phase setup comparison" below | `artifacts/hera_crypt_rss_full_run.jsonl`, `artifacts/rubato_crypt_rss_full_run.jsonl` | 2026-08-04 / 2026-08-19 | powersave | AC (HERA), not recorded (Rubato) | not recorded |
 | 24 | `heap_alloc_kb` exceeding `vm_hwm_kb` at the same checkpoint | KB | open, unconfirmed anomaly, reproduced independently in two different runs of two different ciphers | HERA: 14.4 GB heap_alloc vs 9.0 GB VmHWM at `round_0` (2026-08-04, unconstrained pre-fix trace). Rubato: 20,257,175 KB heap_alloc vs 13,279,632 KB VmHWM at `slot_to_coeff_mat` (2026-08-19) | `artifacts/hera_crypt_rss_checkpoints.jsonl`; `artifacts/rubato_crypt_rss_full_run.jsonl`; source-checked against `tools/transciphering/cipher/rss_checkpoint_test.go` (both fields correctly read/labelled, not a code bug) | 2026-08-04 / 2026-08-19 | n/a | n/a | n/a |
 | 25 | Row 17's HERA harness — was unreproducible, now fixed | n/a | the `*_test.go` that produced row 17 and row 22 lived in `third_party/RtF-Transciphering/ckks_fv/`, gitignored, deleted after each run | n/a | superseded by `tools/transciphering/cipher/rss_checkpoint_test.go`, committed 2026-08-19 | 2026-08-19 | n/a | n/a | n/a |
+| 26 | **HERA client plaintext modulus was t = 2^26, not ckks_fv's 0x1fc0001 — every HERA *client-side* figure below was measured at the wrong modulus** | n/a | `cipher/hera.go` reduced mod 2^26 (power of two, so `% t` compiled to a mask); ckks_fv `RtFHeraParams[2,3].PlainModulus` = 33292289 (prime). Fixed 2026-10-24 on branch `fix/hera-plain-modulus`; `HeraModulus` is now a const = 0x1fc0001 like `RubatoModulus`. | **MUST RE-MEASURE** — see "Row 26 detail" below | list below | 2026-10-24 | n/a | n/a | n/a |
+
+## Row 26 detail (2026-10-24): artifacts measured with HERA at t = 2^26 — all MUST be re-measured
+
+Why timings move, not just values: with t = 2^26 the compiler turned every
+`% HeraModulus` into an AND mask; with t = 0x1fc0001 (const, same as Rubato) it
+emits multiply-shift reduction. HERA's per-element cost and the
+HERA-vs-Rubato ratio will therefore change, and the old HERA numbers are not
+a lower bound on the new ones. None of the files below have been edited.
+
+**HERA client timings / HERA-vs-Rubato (must re-measure):**
+- `artifacts/hera_vs_rubato_transciphering.json` (rows 1, 2, 5; also the ratio columns that divide by HERA)
+- `artifacts/hera_vs_rubato_transciphering_PRIOR_wrong_noise_sampler.json` (already superseded; HERA side also at 2^26)
+- `artifacts/hera_vs_rubato_client_lane_sweep_2026-08-19.json`
+- `artifacts/c3_comparison.json`, `artifacts/c3_comparison_PLUMBING_powersave.json`: only if their HERA fields are timing-derived; the `client_encode_encrypt_*` fields I saw are CKKS, and `hera_upload_bytes` (1052) is unaffected — not fully audited
+- `artifacts/performance_revalidation/{baseline_powersave,performance}/hera_bench_lane{1,4,8,16}.json` and their `.governor_manifest.json` files
+- `tools/transciphering/results/hera_bench_lane*.json` and `hera_bench_lane*_r_fixed*.json`
+- `artifacts/hhe_breakeven.json` and `artifacts/performance_revalidation/*/hhe_breakeven.json` (`online_encrypt_ms` is MEASURED from `tools/transciphering/results/` HERA runs — re-derive the break-even)
+- README/PROJECT_STATE/`tools/transciphering/README.md` HERA timing tables (e.g. `tools/transciphering/README.md:175`, `0.164 ms` vs `0.079 ms`, `0.48x`)
+
+**Figures that depend on t as a number, not on timing (must re-derive):**
+- `artifacts/quantisation_sweep.json` and `scripts/quantisation_sweep.py`: the sweep's docstring and `margin_bits = 26 - sufficient_bits = 16` assume t = 2^26. With t = 33292289 (< 2^25) the usable headroom is at most 24 - 10 = 14 bits. `sufficient_bits = 10` (an AUC criterion) is probably unaffected, but the margin claim is stale.
+- `docs/spec.md` §8.3 step 1 said "scale = 2^26, t = 2^26"; now corrected to t = 33292289 with scale < t.
+
+**Upload size / "1,052 B, ~249x" (row 18, `bandwidth_ladder*.json`, `c3_comparison*.json` `hera_upload_bytes`): NOT changed by this fix — checked by byte counting, not benchmark.**
+`OnlineCiphertextBytes(n) = 4n + 28` (`hera.go`): each element is stored in a whole `uint32`, never bit-packed, so a 25-bit element costs the same 4 bytes as a 26-bit one.
+
+| | old (t = 2^26) | new (t = 0x1fc0001) |
+|---|---|---|
+| 1 record, n = 256 | 256·4 + 28 = **1,052 B** | 256·4 + 28 = **1,052 B** |
+| 16 lanes, n = 4096 | 4096·4 + 28 = **16,412 B** | **16,412 B** |
+| (not implemented) bit-packed, 1 record | ceil(256·26/8) + 28 = 860 B | ceil(256·25/8) + 28 = 828 B |
+
+So the 1,052 B / ~249x figure stands for the implemented wire format. The artifacts holding it are still listed as re-measure only because they are bundled with timing fields. The old `hera.go` comment "packed at 26 bits" was wrong about the code too (it never bit-packed); corrected.
+
+**NOT affected:** HERA full-scale RSS/setup rows (17, 23, 24, `hera_crypt_rss_*.jsonl`) — that harness allocates ckks_fv's own `RtFHeraParams`, which already used 0x1fc0001; and all Rubato rows.
+
+**What was and was not verified after the fix (2026-10-24):** `go vet ./...` clean; `go test ./...` passes; `TestHERAKnownAnswer` now compares against `plainHera` at `RtFHeraParams[3].PlainModulus` and was confirmed to FAIL (as did `TestHeraModulusMatchesCkksFV`) when `HeraModulus` is reverted to `1<<26`. The toy-scale (LogN=10) Gate B harness tests the ckks_fv reference side only and never executed `hera.go`; it passes but is not evidence about the Go client modulus. No timing was re-measured.
 
 ## PRIMARY FINDING (2026-08-19): the HERA-vs-Rubato full-scale comparison ran at mismatched LogSlots — 4 vs 15, not a cipher difference
 

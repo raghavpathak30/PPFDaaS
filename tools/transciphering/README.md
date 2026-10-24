@@ -10,7 +10,7 @@ arm of PPFDaaS. This is NOT part of the TCB — it is a research-tool, like
 |---|---|
 | `cipher/backend.go` — CipherBackend interface | COMPLETE |
 | `cipher/shakeprf.go` — shared SHAKE256/`sampleZqx` round-key derivation (HERA + Rubato) | COMPLETE |
-| `cipher/hera.go` — HERA-16, m=16, r=5, t=2^26 | COMPLETE |
+| `cipher/hera.go` — HERA-16, m=16, r=5, t=0x1fc0001 | COMPLETE |
 | `cipher/rubato.go` — Rubato-128L, n=64, r=2, q=0x1fc0001 | COMPLETE |
 | `bench/main.go` — client CPU + upload-size benchmark, `--cipher=hera\|rubato` | COMPLETE |
 | `cipher/hera_test.go`, `cipher/rubato_test.go` — known-answer tests vs `ckks_fv`'s own reference | COMPLETE |
@@ -107,7 +107,7 @@ file/line citations of every constant and matrix.
 |---|---|---|
 | State size | 16 | 64 |
 | Rounds | 5 (matches `RtFHeraParams[3]` "128as") | 2 |
-| Plaintext modulus | 2^26 | 0x1fc0001 |
+| Plaintext modulus | 0x1fc0001 (= `RtFHeraParams[2,3].PlainModulus`) | 0x1fc0001 |
 | Round-key seed | SHAKE256(nonce) | SHAKE256(nonce‖counter) |
 | Nonlinear layer | cube S-box | sequential Feistel-square |
 | Client-side noise | none | Gaussian, σ≈1.6357 |
@@ -124,7 +124,7 @@ file/line citations of every constant and matrix.
   same as proven secure.
 - Elisabeth-4: broken (Cosseron et al.). Not used.
 - HERA: round-key collision weaknesses found; current parameters (m=16, r=5,
-  t=2^26) remain secure.
+  t=0x1fc0001) remain secure.
 
 ## Correctness gates (both required before any timing number is trusted)
 
