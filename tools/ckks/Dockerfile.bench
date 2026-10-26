@@ -1,0 +1,93 @@
+# syntax=docker/dockerfile:1
+#
+# Benchmark image for the base CKKS arm (SEAL 4.1.2, CPU only): ckks_bench,
+# the A1-A4 harness in tools/ckks/. No gRPC, protobuf or Python.
+# Build from the REPO ROOT:
+#
+#   docker build -f tools/ckks/Dockerfile.bench \
+#     --build-arg GIT_SHA="$(git rev-parse HEAD)" \
+#     --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+#     -t ppfdaas-ckks-bench .
+#
+# The build context is filtered by Dockerfile.bench.dockerignore (BuildKit picks
+# it up next to this file; it takes precedence over the repo-root .dockerignore).
+# The harness links vendor_server/src/rotation_hoisting.cpp unchanged, so that
+# file and its header are in the context at their repo paths.
+
+# debian:bookworm-slim, pinned by index digest (same base as the transciphering
+# image, resolved 2026-10-24). Builder and runtime share it, so glibc, libstdc++
+# and libgomp match between build and run.
+FROM debian:bookworm-slim@sha256:7ff6ba31527b9e336162fa061746c366c4b2032f4d2cff2078bea43f78efe3f8 AS build
+
+# The asserts below make a drift in any of these fatal instead of silent.
+ARG SEAL_VERSION=4.1.2
+ARG SEAL_COMMIT=119dc32e135cb89c1062076a69310d4413ebc824
+ARG GCC_VERSION=12.2.0
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends build-essential cmake git ca-certificates \
+ && rm -rf /var/lib/apt/lists/* \
+ && test "$(g++ -dumpfullversion)" = "${GCC_VERSION}"
+
+# SEAL, static, at the pinned commit (tag v4.1.2). Same configure as
+# Dockerfile.server: no -march flags, no HEXL, so the image runs on any x86-64
+# Haswell+ host; the DGX Xeons (Broadwell) have AVX2 but not AVX-512.
+# SEAL_BUILD_DEPS fetches zlib and zstd at the tags SEAL 4.1.2 pins.
+RUN git init -q /tmp/SEAL \
+ && git -C /tmp/SEAL fetch -q --depth 1 https://github.com/microsoft/SEAL.git "${SEAL_COMMIT}" \
+ && git -C /tmp/SEAL checkout -q FETCH_HEAD \
+ && test "$(git -C /tmp/SEAL rev-parse HEAD)" = "${SEAL_COMMIT}" \
+ && cmake -S /tmp/SEAL -B /tmp/SEAL/build \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=/usr/local \
+      -DSEAL_BUILD_DEPS=ON \
+      -DSEAL_USE_MSGSL=OFF \
+      -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+ && cmake --build /tmp/SEAL/build -j"$(nproc)" \
+ && cmake --install /tmp/SEAL/build \
+ && grep -q "PACKAGE_VERSION \"${SEAL_VERSION}\"" /usr/local/lib/cmake/SEAL-4.1/SEALConfigVersion.cmake \
+ && rm -rf /tmp/SEAL
+
+WORKDIR /src
+COPY vendor_server/src/rotation_hoisting.cpp vendor_server/src/rotation_hoisting.cpp
+COPY vendor_server/include/rotation_hoisting.h vendor_server/include/rotation_hoisting.h
+COPY tools/ckks tools/ckks
+
+# Release, -O3 -DNDEBUG (tools/ckks/CMakeLists.txt); -mavx2 only, never -march=native.
+RUN cmake -S tools/ckks -B /tmp/build -DCMAKE_BUILD_TYPE=Release \
+ && cmake --build /tmp/build -j"$(nproc)" \
+ && install -D /tmp/build/ckks_bench /out/ckks_bench \
+ && strip /out/ckks_bench
+
+FROM debian:bookworm-slim@sha256:7ff6ba31527b9e336162fa061746c366c4b2032f4d2cff2078bea43f78efe3f8
+
+ARG GIT_SHA=unknown
+ARG BUILD_DATE=unknown
+ARG SEAL_VERSION=4.1.2
+ARG GCC_VERSION=12.2.0
+
+LABEL org.opencontainers.image.title="ppfdaas-ckks-bench" \
+      org.opencontainers.image.revision="${GIT_SHA}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      ppfdaas.repo_sha="${GIT_SHA}" \
+      ppfdaas.build_date="${BUILD_DATE}" \
+      ppfdaas.seal_version="${SEAL_VERSION}" \
+      ppfdaas.compiler_version="g++ ${GCC_VERSION}" \
+      ppfdaas.build_flags="Release -O3 -DNDEBUG -mavx2"
+
+# libgomp is the only runtime dependency (SEAL is static). /results is
+# world-writable so an arbitrary --user can write to it when nothing is mounted;
+# the wrapper mounts a host dir there.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libgomp1 \
+ && rm -rf /var/lib/apt/lists/* \
+ && mkdir /results && chmod 1777 /results
+
+COPY --from=build /out/ckks_bench /opt/bench/ckks_bench
+COPY tools/ckks/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
+ENV RESULTS_DIR=/results PPFDAAS_REPO_SHA=${GIT_SHA}
+VOLUME /results
+WORKDIR /results
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["parity"]

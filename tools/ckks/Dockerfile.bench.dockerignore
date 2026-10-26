@@ -1,0 +1,8 @@
+# Build context filter for Dockerfile.bench (BuildKit reads
+# <Dockerfile>.dockerignore). Allow-list: only what the build reads.
+*
+!vendor_server/src/rotation_hoisting.cpp
+!vendor_server/include/rotation_hoisting.h
+!tools/ckks
+tools/ckks/README.md
+**/build
