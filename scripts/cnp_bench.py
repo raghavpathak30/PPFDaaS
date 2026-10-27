@@ -112,8 +112,7 @@ def gate_sample(X, y, seed=20260628):
 
 def keygen_time_us(strategy: str) -> float:
     """Wall time to generate the key material a deployment of this strategy needs."""
-    import importlib
-    w = importlib.import_module("bank_client.seal_wrapper_160")
+    w = C.get_wrapper()  # same module object the BankClient uses (see cnp_common.get_wrapper)
     t0 = time.perf_counter()
     if strategy == "cnp":
         w.generate_keys_160_no_galois()  # pk + sk, no Galois keys

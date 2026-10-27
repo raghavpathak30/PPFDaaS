@@ -34,6 +34,24 @@ SLOT_BATCH = 16
 CNP_BATCH = 32
 
 
+def get_wrapper():
+    """The 160-bit pybind module, loaded exactly once under its top-level name.
+
+    BankClient resolves it as top-level `seal_wrapper_160`. Importing the same .so under a second
+    name (e.g. `bank_client.seal_wrapper_160`) initialises the extension twice, which crashed the
+    interpreter at exit ("free(): invalid pointer") under Python 3.11 in the Docker image.
+    """
+    import importlib
+    try:
+        return importlib.import_module("seal_wrapper_160")
+    except ModuleNotFoundError:
+        importlib.import_module("bank_client")  # cache the (namespace) package FIRST: once bank_client/ is on
+        d = str(REPO_ROOT / "bank_client")      # sys.path, bank_client.py there would otherwise shadow it
+        if d not in sys.path:
+            sys.path.append(d)  # append, never insert(0): must not shadow the `bank_client` package
+        return importlib.import_module("seal_wrapper_160")
+
+
 def free_port() -> int:
     s = socket.socket()
     s.bind(("127.0.0.1", 0))

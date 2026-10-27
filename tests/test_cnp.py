@@ -45,7 +45,7 @@ W, BIAS = C.load_model() if (C.ART / "weights.npy").exists() else (None, None)
 # ───────────────────────────── fixtures ─────────────────────────────
 @pytest.fixture(scope="module")
 def wrapper():
-    w = importlib.import_module("bank_client.seal_wrapper_160")
+    w = C.get_wrapper()  # one load, same object BankClient uses (a 2nd import name double-initialises the .so)
     w.init_seal((C.ART / "public_key_160.bin").read_bytes(), (C.ART / "secret_key_160.bin").read_bytes())
     return w
 
