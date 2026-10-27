@@ -9,6 +9,8 @@
 !bank_client/he_wrapper
 !bank_client/tools
 !generated
+!inference_pb2.py
+!inference_pb2_grpc.py
 !scripts/cnp_bench.py
 !scripts/cnp_common.py
 !scripts/cnp_parity.py

@@ -86,6 +86,8 @@ COPY --from=build /out/build /opt/cnp/build
 COPY --from=build /app/bank_client/*.so /app/bank_client/
 COPY bank_client/bank_client.py /app/bank_client/bank_client.py
 COPY generated/ /app/generated/
+# repo-root shims: generated/inference_pb2_grpc.py does a top-level `import inference_pb2`
+COPY inference_pb2.py inference_pb2_grpc.py /app/
 COPY scripts/cnp_bench.py scripts/cnp_common.py scripts/cnp_parity.py /app/scripts/
 COPY tools/cnp/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
