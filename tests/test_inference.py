@@ -66,6 +66,7 @@ def test_proto_timing_breakdown_field_numbers_are_stable():
         "rotation_hoisting_us": 3,
         "serialization_us": 4,
         "total_inference_us": 5,
+        "mask_us": 6,  # CNP-A: invariant is deser+mul+rot+mask+ser ~= total (residual <= 300 us)
     }
 
     for field, number in expected.items():
@@ -81,6 +82,7 @@ def test_proto_request_response_contract_field_numbers_are_stable():
         "request_id": 2,
         "institution_id": 3,
         "n_transactions": 4,
+        "packing_mode": 5,  # CNP-A: SLOT = 0 (default), CNP = 1
     }
     for field, number in request_expected.items():
         pattern = rf"\b{field}\b\s*=\s*{number}\s*;"

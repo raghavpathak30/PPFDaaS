@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-EvalContext160::EvalContext160() : params(seal::scheme_type::ckks) {
+EvalContext160::EvalContext160(PackingMode160 mode) : params(seal::scheme_type::ckks), packing_mode(mode) {
     params.set_poly_modulus_degree(8192);
     params.set_coeff_modulus(seal::CoeffModulus::Create(8192, {60, 40, 60}));
 
@@ -141,7 +141,18 @@ EvalContext160::EvalContext160() : params(seal::scheme_type::ckks) {
     }
 }
 
+void EvalContext160::assert_no_galois_keys() const {
+    if (galois_keys_loaded || galois_keys.size() != 0) {
+        throw std::logic_error("EvalContext160: CNP invariant violated -- Galois keys are present");
+    }
+}
+
 void EvalContext160::load_and_validate_galois_keys(std::istream &in) {
+    if (packing_mode == PackingMode160::CNP) {
+        throw std::logic_error(
+            "EvalContext160: Galois keys must never be loaded in CNP mode (the CNP circuit "
+            "performs no rotations)");
+    }
     seal::GaloisKeys candidate;
     try {
         candidate.load(*context, in);

@@ -13,39 +13,45 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0finference.proto\x12\x07ppfdaas\"\x9c\x01\n\x0fTimingBreakdown\x12\x1a\n\x12\x64\x65serialization_us\x18\x01 \x01(\x03\x12\x19\n\x11multiply_plain_us\x18\x02 \x01(\x03\x12\x1c\n\x14rotation_hoisting_us\x18\x03 \x01(\x03\x12\x18\n\x10serialization_us\x18\x04 \x01(\x03\x12\x1a\n\x12total_inference_us\x18\x05 \x01(\x03\"j\n\x10InferenceRequest\x12\x12\n\nciphertext\x18\x01 \x01(\x0c\x12\x12\n\nrequest_id\x18\x02 \x01(\t\x12\x16\n\x0einstitution_id\x18\x03 \x01(\t\x12\x16\n\x0en_transactions\x18\x04 \x01(\x05\"\xad\x01\n\x11InferenceResponse\x12(\n\x06status\x18\x01 \x01(\x0e\x32\x18.ppfdaas.InferenceStatus\x12\x19\n\x11result_ciphertext\x18\x02 \x01(\x0c\x12\x12\n\nrequest_id\x18\x03 \x01(\t\x12\x15\n\rerror_message\x18\x04 \x01(\t\x12(\n\x06timing\x18\x05 \x01(\x0b\x32\x18.ppfdaas.TimingBreakdown\"@\n\x1aProvisionGaloisKeysRequest\x12\x13\n\x0bgalois_keys\x18\x01 \x01(\x0c\x12\r\n\x05parms\x18\x02 \x01(\x0c\"Y\n\x1bProvisionGaloisKeysResponse\x12)\n\x05state\x18\x01 \x01(\x0e\x32\x1a.ppfdaas.ProvisioningState\x12\x0f\n\x07message\x18\x02 \x01(\t\"#\n\rCanaryRequest\x12\x12\n\nciphertext\x18\x01 \x01(\x0c\"g\n\x0e\x43\x61naryResponse\x12)\n\x05state\x18\x01 \x01(\x0e\x32\x1a.ppfdaas.ProvisioningState\x12\x19\n\x11result_ciphertext\x18\x02 \x01(\x0c\x12\x0f\n\x07message\x18\x03 \x01(\t\"7\n\x14\x43\x61naryConfirmRequest\x12\x0e\n\x06passed\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\"S\n\x15\x43\x61naryConfirmResponse\x12)\n\x05state\x18\x01 \x01(\x0e\x32\x1a.ppfdaas.ProvisioningState\x12\x0f\n\x07message\x18\x02 \x01(\t\"\x1b\n\x19ProvisioningStatusRequest\"W\n\x1aProvisioningStatusResponse\x12)\n\x05state\x18\x01 \x01(\x0e\x32\x1a.ppfdaas.ProvisioningState\x12\x0e\n\x06\x64\x65tail\x18\x02 \x01(\t*\xab\x01\n\x0fInferenceStatus\x12\x06\n\x02OK\x10\x00\x12\x1e\n\x1a\x45RR_NOISE_BUDGET_EXHAUSTED\x10\x01\x12\x1c\n\x18\x45RR_MALFORMED_CIPHERTEXT\x10\x02\x12\x16\n\x12\x45RR_PARAM_MISMATCH\x10\x03\x12\x0f\n\x0b\x45RR_TIMEOUT\x10\x04\x12\x10\n\x0c\x45RR_INTERNAL\x10\x05\x12\x17\n\x13\x45RR_NOT_PROVISIONED\x10\x06*o\n\x11ProvisioningState\x12\r\n\tPROV_INIT\x10\x00\x12\x16\n\x12PROV_AWAITING_KEYS\x10\x01\x12\x13\n\x0fPROV_VALIDATING\x10\x02\x12\x0e\n\nPROV_READY\x10\x03\x12\x0e\n\nPROV_FAULT\x10\x04\x32\xb2\x03\n\x15\x46raudInferenceService\x12\x45\n\x0cRunInference\x12\x19.ppfdaas.InferenceRequest\x1a\x1a.ppfdaas.InferenceResponse\x12`\n\x13ProvisionGaloisKeys\x12#.ppfdaas.ProvisionGaloisKeysRequest\x1a$.ppfdaas.ProvisionGaloisKeysResponse\x12>\n\x0b\x43\x61naryCheck\x12\x16.ppfdaas.CanaryRequest\x1a\x17.ppfdaas.CanaryResponse\x12N\n\rCanaryConfirm\x12\x1d.ppfdaas.CanaryConfirmRequest\x1a\x1e.ppfdaas.CanaryConfirmResponse\x12`\n\x15GetProvisioningStatus\x12\".ppfdaas.ProvisioningStatusRequest\x1a#.ppfdaas.ProvisioningStatusResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0finference.proto\x12\x07ppfdaas\"\xad\x01\n\x0fTimingBreakdown\x12\x1a\n\x12\x64\x65serialization_us\x18\x01 \x01(\x03\x12\x19\n\x11multiply_plain_us\x18\x02 \x01(\x03\x12\x1c\n\x14rotation_hoisting_us\x18\x03 \x01(\x03\x12\x18\n\x10serialization_us\x18\x04 \x01(\x03\x12\x1a\n\x12total_inference_us\x18\x05 \x01(\x03\x12\x0f\n\x07mask_us\x18\x06 \x01(\x03\"\x96\x01\n\x10InferenceRequest\x12\x12\n\nciphertext\x18\x01 \x01(\x0c\x12\x12\n\nrequest_id\x18\x02 \x01(\t\x12\x16\n\x0einstitution_id\x18\x03 \x01(\t\x12\x16\n\x0en_transactions\x18\x04 \x01(\x05\x12*\n\x0cpacking_mode\x18\x05 \x01(\x0e\x32\x14.ppfdaas.PackingMode\"\xad\x01\n\x11InferenceResponse\x12(\n\x06status\x18\x01 \x01(\x0e\x32\x18.ppfdaas.InferenceStatus\x12\x19\n\x11result_ciphertext\x18\x02 \x01(\x0c\x12\x12\n\nrequest_id\x18\x03 \x01(\t\x12\x15\n\rerror_message\x18\x04 \x01(\t\x12(\n\x06timing\x18\x05 \x01(\x0b\x32\x18.ppfdaas.TimingBreakdown\"@\n\x1aProvisionGaloisKeysRequest\x12\x13\n\x0bgalois_keys\x18\x01 \x01(\x0c\x12\r\n\x05parms\x18\x02 \x01(\x0c\"Y\n\x1bProvisionGaloisKeysResponse\x12)\n\x05state\x18\x01 \x01(\x0e\x32\x1a.ppfdaas.ProvisioningState\x12\x0f\n\x07message\x18\x02 \x01(\t\"#\n\rCanaryRequest\x12\x12\n\nciphertext\x18\x01 \x01(\x0c\"g\n\x0e\x43\x61naryResponse\x12)\n\x05state\x18\x01 \x01(\x0e\x32\x1a.ppfdaas.ProvisioningState\x12\x19\n\x11result_ciphertext\x18\x02 \x01(\x0c\x12\x0f\n\x07message\x18\x03 \x01(\t\"7\n\x14\x43\x61naryConfirmRequest\x12\x0e\n\x06passed\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\"S\n\x15\x43\x61naryConfirmResponse\x12)\n\x05state\x18\x01 \x01(\x0e\x32\x1a.ppfdaas.ProvisioningState\x12\x0f\n\x07message\x18\x02 \x01(\t\"\x1b\n\x19ProvisioningStatusRequest\"\xb5\x01\n\x1aProvisioningStatusResponse\x12)\n\x05state\x18\x01 \x01(\x0e\x32\x1a.ppfdaas.ProvisioningState\x12\x0e\n\x06\x64\x65tail\x18\x02 \x01(\t\x12*\n\x0cpacking_mode\x18\x03 \x01(\x0e\x32\x14.ppfdaas.PackingMode\x12\x18\n\x10galois_key_bytes\x18\x04 \x01(\x04\x12\x16\n\x0erotation_calls\x18\x05 \x01(\x04\"A\n\x18\x43\x61naryTranscipherRequest\x12\x16\n\x0esym_ciphertext\x18\x01 \x01(\x0c\x12\r\n\x05nonce\x18\x02 \x01(\x0c\"\x82\x01\n\x19\x43\x61naryTranscipherResponse\x12)\n\x05state\x18\x01 \x01(\x0e\x32\x1a.ppfdaas.ProvisioningState\x12\x13\n\x0bresult_ckks\x18\x02 \x01(\x0c\x12\x0f\n\x07message\x18\x03 \x01(\t\x12\x14\n\x0cpending_impl\x18\x04 \x01(\x08*\xab\x01\n\x0fInferenceStatus\x12\x06\n\x02OK\x10\x00\x12\x1e\n\x1a\x45RR_NOISE_BUDGET_EXHAUSTED\x10\x01\x12\x1c\n\x18\x45RR_MALFORMED_CIPHERTEXT\x10\x02\x12\x16\n\x12\x45RR_PARAM_MISMATCH\x10\x03\x12\x0f\n\x0b\x45RR_TIMEOUT\x10\x04\x12\x10\n\x0c\x45RR_INTERNAL\x10\x05\x12\x17\n\x13\x45RR_NOT_PROVISIONED\x10\x06*o\n\x11ProvisioningState\x12\r\n\tPROV_INIT\x10\x00\x12\x16\n\x12PROV_AWAITING_KEYS\x10\x01\x12\x13\n\x0fPROV_VALIDATING\x10\x02\x12\x0e\n\nPROV_READY\x10\x03\x12\x0e\n\nPROV_FAULT\x10\x04* \n\x0bPackingMode\x12\x08\n\x04SLOT\x10\x00\x12\x07\n\x03\x43NP\x10\x01\x32\x93\x04\n\x15\x46raudInferenceService\x12\x45\n\x0cRunInference\x12\x19.ppfdaas.InferenceRequest\x1a\x1a.ppfdaas.InferenceResponse\x12`\n\x13ProvisionGaloisKeys\x12#.ppfdaas.ProvisionGaloisKeysRequest\x1a$.ppfdaas.ProvisionGaloisKeysResponse\x12>\n\x0b\x43\x61naryCheck\x12\x16.ppfdaas.CanaryRequest\x1a\x17.ppfdaas.CanaryResponse\x12N\n\rCanaryConfirm\x12\x1d.ppfdaas.CanaryConfirmRequest\x1a\x1e.ppfdaas.CanaryConfirmResponse\x12`\n\x15GetProvisioningStatus\x12\".ppfdaas.ProvisioningStatusRequest\x1a#.ppfdaas.ProvisioningStatusResponse\x12_\n\x16\x43\x61naryCheckTranscipher\x12!.ppfdaas.CanaryTranscipherRequest\x1a\".ppfdaas.CanaryTranscipherResponseb\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'inference_pb2', globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
-  _INFERENCESTATUS._serialized_start=1031
-  _INFERENCESTATUS._serialized_end=1202
-  _PROVISIONINGSTATE._serialized_start=1204
-  _PROVISIONINGSTATE._serialized_end=1315
+  _INFERENCESTATUS._serialized_start=1388
+  _INFERENCESTATUS._serialized_end=1559
+  _PROVISIONINGSTATE._serialized_start=1561
+  _PROVISIONINGSTATE._serialized_end=1672
+  _PACKINGMODE._serialized_start=1674
+  _PACKINGMODE._serialized_end=1706
   _TIMINGBREAKDOWN._serialized_start=29
-  _TIMINGBREAKDOWN._serialized_end=185
-  _INFERENCEREQUEST._serialized_start=187
-  _INFERENCEREQUEST._serialized_end=293
-  _INFERENCERESPONSE._serialized_start=296
-  _INFERENCERESPONSE._serialized_end=469
-  _PROVISIONGALOISKEYSREQUEST._serialized_start=471
-  _PROVISIONGALOISKEYSREQUEST._serialized_end=535
-  _PROVISIONGALOISKEYSRESPONSE._serialized_start=537
-  _PROVISIONGALOISKEYSRESPONSE._serialized_end=626
-  _CANARYREQUEST._serialized_start=628
-  _CANARYREQUEST._serialized_end=663
-  _CANARYRESPONSE._serialized_start=665
-  _CANARYRESPONSE._serialized_end=768
-  _CANARYCONFIRMREQUEST._serialized_start=770
-  _CANARYCONFIRMREQUEST._serialized_end=825
-  _CANARYCONFIRMRESPONSE._serialized_start=827
-  _CANARYCONFIRMRESPONSE._serialized_end=910
-  _PROVISIONINGSTATUSREQUEST._serialized_start=912
-  _PROVISIONINGSTATUSREQUEST._serialized_end=939
-  _PROVISIONINGSTATUSRESPONSE._serialized_start=941
-  _PROVISIONINGSTATUSRESPONSE._serialized_end=1028
-  _FRAUDINFERENCESERVICE._serialized_start=1318
-  _FRAUDINFERENCESERVICE._serialized_end=1752
+  _TIMINGBREAKDOWN._serialized_end=202
+  _INFERENCEREQUEST._serialized_start=205
+  _INFERENCEREQUEST._serialized_end=355
+  _INFERENCERESPONSE._serialized_start=358
+  _INFERENCERESPONSE._serialized_end=531
+  _PROVISIONGALOISKEYSREQUEST._serialized_start=533
+  _PROVISIONGALOISKEYSREQUEST._serialized_end=597
+  _PROVISIONGALOISKEYSRESPONSE._serialized_start=599
+  _PROVISIONGALOISKEYSRESPONSE._serialized_end=688
+  _CANARYREQUEST._serialized_start=690
+  _CANARYREQUEST._serialized_end=725
+  _CANARYRESPONSE._serialized_start=727
+  _CANARYRESPONSE._serialized_end=830
+  _CANARYCONFIRMREQUEST._serialized_start=832
+  _CANARYCONFIRMREQUEST._serialized_end=887
+  _CANARYCONFIRMRESPONSE._serialized_start=889
+  _CANARYCONFIRMRESPONSE._serialized_end=972
+  _PROVISIONINGSTATUSREQUEST._serialized_start=974
+  _PROVISIONINGSTATUSREQUEST._serialized_end=1001
+  _PROVISIONINGSTATUSRESPONSE._serialized_start=1004
+  _PROVISIONINGSTATUSRESPONSE._serialized_end=1185
+  _CANARYTRANSCIPHERREQUEST._serialized_start=1187
+  _CANARYTRANSCIPHERREQUEST._serialized_end=1252
+  _CANARYTRANSCIPHERRESPONSE._serialized_start=1255
+  _CANARYTRANSCIPHERRESPONSE._serialized_end=1385
+  _FRAUDINFERENCESERVICE._serialized_start=1709
+  _FRAUDINFERENCESERVICE._serialized_end=2240
 # @@protoc_insertion_point(module_scope)

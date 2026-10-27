@@ -307,4 +307,11 @@ def print_table(strategies: list[dict]) -> None:
 
 
 if __name__ == "__main__":
+    # CNP-A: with no flags this is the unchanged Phase 4 table builder. With any
+    # flag (--strategies fold,bsgs,naive,cnp --lanes ... --requests N [--smoke]
+    # ...) it runs the strategy x lanes x requests harness in scripts/cnp_bench.py.
+    if any(a.startswith("--") for a in sys.argv[1:]):
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from cnp_bench import cli
+        sys.exit(cli())
     main()

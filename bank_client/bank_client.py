@@ -40,13 +40,26 @@ class BankClient:
                  secret_key_path='artifacts/secret_key.bin', use_tls=False,
                  wrapper_module='seal_wrapper', grpc_max_message_length=512 * 1024,
                  galois_keys_path=None,
-                 tls_ca_path=None, tls_cert_path=None, tls_key_path=None):
+                 tls_ca_path=None, tls_cert_path=None, tls_key_path=None,
+                 packing='slot'):
+        # CNP-A: packing='cnp' selects Coefficient-Native Packing (up to 32
+        # lanes, no Galois keys, no rotations). It needs the 160-bit wrapper
+        # and a server started with PPFD_PACKING=cnp; the server mode is fixed
+        # per process and a mismatching request is rejected, never redirected.
+        if packing not in ('slot', 'cnp'):
+            raise ValueError(f"packing must be 'slot' or 'cnp', got {packing!r}")
+        if packing == 'cnp' and galois_keys_path is not None:
+            raise ValueError("packing='cnp' never provisions Galois keys; pass galois_keys_path=None")
+        self._packing = packing
+        self._max_lanes = 32 if packing == 'cnp' else 16
         wrapper = seal_wrapper if wrapper_module == 'seal_wrapper' else _load_wrapper_module(wrapper_module)
+        if packing == 'cnp' and not hasattr(wrapper, 'encrypt_cnp_batch'):
+            raise ValueError("packing='cnp' requires wrapper_module='seal_wrapper_160'")
         self._wrapper = wrapper
         wrapper.init_seal(
             Path(public_key_path).read_bytes(),
             Path(secret_key_path).read_bytes())
-        self._pad_buffer = np.zeros((16, 256), dtype=np.float64)
+        self._pad_buffer = np.zeros((self._max_lanes, 256), dtype=np.float64)
         options = _grpc_options(grpc_max_message_length)
         if use_tls:
             # §1.7: mutually authenticated TLS. If tls_ca_path/tls_cert_path/
@@ -151,8 +164,14 @@ class BankClient:
                       timeout_seconds=0.5) -> dict:
         n_txns, n_feat = X.shape
         if n_feat != 256: raise ValueError(f'Expected 256 features, got {n_feat}')
-        if not (1 <= n_txns <= 16): raise ValueError(f'n_txns must be 1-16')
-        if n_txns < 16:
+        if not (1 <= n_txns <= self._max_lanes):
+            raise ValueError(f'n_txns must be 1-{self._max_lanes}')
+        cnp_mode = self._packing == 'cnp'
+        if cnp_mode:
+            # CNP encodes exactly the n_txns lanes it is given (zeros elsewhere
+            # are implicit in the coefficient polynomial); no padding buffer.
+            flat = np.ascontiguousarray(X, dtype=np.float64)
+        elif n_txns < 16:
             self._pad_buffer[:n_txns] = X
             self._pad_buffer[n_txns:] = 0.0
             flat = np.ascontiguousarray(self._pad_buffer.ravel(), dtype=np.float64)
@@ -176,14 +195,16 @@ class BankClient:
         t_start = time.perf_counter()
 
         t0 = time.perf_counter()
-        ct_bytes   = self._wrapper.encrypt_batch(flat)
+        ct_bytes   = (self._wrapper.encrypt_cnp_batch(flat) if cnp_mode
+                      else self._wrapper.encrypt_batch(flat))
         t1 = time.perf_counter()
         encrypt_us = (t1 - t0) * 1e6
 
         request_id = str(uuid.uuid4())
         req = inference_pb2.InferenceRequest(
             ciphertext=ct_bytes, request_id=request_id,
-            institution_id=institution_id, n_transactions=n_txns)
+            institution_id=institution_id, n_transactions=n_txns,
+            packing_mode=inference_pb2.CNP if cnp_mode else inference_pb2.SLOT)
 
         t2 = time.perf_counter()
         resp = self._stub.RunInference(req, timeout=timeout_seconds)
@@ -196,12 +217,14 @@ class BankClient:
             raise RuntimeError(f'Request ID mismatch: sent {request_id}')
 
         t4 = time.perf_counter()
-        raw = self._wrapper.decrypt_batch(resp.result_ciphertext, n_txns)
+        raw = (self._wrapper.decrypt_cnp_batch(resp.result_ciphertext, n_txns) if cnp_mode
+               else self._wrapper.decrypt_batch(resp.result_ciphertext, n_txns))
         t5 = time.perf_counter()
         decrypt_us = (t5 - t4) * 1e6
 
         # §1.3: bias is applied server-side (inference_service_160.cpp) and is
-        # already included in `raw`. The bank never sees model_weights.bin.
+        # already included in `raw` -- in CNP mode it rides in the server's
+        # mask at the 32 output coefficients. The bank never sees model_weights.bin.
         t6 = time.perf_counter()
         probs = expit(raw)
         t7 = time.perf_counter()
@@ -217,6 +240,7 @@ class BankClient:
                 'deserialization_us':    resp.timing.deserialization_us,
                 'multiply_plain_us':     resp.timing.multiply_plain_us,
                 'rotation_hoisting_us':  resp.timing.rotation_hoisting_us,
+                'mask_us':               resp.timing.mask_us,
                 'serialization_us':      resp.timing.serialization_us,
                 'total_inference_us':    resp.timing.total_inference_us,
             },
@@ -231,3 +255,18 @@ class BankClient:
         }
 
     def close(self): ...
+
+
+# TimingBreakdown invariant (proto/inference.proto):
+#   deserialization + multiply_plain + rotation_hoisting + mask + serialization
+#   ~= total_inference, residual <= 300 us.
+# CNP mode: rotation_hoisting_us == 0. SLOT mode: mask_us == 0.
+TIMING_RESIDUAL_BUDGET_US = 300
+
+
+def timing_residual_us(timing: dict) -> int:
+    """total_inference_us minus the sum of the five named server stages."""
+    parts = (timing['deserialization_us'] + timing['multiply_plain_us']
+             + timing['rotation_hoisting_us'] + timing.get('mask_us', 0)
+             + timing['serialization_us'])
+    return int(timing['total_inference_us'] - parts)

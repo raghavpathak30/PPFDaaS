@@ -162,6 +162,31 @@ inline bool ProvisioningState_Parse(
   return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<ProvisioningState>(
     ProvisioningState_descriptor(), name, value);
 }
+enum PackingMode : int {
+  SLOT = 0,
+  CNP = 1,
+  PackingMode_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
+  PackingMode_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
+};
+bool PackingMode_IsValid(int value);
+constexpr PackingMode PackingMode_MIN = SLOT;
+constexpr PackingMode PackingMode_MAX = CNP;
+constexpr int PackingMode_ARRAYSIZE = PackingMode_MAX + 1;
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* PackingMode_descriptor();
+template<typename T>
+inline const std::string& PackingMode_Name(T enum_t_value) {
+  static_assert(::std::is_same<T, PackingMode>::value ||
+    ::std::is_integral<T>::value,
+    "Incorrect type passed to function PackingMode_Name.");
+  return ::PROTOBUF_NAMESPACE_ID::internal::NameOfEnum(
+    PackingMode_descriptor(), enum_t_value);
+}
+inline bool PackingMode_Parse(
+    ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, PackingMode* value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<PackingMode>(
+    PackingMode_descriptor(), name, value);
+}
 // ===================================================================
 
 class TimingBreakdown final :
@@ -290,6 +315,7 @@ class TimingBreakdown final :
     kRotationHoistingUsFieldNumber = 3,
     kSerializationUsFieldNumber = 4,
     kTotalInferenceUsFieldNumber = 5,
+    kMaskUsFieldNumber = 6,
   };
   // int64 deserialization_us = 1;
   void clear_deserialization_us();
@@ -336,6 +362,15 @@ class TimingBreakdown final :
   void _internal_set_total_inference_us(int64_t value);
   public:
 
+  // int64 mask_us = 6;
+  void clear_mask_us();
+  int64_t mask_us() const;
+  void set_mask_us(int64_t value);
+  private:
+  int64_t _internal_mask_us() const;
+  void _internal_set_mask_us(int64_t value);
+  public:
+
   // @@protoc_insertion_point(class_scope:ppfdaas.TimingBreakdown)
  private:
   class _Internal;
@@ -349,6 +384,7 @@ class TimingBreakdown final :
     int64_t rotation_hoisting_us_;
     int64_t serialization_us_;
     int64_t total_inference_us_;
+    int64_t mask_us_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -481,6 +517,7 @@ class InferenceRequest final :
     kRequestIdFieldNumber = 2,
     kInstitutionIdFieldNumber = 3,
     kNTransactionsFieldNumber = 4,
+    kPackingModeFieldNumber = 5,
   };
   // bytes ciphertext = 1;
   void clear_ciphertext();
@@ -533,6 +570,15 @@ class InferenceRequest final :
   void _internal_set_n_transactions(int32_t value);
   public:
 
+  // .ppfdaas.PackingMode packing_mode = 5;
+  void clear_packing_mode();
+  ::ppfdaas::PackingMode packing_mode() const;
+  void set_packing_mode(::ppfdaas::PackingMode value);
+  private:
+  ::ppfdaas::PackingMode _internal_packing_mode() const;
+  void _internal_set_packing_mode(::ppfdaas::PackingMode value);
+  public:
+
   // @@protoc_insertion_point(class_scope:ppfdaas.InferenceRequest)
  private:
   class _Internal;
@@ -545,6 +591,7 @@ class InferenceRequest final :
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr request_id_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr institution_id_;
     int32_t n_transactions_;
+    int packing_mode_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -2003,6 +2050,9 @@ class ProvisioningStatusResponse final :
   enum : int {
     kDetailFieldNumber = 2,
     kStateFieldNumber = 1,
+    kPackingModeFieldNumber = 3,
+    kGaloisKeyBytesFieldNumber = 4,
+    kRotationCallsFieldNumber = 5,
   };
   // string detail = 2;
   void clear_detail();
@@ -2027,6 +2077,33 @@ class ProvisioningStatusResponse final :
   void _internal_set_state(::ppfdaas::ProvisioningState value);
   public:
 
+  // .ppfdaas.PackingMode packing_mode = 3;
+  void clear_packing_mode();
+  ::ppfdaas::PackingMode packing_mode() const;
+  void set_packing_mode(::ppfdaas::PackingMode value);
+  private:
+  ::ppfdaas::PackingMode _internal_packing_mode() const;
+  void _internal_set_packing_mode(::ppfdaas::PackingMode value);
+  public:
+
+  // uint64 galois_key_bytes = 4;
+  void clear_galois_key_bytes();
+  uint64_t galois_key_bytes() const;
+  void set_galois_key_bytes(uint64_t value);
+  private:
+  uint64_t _internal_galois_key_bytes() const;
+  void _internal_set_galois_key_bytes(uint64_t value);
+  public:
+
+  // uint64 rotation_calls = 5;
+  void clear_rotation_calls();
+  uint64_t rotation_calls() const;
+  void set_rotation_calls(uint64_t value);
+  private:
+  uint64_t _internal_rotation_calls() const;
+  void _internal_set_rotation_calls(uint64_t value);
+  public:
+
   // @@protoc_insertion_point(class_scope:ppfdaas.ProvisioningStatusResponse)
  private:
   class _Internal;
@@ -2037,6 +2114,9 @@ class ProvisioningStatusResponse final :
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr detail_;
     int state_;
+    int packing_mode_;
+    uint64_t galois_key_bytes_;
+    uint64_t rotation_calls_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -2513,6 +2593,26 @@ inline void TimingBreakdown::set_total_inference_us(int64_t value) {
   // @@protoc_insertion_point(field_set:ppfdaas.TimingBreakdown.total_inference_us)
 }
 
+// int64 mask_us = 6;
+inline void TimingBreakdown::clear_mask_us() {
+  _impl_.mask_us_ = int64_t{0};
+}
+inline int64_t TimingBreakdown::_internal_mask_us() const {
+  return _impl_.mask_us_;
+}
+inline int64_t TimingBreakdown::mask_us() const {
+  // @@protoc_insertion_point(field_get:ppfdaas.TimingBreakdown.mask_us)
+  return _internal_mask_us();
+}
+inline void TimingBreakdown::_internal_set_mask_us(int64_t value) {
+  
+  _impl_.mask_us_ = value;
+}
+inline void TimingBreakdown::set_mask_us(int64_t value) {
+  _internal_set_mask_us(value);
+  // @@protoc_insertion_point(field_set:ppfdaas.TimingBreakdown.mask_us)
+}
+
 // -------------------------------------------------------------------
 
 // InferenceRequest
@@ -2685,6 +2785,26 @@ inline void InferenceRequest::_internal_set_n_transactions(int32_t value) {
 inline void InferenceRequest::set_n_transactions(int32_t value) {
   _internal_set_n_transactions(value);
   // @@protoc_insertion_point(field_set:ppfdaas.InferenceRequest.n_transactions)
+}
+
+// .ppfdaas.PackingMode packing_mode = 5;
+inline void InferenceRequest::clear_packing_mode() {
+  _impl_.packing_mode_ = 0;
+}
+inline ::ppfdaas::PackingMode InferenceRequest::_internal_packing_mode() const {
+  return static_cast< ::ppfdaas::PackingMode >(_impl_.packing_mode_);
+}
+inline ::ppfdaas::PackingMode InferenceRequest::packing_mode() const {
+  // @@protoc_insertion_point(field_get:ppfdaas.InferenceRequest.packing_mode)
+  return _internal_packing_mode();
+}
+inline void InferenceRequest::_internal_set_packing_mode(::ppfdaas::PackingMode value) {
+  
+  _impl_.packing_mode_ = value;
+}
+inline void InferenceRequest::set_packing_mode(::ppfdaas::PackingMode value) {
+  _internal_set_packing_mode(value);
+  // @@protoc_insertion_point(field_set:ppfdaas.InferenceRequest.packing_mode)
 }
 
 // -------------------------------------------------------------------
@@ -3533,6 +3653,66 @@ inline void ProvisioningStatusResponse::set_allocated_detail(std::string* detail
   // @@protoc_insertion_point(field_set_allocated:ppfdaas.ProvisioningStatusResponse.detail)
 }
 
+// .ppfdaas.PackingMode packing_mode = 3;
+inline void ProvisioningStatusResponse::clear_packing_mode() {
+  _impl_.packing_mode_ = 0;
+}
+inline ::ppfdaas::PackingMode ProvisioningStatusResponse::_internal_packing_mode() const {
+  return static_cast< ::ppfdaas::PackingMode >(_impl_.packing_mode_);
+}
+inline ::ppfdaas::PackingMode ProvisioningStatusResponse::packing_mode() const {
+  // @@protoc_insertion_point(field_get:ppfdaas.ProvisioningStatusResponse.packing_mode)
+  return _internal_packing_mode();
+}
+inline void ProvisioningStatusResponse::_internal_set_packing_mode(::ppfdaas::PackingMode value) {
+  
+  _impl_.packing_mode_ = value;
+}
+inline void ProvisioningStatusResponse::set_packing_mode(::ppfdaas::PackingMode value) {
+  _internal_set_packing_mode(value);
+  // @@protoc_insertion_point(field_set:ppfdaas.ProvisioningStatusResponse.packing_mode)
+}
+
+// uint64 galois_key_bytes = 4;
+inline void ProvisioningStatusResponse::clear_galois_key_bytes() {
+  _impl_.galois_key_bytes_ = uint64_t{0u};
+}
+inline uint64_t ProvisioningStatusResponse::_internal_galois_key_bytes() const {
+  return _impl_.galois_key_bytes_;
+}
+inline uint64_t ProvisioningStatusResponse::galois_key_bytes() const {
+  // @@protoc_insertion_point(field_get:ppfdaas.ProvisioningStatusResponse.galois_key_bytes)
+  return _internal_galois_key_bytes();
+}
+inline void ProvisioningStatusResponse::_internal_set_galois_key_bytes(uint64_t value) {
+  
+  _impl_.galois_key_bytes_ = value;
+}
+inline void ProvisioningStatusResponse::set_galois_key_bytes(uint64_t value) {
+  _internal_set_galois_key_bytes(value);
+  // @@protoc_insertion_point(field_set:ppfdaas.ProvisioningStatusResponse.galois_key_bytes)
+}
+
+// uint64 rotation_calls = 5;
+inline void ProvisioningStatusResponse::clear_rotation_calls() {
+  _impl_.rotation_calls_ = uint64_t{0u};
+}
+inline uint64_t ProvisioningStatusResponse::_internal_rotation_calls() const {
+  return _impl_.rotation_calls_;
+}
+inline uint64_t ProvisioningStatusResponse::rotation_calls() const {
+  // @@protoc_insertion_point(field_get:ppfdaas.ProvisioningStatusResponse.rotation_calls)
+  return _internal_rotation_calls();
+}
+inline void ProvisioningStatusResponse::_internal_set_rotation_calls(uint64_t value) {
+  
+  _impl_.rotation_calls_ = value;
+}
+inline void ProvisioningStatusResponse::set_rotation_calls(uint64_t value) {
+  _internal_set_rotation_calls(value);
+  // @@protoc_insertion_point(field_set:ppfdaas.ProvisioningStatusResponse.rotation_calls)
+}
+
 // -------------------------------------------------------------------
 
 // CanaryTranscipherRequest
@@ -3824,6 +4004,11 @@ template <> struct is_proto_enum< ::ppfdaas::ProvisioningState> : ::std::true_ty
 template <>
 inline const EnumDescriptor* GetEnumDescriptor< ::ppfdaas::ProvisioningState>() {
   return ::ppfdaas::ProvisioningState_descriptor();
+}
+template <> struct is_proto_enum< ::ppfdaas::PackingMode> : ::std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::ppfdaas::PackingMode>() {
+  return ::ppfdaas::PackingMode_descriptor();
 }
 
 PROTOBUF_NAMESPACE_CLOSE

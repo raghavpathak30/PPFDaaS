@@ -42,6 +42,17 @@ Rubato (5 seeds; the noise bound ±9 is included in the worst-case bound)
 
 The top-5 ordering is within noise. All differences are around 1e-5, far below the Rubato seed std of 3e-4. Treat any pair with worst-case ratio < 1 and ΔAUC ≤ 1e-3 as equivalent. For the Rubato best pair, the worst single seed deviates 4.4e-4 from baseline.
 
+## Chosen pair for both ciphers: (log2Δx, log2Δw) = (8, 6)
+
+Read from `artifacts/cnp_gate.json` (cells with log2_dx=8, log2_dw=6); both are worst-case safe with |ΔAUC| ≤ 0.001.
+
+| Cipher | worst-case bound / (t/2) | empirical max\|s\| | headroom bits | overflows | ΔAUC |
+|---|---|---|---|---|---|
+| HERA | 752,896 / 16,646,144 = 0.045 | 338,999 | 5.62 | 0 | −8.1e-6 |
+| Rubato (5 seeds, includes ±9 noise bound) | 779,365 / 16,646,144 = 0.047 | 339,401 | 5.62 | 0 | +6.2e-5 (std 3.0e-4) |
+
+Use this single pair for both ciphers. Rubato's (8,6) is absent from its top 5 only because that ranking is noise-level (see below).
+
 ## Precision bound
 With |x_j| ≤ 1 (guaranteed by `compiler/train_xgboost.py:60-61`), xq = round(Δx·x), wq = round(Δw·w):
 
