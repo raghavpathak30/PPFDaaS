@@ -1,12 +1,14 @@
 from pathlib import Path
 import importlib
 import json
+import os
 import pathlib
 import re
 import socket
 import struct
 import subprocess
 import sys
+import tempfile
 import time
 import uuid
 
@@ -254,7 +256,12 @@ _VENDOR_160 = {
     "grpc_max_message_length": 8 * 1024 * 1024,
 }
 
-ERRORS_JSON_PATH = REPO_ROOT / "artifacts" / "errors.json"
+# Where run_runtime_validation writes its report. NEVER the tracked
+# artifacts/errors.json by default (a plain pytest run used to overwrite it with a 160-sample
+# result). Override with PPFD_ERRORS_JSON=<path>, or `python tests/test_inference.py --errors-json
+# <path>`; to deliberately regenerate the tracked baseline pass artifacts/errors.json explicitly.
+ERRORS_JSON_PATH = Path(os.environ.get("PPFD_ERRORS_JSON")
+                        or Path(tempfile.gettempdir()) / "ppfdaas" / "errors.json")
 
 BATCH_SIZE = 16  # protocol packs 16 transactions x 256 features = 4096 slots
 
@@ -299,7 +306,8 @@ def _stop_server(proc: subprocess.Popen) -> None:
 def run_runtime_validation(max_samples: int | None = None) -> dict:
     """Phase 0.3 end-to-end logit-vs-logit parity + accuracy report.
 
-    Returns the report dict (also written to `artifacts/errors.json`).
+    Returns the report dict (also written to ERRORS_JSON_PATH: $PPFD_ERRORS_JSON or a tmp dir,
+    never the tracked artifacts/errors.json unless that path is given explicitly).
     """
     from generated import inference_pb2
     from sklearn.metrics import average_precision_score, roc_auc_score
@@ -430,4 +438,12 @@ def test_runtime_validation():
 
 
 if __name__ == "__main__":
+    import argparse
+
+    _ap = argparse.ArgumentParser()
+    _ap.add_argument("--errors-json", default=None,
+                     help="output path (default: $PPFD_ERRORS_JSON or a tmp dir)")
+    _a = _ap.parse_args()
+    if _a.errors_json:
+        ERRORS_JSON_PATH = Path(_a.errors_json)
     run_runtime_validation()

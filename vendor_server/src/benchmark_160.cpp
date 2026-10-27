@@ -1,5 +1,6 @@
 #include "ckks_context_160.h"
 
+#include "cnp_codec.h"
 #include "he_inference.h"
 #include "rotation_hoisting.h"
 
@@ -22,6 +23,14 @@ constexpr int kLanes = 16;
 constexpr int kFeatures = 256;
 constexpr int kBabyStep = 16;
 constexpr int kGiantStep = 16;
+
+// Synthetic bias, added inside every timed circuit so that all four strategies
+// time the same server work: the slot strategies do add_plain(pt_bias) after
+// the reduction (as inference_service_160.cpp does); CNP carries the bias in
+// its per-request mask. Precomputed plaintexts are built OUTSIDE the timer,
+// exactly as the server builds pt_bias_ once at construction; the CNP mask is
+// fresh randomness per request, so building it is INSIDE the timer.
+constexpr double kBias = 0.37;
 
 constexpr int kWarmupRounds = 20;
 constexpr int kMeasureRounds = 100;
@@ -76,13 +85,14 @@ Stats compute_stats(std::vector<double> samples_us) {
     return s;
 }
 
-// Runs multiply_plain -> rescale -> reduction(strategy) on `ct` (consumed),
-// writing the lane-aligned dot-product result into `out`.
+// Runs multiply_plain -> rescale -> reduction(strategy) -> add_plain(bias) on
+// `ct` (consumed), writing the lane-aligned score (dot product + bias) into `out`.
 void run_circuit(
         CKKSContext160 &ctx,
         const std::string &strategy,
         const seal::Ciphertext &ct_in,
         const seal::Plaintext &pt_weights,
+        const seal::Plaintext &pt_bias,
         const seal::GaloisKeys &galois_keys,
         seal::Ciphertext &out) {
     seal::Ciphertext ct = ct_in;
@@ -96,6 +106,23 @@ void run_circuit(
     } else {
         hoisted_tree_sum(ct, galois_keys, *ctx.evaluator, out, kFeatures);
     }
+    ctx.evaluator->add_plain_inplace(out, pt_bias);
+}
+
+// CNP circuit: multiply_plain(w_rev) -> rescale -> fresh output mask carrying
+// the bias (built here, per call: it is per-request randomness) -> add_plain.
+// No rotations, no Galois keys. Same stages as the CNP branch of RunInference.
+void run_circuit_cnp(
+        CKKSContext160 &ctx,
+        const seal::Ciphertext &ct_in,
+        const seal::Plaintext &pt_wrev,
+        seal::Ciphertext &out) {
+    out = ct_in;
+    ctx.evaluator->multiply_plain_inplace(out, pt_wrev);
+    ctx.evaluator->rescale_to_next_inplace(out);
+    seal::Plaintext mask;
+    cnp::build_output_mask(*ctx.context, out.parms_id(), out.scale(), kBias, true, mask);
+    ctx.evaluator->add_plain_inplace(out, mask);
 }
 
 } // namespace
@@ -103,14 +130,18 @@ void run_circuit(
 int main(int argc, char **argv) {
     std::string strategy; // empty => legacy default behavior (backward-compatible)
     std::string samples_out; // optional: dump raw per-iteration latencies_us as a JSON array
+    int cnp_lanes = static_cast<int>(cnp::kMaxLanes); // --lanes=N, cnp only (slot circuits always use 16)
     for (int i = 1; i < argc; ++i) {
         const std::string arg = argv[i];
         const std::string strategy_prefix = "--strategy=";
         const std::string samples_prefix = "--samples-out=";
+        const std::string lanes_prefix = "--lanes=";
         if (arg.rfind(strategy_prefix, 0) == 0) {
             strategy = arg.substr(strategy_prefix.size());
         } else if (arg.rfind(samples_prefix, 0) == 0) {
             samples_out = arg.substr(samples_prefix.size());
+        } else if (arg.rfind(lanes_prefix, 0) == 0) {
+            cnp_lanes = std::atoi(arg.substr(lanes_prefix.size()).c_str());
         }
     }
 
@@ -145,11 +176,17 @@ int main(int argc, char **argv) {
     }
 
     // ── Phase 4/5 measurement path: --strategy=fold|bsgs|naive ───────────────
-    if (strategy != "fold" && strategy != "bsgs" && strategy != "naive") {
+    if (strategy != "fold" && strategy != "bsgs" && strategy != "naive" && strategy != "cnp") {
         std::cerr << "benchmark_160: unknown --strategy='" << strategy
-                  << "' (expected 'fold', 'bsgs', or 'naive')\n";
+                  << "' (expected 'fold', 'bsgs', 'naive', or 'cnp')\n";
         return 2;
     }
+    const bool is_cnp = strategy == "cnp";
+    if (is_cnp && (cnp_lanes < 1 || cnp_lanes > static_cast<int>(cnp::kMaxLanes))) {
+        std::cerr << "benchmark_160: --lanes must be 1..32 for cnp\n";
+        return 2;
+    }
+    const int lanes_used = is_cnp ? cnp_lanes : kLanes;
 
     // Generate a fresh Galois key set for the requested strategy. This is a
     // BENCHMARK-ONLY operation (CKKSContext160 holds a live secret key and is
@@ -182,6 +219,10 @@ int main(int argc, char **argv) {
             "in bsgs's layers) but naive_tree_sum executes them in a single "
             "sequential loop with no hoisting/batching -- critical_path "
             "reflects the as-implemented sequential cost";
+    } else if (is_cnp) {
+        steps.clear();  // CNP: no rotations, no Galois keys, nothing to generate
+        n_rotations = 0;
+        critical_path = 0;
     } else {
         steps = {1, 2, 4, 8, 16, 32, 64, 128};
         n_rotations = 8;
@@ -189,7 +230,7 @@ int main(int argc, char **argv) {
     }
 
     const clock_type::time_point kg_t0 = clock_type::now();
-    keygen.create_galois_keys(steps, galois_keys);
+    if (!is_cnp) keygen.create_galois_keys(steps, galois_keys);
     const clock_type::time_point kg_t1 = clock_type::now();
     const double galois_keygen_us =
         std::chrono::duration<double, std::micro>(kg_t1 - kg_t0).count();
@@ -199,26 +240,61 @@ int main(int argc, char **argv) {
     // vector per lane (16 lanes x 256 features = 4096 slots). ──────────────
     std::mt19937 rng(42);
     std::uniform_real_distribution<double> dist(-1.0, 1.0);
-    std::vector<double> features(kSlotCount);
-    std::vector<double> weights(kSlotCount);
-    for (int i = 0; i < kSlotCount; ++i) {
-        features[i] = dist(rng);
-        weights[i] = dist(rng);
-    }
-
-    std::vector<double> expected(kLanes, 0.0);
-    for (int k = 0; k < kLanes; ++k) {
-        double acc = 0.0;
-        for (int j = 0; j < kFeatures; ++j) {
-            acc += weights[k * kFeatures + j] * features[k * kFeatures + j];
-        }
-        expected[k] = acc;
-    }
 
     seal::Plaintext pt_features;
-    seal::Plaintext pt_weights;
-    ctx.encoder->encode(features, ctx.scale, pt_features);
-    ctx.encoder->encode(weights, ctx.scale, pt_weights);
+    seal::Plaintext pt_weights;  // slot: per-slot weights; cnp: w_rev(X)
+    seal::Plaintext pt_bias;     // slot only (cnp carries the bias in its mask)
+    std::vector<double> expected(lanes_used, 0.0);  // dot product + kBias per lane
+
+    if (is_cnp) {
+        // CNP oracle: ONE weight vector shared by all lanes (the model), an
+        // independent random feature row per lane, dense in every coefficient.
+        std::vector<double> w(kFeatures);
+        for (double &v : w) v = dist(rng);
+        std::vector<double> rows(static_cast<std::size_t>(lanes_used) * kFeatures);
+        for (double &v : rows) v = dist(rng);
+        for (int k = 0; k < lanes_used; ++k) {
+            double acc = 0.0;
+            for (int j = 0; j < kFeatures; ++j) acc += w[j] * rows[k * kFeatures + j];
+            expected[k] = acc + kBias;
+        }
+        cnp::encode_coeffs(*ctx.context, cnp::pack_lanes(rows.data(), lanes_used), ctx.scale,
+                           ctx.context->first_parms_id(), pt_features);
+        cnp::encode_coeffs(*ctx.context, cnp::weights_to_wrev(w), ctx.scale,
+                           ctx.context->first_parms_id(), pt_weights);
+    } else {
+        std::vector<double> features(kSlotCount);
+        std::vector<double> weights(kSlotCount);
+        for (int i = 0; i < kSlotCount; ++i) {
+            features[i] = dist(rng);
+            weights[i] = dist(rng);
+        }
+        for (int k = 0; k < kLanes; ++k) {
+            double acc = 0.0;
+            for (int j = 0; j < kFeatures; ++j) {
+                acc += weights[k * kFeatures + j] * features[k * kFeatures + j];
+            }
+            expected[k] = acc + kBias;
+        }
+        ctx.encoder->encode(features, ctx.scale, pt_features);
+        ctx.encoder->encode(weights, ctx.scale, pt_weights);
+
+        // Bias plaintext at the post-rescale scale, built once (as the server's
+        // pt_bias_ is): scale^2 / q_last, lane-aligned slots k*256.
+        const double q_last = static_cast<double>(
+            ctx.context->first_context_data()->parms().coeff_modulus().back().value());
+        std::vector<double> bias_vec(kSlotCount, 0.0);
+        for (int k = 0; k < kLanes; ++k) bias_vec[k * kFeatures] = kBias;
+        ctx.encoder->encode(bias_vec, ctx.second_parms_id, (ctx.scale * ctx.scale) / q_last, pt_bias);
+    }
+
+    auto run = [&](const seal::Ciphertext &ct_in, seal::Ciphertext &o) {
+        if (is_cnp) {
+            run_circuit_cnp(ctx, ct_in, pt_weights, o);
+        } else {
+            run_circuit(ctx, strategy, ct_in, pt_weights, pt_bias, galois_keys, o);
+        }
+    };
 
     seal::Ciphertext ct_seed;
     ctx.encryptor->encrypt(pt_features, ct_seed);
@@ -227,16 +303,22 @@ int main(int argc, char **argv) {
     // the plaintext oracle to CKKS precision BEFORE any timing number is
     // trusted (Phase 4 instructions / Phase 5.5 pattern). ──────────────────
     seal::Ciphertext correctness_out;
-    run_circuit(ctx, strategy, ct_seed, pt_weights, galois_keys, correctness_out);
+    run(ct_seed, correctness_out);
 
     seal::Plaintext pt_decrypted;
-    std::vector<double> decoded;
+    std::vector<double> got_lane(lanes_used, 0.0);
     ctx.decryptor->decrypt(correctness_out, pt_decrypted);
-    ctx.encoder->decode(pt_decrypted, decoded);
+    if (is_cnp) {
+        got_lane = cnp::decode_lane_outputs(*ctx.context, pt_decrypted, lanes_used);
+    } else {
+        std::vector<double> decoded;
+        ctx.encoder->decode(pt_decrypted, decoded);
+        for (int k = 0; k < kLanes; ++k) got_lane[k] = decoded[k * kFeatures];
+    }
 
     double max_abs_error = 0.0;
-    for (int k = 0; k < kLanes; ++k) {
-        const double got = decoded[k * kFeatures];
+    for (int k = 0; k < lanes_used; ++k) {
+        const double got = got_lane[k];
         const double err = std::fabs(got - expected[k]);
         max_abs_error = std::max(max_abs_error, err);
     }
@@ -256,7 +338,7 @@ int main(int argc, char **argv) {
         seal::Ciphertext ct;
         ctx.encryptor->encrypt(pt_features, ct);
         seal::Ciphertext out;
-        run_circuit(ctx, strategy, ct, pt_weights, galois_keys, out);
+        run(ct, out);
     }
 
     std::vector<double> latencies_us;
@@ -267,7 +349,7 @@ int main(int argc, char **argv) {
 
         clock_type::time_point t0 = clock_type::now();
         seal::Ciphertext out;
-        run_circuit(ctx, strategy, ct, pt_weights, galois_keys, out);
+        run(ct, out);
         clock_type::time_point t1 = clock_type::now();
 
         latencies_us.push_back(std::chrono::duration<double, std::micro>(t1 - t0).count());
@@ -287,6 +369,12 @@ int main(int argc, char **argv) {
 
     std::cout << "{\n"
               << "  \"strategy\": \"" << strategy << "\",\n"
+              << "  \"scope\": \"server_compute_only\",\n"
+              << "  \"stages\": \"multiply_plain, rescale, "
+              << (is_cnp ? "output mask (fresh CSPRNG, carries bias) + add_plain"
+                         : "reduction, add_plain(bias)")
+              << "; excludes (de)serialization, encrypt and decrypt\",\n"
+              << "  \"lanes\": " << lanes_used << ",\n"
               << "  \"rotations\": " << n_rotations << ",\n"
               << "  \"critical_path\": " << critical_path << ",\n";
     if (!critical_path_note.empty()) {

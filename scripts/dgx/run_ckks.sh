@@ -14,6 +14,11 @@
 #             a3       thread scaling over THREADS (fold and bsgs)
 #             a4       throughput: CONCURRENCY concurrent requests
 #             all      parity, a1, a2, a3, a4 in order
+#             cnp      CNP-A strategy x lanes x requests harness (scripts/cnp_bench.py): fold, bsgs,
+#                      naive, cnp as server-compute-only rows + fold and cnp as e2e gRPC rows.
+#                      Uses image ppfdaas-cnp-bench (tools/cnp/Dockerfile.cnpbench) and mounts
+#                      ARTIFACTS_DIR read-only at /app/artifacts.
+#             smoke    same, 10 requests / 2 warmup per configuration
 #
 # Environment (all optional):
 #   PARAMS=160|200|both       default both
@@ -35,6 +40,11 @@
 #   MEM_LIMIT=<e.g. 16g>      optional --memory (recommended on a shared host)
 #   IMAGE=<name[:tag]|id>     default ppfdaas-ckks-bench:latest
 #   RESULTS_ROOT=<dir>        default ~/results
+#   cnp / smoke targets only:
+#     STRATEGIES=fold,bsgs,naive,cnp  LANES=1,4,8,16,32  REQUESTS=1000  (WARMUP, OMP_THREADS as above)
+#     SERVER_CORES=0-7  CLIENT_CORES=10-11   split of the pinned CPUs between the server and the client
+#     PORT=50052        server port inside the container (own network namespace)
+#     ARTIFACTS_DIR=<dir>  host artifacts/ with the *_160.bin keys, weights, X_test/y_test (default ./artifacts)
 #   WAIT=1                    block until the job finishes (default: detach)
 #   FORCE=1                   allow reusing a non-empty results dir
 set -euo pipefail
@@ -44,7 +54,10 @@ usage() { sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//' >&2; ex
 JOB="$1"; TARGET="$2"; shift 2
 [[ "${JOB}" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]] || { echo "bad job name: ${JOB}" >&2; exit 2; }
 
-IMAGE="${IMAGE:-ppfdaas-ckks-bench:latest}"
+case "${TARGET}" in
+  cnp|smoke) IMAGE="${IMAGE:-ppfdaas-cnp-bench:latest}" ;;
+  *)         IMAGE="${IMAGE:-ppfdaas-ckks-bench:latest}" ;;
+esac
 NODE="${NODE:-0}"
 SMT="${SMT:-off}"
 RESULTS_ROOT="${RESULTS_ROOT:-${HOME}/results}"
@@ -74,12 +87,13 @@ CONCURRENCY="${CONCURRENCY:-$(default_sweep)}"
 for t in ${THREADS} ${CONCURRENCY}; do
   (( t <= NCPUS )) || echo "warning: sweep value ${t} exceeds the ${NCPUS} pinned CPUs (oversubscribed)" >&2
 done
-for v in PARAMS REPS WARMUP SEED STRATEGIES OMP_THREADS THREADS CONCURRENCY DURATION; do
+for v in PARAMS REPS WARMUP SEED STRATEGIES OMP_THREADS THREADS CONCURRENCY DURATION \
+         LANES REQUESTS SERVER_CORES CLIENT_CORES PORT; do
   [[ -n "${!v:-}" ]] && add_env "${v}" "${!v}"
 done
 CMD=()
 case "${TARGET}" in
-  parity|a1|a2|a3|a4|all) CMD=("${TARGET}") ;;
+  parity|a1|a2|a3|a4|all|cnp|smoke) CMD=("${TARGET}") ;;
   *) usage ;;
 esac
 
@@ -143,6 +157,11 @@ DOCKER_ARGS=(run -d --name "${JOB}" --user "$(id -u):$(id -g)"
   --cpuset-cpus "${CPUS}" --cpuset-mems "${NODE}"
   --cap-drop ALL --security-opt no-new-privileges
   -v "${RDIR}:/results")
+if [[ "${TARGET}" == cnp || "${TARGET}" == smoke ]]; then
+  ARTIFACTS_DIR="$(cd "${ARTIFACTS_DIR:-./artifacts}" 2>/dev/null && pwd)" \
+    || { echo "ARTIFACTS_DIR not found; set ARTIFACTS_DIR=<host artifacts dir>" >&2; exit 1; }
+  DOCKER_ARGS+=(-v "${ARTIFACTS_DIR}:/app/artifacts:ro")
+fi
 [[ -n "${MEM_LIMIT:-}" ]] && DOCKER_ARGS+=(--memory "${MEM_LIMIT}" --memory-swap "${MEM_LIMIT}")
 DOCKER_ARGS+=("${ENVARGS[@]}" "${IMAGE}" "${CMD[@]}")
 

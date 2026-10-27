@@ -4,14 +4,18 @@ Every test that decrypts lives here, outside vendor_server/ (out of the TCB).
 Servers are real vendor_server_160 processes on free ports, one process per
 packing mode (the mode is fixed per process).
 
-Measured numbers (max errors, p-values) are printed with `pytest -s` and
-recorded in artifacts/cnp_a_test_numbers.json by test_zz_record_numbers.
+Measured numbers (max errors, p-values) are recorded by test_zz_record_numbers, and the full
+parity report by test_4, into $PPFD_CNP_TEST_OUT (default: a tmp dir) -- NEVER into the tracked
+artifacts/ unless that is passed explicitly. The committed artifacts/errors_cnp.json comes from
+`python scripts/cnp_parity.py --mode cnp --out artifacts/errors_cnp.json`.
 """
 from __future__ import annotations
 
 import importlib
 import json
+import os
 import sys
+import tempfile
 import uuid
 from pathlib import Path
 
@@ -32,6 +36,8 @@ pytestmark = pytest.mark.skipif(
 )
 
 PARITY_TOL = 1e-3  # the repo's logit parity tolerance
+OUT_DIR = Path(os.environ.get("PPFD_CNP_TEST_OUT") or Path(tempfile.gettempdir()) / "ppfdaas")
+OUT_DIR.mkdir(parents=True, exist_ok=True)
 NUMBERS: dict = {}
 W, BIAS = C.load_model() if (C.ART / "weights.npy").exists() else (None, None)
 
@@ -156,7 +162,7 @@ def test_4_full_parity_cnp(cnp_client):
     rep = C.error_report(X @ W + BIAS, enc, y)
     rep["packing"] = "cnp"
     rep["batch_size"] = C.CNP_BATCH
-    (C.ART / "errors_cnp.json").write_text(json.dumps(rep, indent=2))
+    (OUT_DIR / "errors_cnp.json").write_text(json.dumps(rep, indent=2))
     NUMBERS["t4"] = {k: rep[k] for k in ("n_samples", "max_abs_error", "mean_abs_error", "median_abs_error",
                                          "roc_auc_encrypted", "pr_auc_encrypted")}
     assert rep["n_samples"] == 56962
@@ -350,5 +356,5 @@ def test_timing_invariant_includes_mask_us(cnp_client, slot_client, Xtest):
 
 # ─────────────────────── record measured numbers ───────────────────────
 def test_zz_record_numbers():
-    (C.ART / "cnp_a_test_numbers.json").write_text(json.dumps(NUMBERS, indent=2, default=float))
+    (OUT_DIR / "cnp_a_test_numbers.json").write_text(json.dumps(NUMBERS, indent=2, default=float))
     assert NUMBERS

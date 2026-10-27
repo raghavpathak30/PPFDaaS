@@ -4,21 +4,22 @@
 PREPARED, NOT RUN AT SCALE. This file only produces a measurement protocol and
 a --smoke self-check; it makes no performance claim by itself.
 
-Scopes (never silently mixed -- each row carries its own `scope`):
-  fold, cnp   -> "grpc_e2e": a real vendor_server_160 process per packing mode
-                 (the mode is fixed per process; fold = PPFD_PACKING=slot,
-                 cnp = PPFD_PACKING=cnp), driven through the real bank client
-                 path, with client/server/e2e stage timings.
-  bsgs, naive -> "local_circuit": the deployed gRPC server only implements the
-                 8-key sequential fold (EvalContext160 provisions
-                 ROTATION_STEPS only; RunInference calls hoisted_tree_sum), so
-                 bsgs (30 keys) / naive (255 keys) can only be measured through
-                 vendor_server/build/benchmark_160 (encrypt..decrypt, no gRPC),
-                 which has its own in-band correctness gate. They have no
-                 client/server/e2e split and no per-lane dimension (the circuit
-                 always processes all 16 lane slots).
-Slot-based strategies pack at most 16 lanes (4096 slots / 256); lanes=32 is
-CNP-only and is recorded as skipped for the others.
+Every row carries a `scope` (never silently mixed):
+  server_compute_only  ALL FOUR strategies, measured the same way by
+                 vendor_server/build/benchmark_160 --strategy=fold|bsgs|naive|cnp:
+                 multiply_plain, rescale, reduction (slot) or fresh output mask (cnp),
+                 and the bias add; excludes (de)serialization, encrypt and decrypt,
+                 gRPC and the client. Slot circuits always process 16 lane slots; the
+                 cnp circuit takes --lanes. Key counts/keygen come from the same binary.
+  e2e_grpc       fold and cnp only: a real vendor_server_160 process per packing mode
+                 (the mode is fixed per process; fold = PPFD_PACKING=slot, cnp =
+                 PPFD_PACKING=cnp) driven through the real bank-client path, with
+                 client/server/e2e stage timings and wire bytes. The deployed server only
+                 implements the 8-key fold, so bsgs/naive have no e2e row.
+                 server_stage_us.compute_only_us (= multiply_plain + rotation + mask) is the
+                 e2e rows' counterpart of the server_compute_only rows.
+Slot-based strategies pack at most 16 lanes (4096 slots / 256); lanes=32 is CNP-only and is
+recorded as skipped for the others.
 
 Every gRPC configuration is parity-gated BEFORE timing: a stratified sample
 (seeded; includes frauds) is run through the same strategy at the same lane
@@ -168,7 +169,7 @@ def run_one_request(client, chunk, mode):
 def grpc_config(client, strategy, lanes, n_requests, warmup, X, y, w, bias, gate_idx) -> dict:
     from sklearn.metrics import roc_auc_score
     mode = "cnp" if strategy == "cnp" else "slot"
-    row = {"strategy": strategy, "scope": "grpc_e2e", "lanes": lanes, "requests": n_requests, "warmup": warmup}
+    row = {"strategy": strategy, "scope": "e2e_grpc", "lanes": lanes, "requests": n_requests, "warmup": warmup}
 
     # ── parity gate (before ANY timing) ──
     gX, gy = X[gate_idx], y[gate_idx]
@@ -194,6 +195,9 @@ def grpc_config(client, strategy, lanes, n_requests, warmup, X, y, w, bias, gate
           "sigmoid_us", "e2e_us")
     row["client_stage_us"] = {k: stat([r[k] for r in rec]) for k in cs}
     row["server_stage_us"] = {k: stat([r["server"][k] for r in rec]) for k in rec[0]["server"]}
+    row["server_stage_us"]["compute_only_us"] = stat(
+        [r["server"]["multiply_plain_us"] + r["server"]["rotation_hoisting_us"] + r["server"]["mask_us"]
+         for r in rec])
     row["bytes_up"] = int(np.median([r["bytes_up"] for r in rec]))
     row["bytes_down"] = int(np.median([r["bytes_down"] for r in rec]))
     row["summary_us"] = {"server_p50": row["server_stage_us"]["total_inference_us"]["p50_us"],
@@ -205,13 +209,14 @@ def grpc_config(client, strategy, lanes, n_requests, warmup, X, y, w, bias, gate
     return row
 
 
-def run_grpc_strategy(strategy, lanes_list, n_requests, warmup, server_cores, client_cores, omp, X, y, w, bias):
+def run_grpc_strategy(strategy, lanes_list, n_requests, warmup, server_cores, client_cores, omp, X, y, w, bias,
+                      port=C.DEFAULT_PORT):
     mode = "cnp" if strategy == "cnp" else "slot"
     rows = []
     kg = keygen_time_us(strategy)
     gk_bytes = 0 if strategy == "cnp" else (C.ART / "galois_keys_160.bin").stat().st_size
     pk_bytes = (C.ART / "public_key_160.bin").stat().st_size
-    proc, addr = C.launch_server(mode, "prod", omp_threads=omp, pin_cores=server_cores)  # one process per mode
+    proc, addr = C.launch_server(mode, "prod", omp_threads=omp, pin_cores=server_cores, port=port)  # one process per mode
     try:
         t0 = time.perf_counter()
         client = C.make_client(addr, mode)  # slot: ProvisionGaloisKeys + canary; cnp: nothing to provision
@@ -219,7 +224,7 @@ def run_grpc_strategy(strategy, lanes_list, n_requests, warmup, server_cores, cl
         gate_idx = gate_sample(X, y)
         for lanes in lanes_list:
             if mode == "slot" and lanes > C.SLOT_BATCH:
-                rows.append({"strategy": strategy, "scope": "grpc_e2e", "lanes": lanes,
+                rows.append({"strategy": strategy, "scope": "e2e_grpc", "lanes": lanes,
                              "status": f"SKIPPED: slot packing holds at most {C.SLOT_BATCH} lanes"})
                 continue
             row = grpc_config(client, strategy, lanes, n_requests, warmup, X, y, w, bias, gate_idx)
@@ -232,29 +237,36 @@ def run_grpc_strategy(strategy, lanes_list, n_requests, warmup, server_cores, cl
     return rows
 
 
-# ───────────────────────────── local circuits (bsgs, naive) ─────────────────────────────
-def run_local_circuit(strategy, n_requests, server_cores, omp) -> dict:
+# ───────────────────────────── server-compute-only circuits (all four) ─────────────────────────────
+def run_local_circuit(strategy, lanes, n_requests, server_cores, omp) -> dict:
     exe = C.BUILD_DIR / "vendor_server" / "benchmark_160"
-    row = {"strategy": strategy, "scope": "local_circuit", "lanes": C.SLOT_BATCH,
-           "lanes_note": "circuit always processes all 16 lane slots; not a per-lane measurement",
+    slot = strategy != "cnp"
+    row = {"strategy": strategy, "scope": "server_compute_only", "lanes": C.SLOT_BATCH if slot else lanes,
            "requests": n_requests, "client_stage_us": None, "server_stage_us": None, "bytes_up": None,
            "bytes_down": None, "bytes_note": "no gRPC / serialization in this scope"}
+    if slot:
+        row["lanes_note"] = "slot circuit always processes all 16 lane slots; not a per-lane measurement"
     if not exe.exists():
         row["status"] = f"SKIPPED: {exe} not built"
         return row
     env = dict(os.environ, PPFD_BENCHMARK_ROUNDS=str(n_requests))
+    # benchmark_160's context wants a client Galois-key file at a compile-time path; this is the
+    # documented benchmark-only escape hatch (latency only; the circuits below use their own keys).
+    env.setdefault("PPFDAAS_ALLOW_LOCAL_GALOIS", "1")
     if omp is not None:
         env["OMP_NUM_THREADS"] = str(omp)
-    proc = subprocess.run([str(exe), f"--strategy={strategy}"], capture_output=True, text=True, env=env,
-                          cwd=exe.parent, preexec_fn=(lambda: os.sched_setaffinity(0, server_cores)) if server_cores else None)
+    args = [str(exe), f"--strategy={strategy}"] + ([] if slot else [f"--lanes={lanes}"])
+    proc = subprocess.run(args, capture_output=True, text=True, env=env, cwd=exe.parent,
+                          preexec_fn=(lambda: os.sched_setaffinity(0, server_cores)) if server_cores else None)
     out = proc.stdout
     end = out.rfind("}")
     if end == -1:
         row["status"] = f"FAILED: no JSON from benchmark_160 ({proc.stderr[-200:]})"
         return row
     r = json.loads(out[: end + 1])
-    row.update(parity_gate={"max_abs_error": r["correctness_max_abs_error"], "passed": bool(r["correctness_passed"]),
-                            "note": "benchmark_160 in-band gate"},
+    row.update(stages=r["stages"],
+               parity_gate={"max_abs_error": r["correctness_max_abs_error"], "passed": bool(r["correctness_passed"]),
+                            "note": "benchmark_160 in-band gate (synthetic random oracle, includes bias)"},
                max_abs_score_error=r["correctness_max_abs_error"], auc_gate_sample=None,
                key_bytes={"galois_key_count": r["galois_keys"], "galois_keys": "not measured in this scope"},
                keygen_us=r["galois_keygen_us"], rotations_per_request=r["rotations"])
@@ -270,7 +282,7 @@ def run_local_circuit(strategy, n_requests, server_cores, omp) -> dict:
 
 # ───────────────────────────── driver ─────────────────────────────
 def run_matrix(strategies, lanes_list, n_requests, warmup, server_cores=None, client_cores=None, omp=None,
-               out=None) -> dict:
+               out=None, port=C.DEFAULT_PORT) -> dict:
     if client_cores:
         os.sched_setaffinity(0, client_cores)
     X, y = C.load_test_set()
@@ -278,14 +290,25 @@ def run_matrix(strategies, lanes_list, n_requests, warmup, server_cores=None, cl
     rows = []
     for s in strategies:
         print(f"[cnp_bench] strategy={s} ...", flush=True)
-        if s in ("fold", "cnp"):
-            rows += run_grpc_strategy(s, lanes_list, n_requests, warmup, server_cores, client_cores, omp, X, y, w, bias)
+        # server-compute-only row(s): every strategy, same binary, same stages
+        if s == "cnp":
+            rows += [run_local_circuit(s, ln, n_requests, server_cores, omp) for ln in lanes_list]
         else:
-            rows.append(run_local_circuit(s, n_requests, server_cores, omp))
+            rows.append(run_local_circuit(s, C.SLOT_BATCH, n_requests, server_cores, omp))
+        # end-to-end gRPC rows: fold and cnp only
+        if s in ("fold", "cnp"):
+            rows += run_grpc_strategy(s, lanes_list, n_requests, warmup, server_cores, client_cores, omp, X, y, w,
+                                      bias, port)
     result = {
         "framing": {
-            "description": "strategy x lanes x requests harness; every gRPC row is parity-gated before timing. "
-                           "Rows with scope=local_circuit are NOT comparable to grpc_e2e rows.",
+            "description": "strategy x lanes x requests harness; every row is parity-gated before timing.",
+            "scope_legend": {
+                "server_compute_only": "benchmark_160, all four strategies, same stages: multiply_plain + rescale + "
+                                       "reduction/mask + bias add. No (de)serialization, no encrypt/decrypt, no gRPC.",
+                "e2e_grpc": "fold and cnp only: real server process + real bank-client path, client+server+wire. "
+                            "Compare its server_stage_us.compute_only_us with the server_compute_only rows, not its e2e_us.",
+            },
+            "server_port": port,
             "machine_state": machine_state(server_cores, client_cores, omp),
             "requests_per_config": n_requests, "warmup_per_config": warmup,
             "percentile_caveat": "p99 over fewer than ~100 requests is just the maximum-ish order statistic",
@@ -299,20 +322,22 @@ def run_matrix(strategies, lanes_list, n_requests, warmup, server_cores=None, cl
 
 
 def print_table(result: dict) -> None:
-    print(f"\n{'strategy':8} {'scope':14} {'lanes':>5} {'status':12} {'srv p50':>9} {'srv p99':>9} {'e2e p50':>9} "
-          f"{'e2e p99':>9} {'up B':>8} {'down B':>8} {'max err':>10}")
+    print(f"\n{'strategy':8} {'scope':20} {'lanes':>5} {'status':8} {'srv p50':>9} {'srv p99':>9} {'e2e p50':>9} "
+          f"{'e2e p99':>9} {'up B':>8} {'down B':>8} {'max err':>9}")
     for r in result["rows"]:
-        st = r.get("status", "?")[:12]
+        st = str(r.get("status", "?"))[:8]
+        head = f"{r['strategy']:8} {r['scope']:20} {r.get('lanes', '-'):>5} {st:8}"
         if r.get("summary_us"):
             s = r["summary_us"]
-            print(f"{r['strategy']:8} {r['scope']:14} {r['lanes']:>5} {st:12} {s['server_p50']:>9.0f} {s['server_p99']:>9.0f} "
-                  f"{s['e2e_p50']:>9.0f} {s['e2e_p99']:>9.0f} {r['bytes_up']:>8} {r['bytes_down']:>8} {r['max_abs_score_error']:>10.2e}")
+            c = r["server_stage_us"]["compute_only_us"]
+            print(f"{head} {s['server_p50']:>9.0f} {s['server_p99']:>9.0f} {s['e2e_p50']:>9.0f} {s['e2e_p99']:>9.0f} "
+                  f"{r['bytes_up']:>8} {r['bytes_down']:>8} {r['max_abs_score_error']:>9.1e}   (compute-only p50 {c['p50_us']:.0f})")
         elif r.get("circuit_us"):
             c = r["circuit_us"]
-            print(f"{r['strategy']:8} {r['scope']:14} {r['lanes']:>5} {st:12} {c['p50_us']:>9.0f} {c['p99_us']:>9.0f} "
-                  f"{'-':>9} {'-':>9} {'-':>8} {'-':>8} {r['max_abs_score_error']:>10.2e}")
+            print(f"{head} {c['p50_us']:>9.0f} {c['p99_us']:>9.0f} {'-':>9} {'-':>9} {'-':>8} {'-':>8} "
+                  f"{r['max_abs_score_error']:>9.1e}")
         else:
-            print(f"{r['strategy']:8} {r['scope']:14} {r.get('lanes', '-'):>5} {r.get('status', '?')}")
+            print(f"{r['strategy']:8} {r['scope']:20} {r.get('lanes', '-'):>5} {r.get('status', '?')}")
 
 
 def cli(argv=None) -> int:
@@ -321,6 +346,8 @@ def cli(argv=None) -> int:
     ap.add_argument("--lanes", default="1,4,8,16,32")
     ap.add_argument("--requests", type=int, default=1000, help="timed requests per configuration")
     ap.add_argument("--warmup", type=int, default=20)
+    ap.add_argument("--port", type=int, default=C.DEFAULT_PORT,
+                    help="port for the e2e gRPC server processes (started one at a time); fails clearly if in use")
     ap.add_argument("--omp-threads", type=int, default=None)
     ap.add_argument("--server-cores", default=None, help="e.g. 0-7 (pins the server / benchmark_160 process)")
     ap.add_argument("--client-cores", default=None, help="e.g. 8-11 (pins this client process)")
@@ -334,10 +361,12 @@ def cli(argv=None) -> int:
     n, warm = (10, 2) if a.smoke else (a.requests, a.warmup)
     out = a.out if (a.out or a.smoke) else str(C.ART / "cnp_bench.json")
     res = run_matrix(strategies, [int(x) for x in a.lanes.split(",")], n, warm, parse_cores(a.server_cores),
-                     parse_cores(a.client_cores), a.omp_threads, out)
+                     parse_cores(a.client_cores), a.omp_threads, out, a.port)
     print_table(res)
     print(f"\n[cnp_bench] wrote {out}" if out else "\n[cnp_bench] smoke run: no file written")
     failed = [r for r in res["rows"] if str(r.get("status", "")).startswith(("PARITY", "FAILED"))]
+    if failed:
+        print(f"[cnp_bench] {len(failed)} row(s) FAILED: " + "; ".join(f"{r['strategy']}/{r.get('lanes')}" for r in failed))
     return 1 if failed else 0
 
 

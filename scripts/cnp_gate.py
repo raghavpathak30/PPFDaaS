@@ -137,10 +137,10 @@ def layout_trials(N, L, trials, rng, t):
             assert int(folded[256 * k + 255]) == dot, f"lane {k}: coeff != dot"
         # no wrap term on any output index: hi only feeds indices 0..len(hi)-1 <= 254
         # true product degree is N+254; slot N+255 is Kronecker padding and must be exactly 0.
-        # Wrap terms c[N+m] fold onto index m in 0..254, never onto 256k+255.
+        # Wrap terms c[N+m] therefore fold only onto indices 0..254, never onto 256k+255; the
+        # per-lane equality above (output coefficient == dot product) is what would catch a violation.
         assert hi[255] == 0 and len(hi) == 256
-        wrap_targets_seen = [m for m in range(255) if int(hi[m]) != 0]
-        assert wrap_targets_seen and all(m % 256 != 255 for m in wrap_targets_seen)
+        assert any(int(hi[m]) != 0 for m in range(255)), "trial exercised no wrap-around terms"
     return res
 
 

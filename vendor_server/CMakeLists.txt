@@ -200,16 +200,22 @@ target_compile_definitions(vendor_server_160_cnp_test PRIVATE
     PPFDAAS_CNP_TEST_NOMASK=1
 )
 
-include(FetchContent)
-FetchContent_Declare(
-    Catch2
-    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG v3.5.4
-)
-FetchContent_MakeAvailable(Catch2)
+# Catch2 is fetched from GitHub at configure time only when the C++ unit tests are
+# built. The benchmark image (tools/cnp/Dockerfile.cnpbench) passes
+# -DPPFDAAS_BUILD_TESTS=OFF; the default (ON) is unchanged.
+option(PPFDAAS_BUILD_TESTS "Build the Catch2 C++ unit tests" ON)
+if(PPFDAAS_BUILD_TESTS)
+    include(FetchContent)
+    FetchContent_Declare(
+        Catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG v3.5.4
+    )
+    FetchContent_MakeAvailable(Catch2)
 
-add_executable(test_he_core tests/test_he_core.cpp)
-target_link_libraries(test_he_core PRIVATE he_core Catch2::Catch2WithMain)
+    add_executable(test_he_core tests/test_he_core.cpp)
+    target_link_libraries(test_he_core PRIVATE he_core Catch2::Catch2WithMain)
 
-enable_testing()
-add_test(NAME he_core COMMAND test_he_core)
+    enable_testing()
+    add_test(NAME he_core COMMAND test_he_core)
+endif()

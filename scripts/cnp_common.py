@@ -42,6 +42,40 @@ def free_port() -> int:
     return port
 
 
+DEFAULT_PORT = 50052
+
+
+class PortInUseError(RuntimeError):
+    pass
+
+
+def ensure_port_free(port: int) -> None:
+    """Raise PortInUseError (with the fix) unless `port` is free for a gRPC server on this host.
+
+    Two probes, because gRPC sets SO_REUSEPORT: (1) a connect probe -- if anything accepts on
+    127.0.0.1:port, a second server could silently share the port instead of failing to bind;
+    (2) a bind probe mirroring the server (also catches a local port held by an outbound
+    connection, which happens for ports inside the kernel's ephemeral range).
+    """
+    try:
+        socket.create_connection(("127.0.0.1", port), 0.3).close()
+    except OSError:
+        pass
+    else:
+        raise PortInUseError(f"port {port} is already in use: something is listening on 127.0.0.1:{port}. "
+                             f"Stop it or choose another port with --port.")
+    probe = socket.socket()
+    probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        probe.bind(("0.0.0.0", port))
+    except OSError as e:
+        raise PortInUseError(f"port {port} is already in use ({e.strerror}). The kernel's ephemeral range is "
+                             f"{open('/proc/sys/net/ipv4/ip_local_port_range').read().split()}; pick a port "
+                             f"outside it, or choose another with --port.") from e
+    finally:
+        probe.close()
+
+
 def launch_server(mode: str, binary: str = "prod", extra_env: dict | None = None,
                   port: int | None = None, omp_threads: int | None = None,
                   pin_cores: set | None = None):
@@ -49,7 +83,10 @@ def launch_server(mode: str, binary: str = "prod", extra_env: dict | None = None
 
     One process per mode: the mode is fixed for the lifetime of the process.
     """
-    port = port or free_port()
+    if port is None:
+        port = free_port()  # tests: any free port
+    else:
+        ensure_port_free(port)  # explicit port: fail clearly, never reuse silently
     env = dict(os.environ)
     env["PPFD_PACKING"] = mode
     if omp_threads is not None:
