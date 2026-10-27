@@ -44,3 +44,16 @@ CNP: inside the mask). The client only applies the sigmoid (`bank_client.py:203`
 
 `vendor_server_160_cnp_test` is TEST-ONLY (`-DPPFDAAS_CNP_TEST_NOMASK`): it honours `PPFD_CNP_TEST_MASK_OFF=1`
 (all-zero mask: raw product, no bias). The production binary does not contain that string (tests assert it).
+
+## Follow-up (bench scopes, Docker, test hygiene)
+- Bench rows carry `scope`: `server_compute_only` (benchmark_160, all four strategies, same stages incl. bias add)
+  or `e2e_grpc` (fold, cnp only). Compare an e2e row's `server_stage_us.compute_only_us` with the matching
+  server_compute_only row, never its `e2e_us`. 10-request smoke numbers are not results.
+- `pytest.ini` sets `testpaths = tests`: bare `pytest` no longer collects third_party/. Still red: the two 200-bit
+  source-grep tests in tests/test_inference.py (pre-existing).
+- `run_runtime_validation` and tests/test_cnp.py write to $PPFD_ERRORS_JSON / $PPFD_CNP_TEST_OUT or a tmp dir.
+  Regenerate tracked artifacts deliberately: `python scripts/cnp_parity.py --mode cnp --out artifacts/errors_cnp.json`.
+- Load the 160-bit wrapper ONLY via `cnp_common.get_wrapper()`. Importing the same .so under two module names
+  (`bank_client.seal_wrapper_160` + `seal_wrapper_160`) double-initialises it and crashed Python 3.11 at exit.
+- Docker: `tools/cnp/Dockerfile.cnpbench` (image `ppfdaas-cnp-bench`); run via `scripts/dgx/run_ckks.sh <job> cnp|smoke`.
+  artifacts/ is mounted read-only, never baked in.

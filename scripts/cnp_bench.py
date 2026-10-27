@@ -83,11 +83,13 @@ def machine_state(server_cores, client_cores, omp_threads) -> dict:
                    for i in range(os.cpu_count() or 1)})
     cpu = next((l.split(":", 1)[1].strip() for l in Path("/proc/cpuinfo").read_text().splitlines()
                 if l.startswith("model name")), "unknown")
-    try:
-        commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=C.REPO_ROOT, capture_output=True,
-                                text=True).stdout.strip()
-    except OSError:
-        commit = "unknown"
+    commit = os.environ.get("PPFDAAS_REPO_SHA", "")[:7]  # baked into the Docker image (no git inside)
+    if not commit or commit == "unknown":
+        try:
+            commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=C.REPO_ROOT, capture_output=True,
+                                    text=True).stdout.strip() or "unknown"
+        except OSError:
+            commit = "unknown"
     return {
         "cpu_governor": govs[0] if len(govs) == 1 else govs,
         "intel_no_turbo": rd("/sys/devices/system/cpu/intel_pstate/no_turbo"),
