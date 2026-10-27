@@ -39,7 +39,7 @@ CNP: inside the mask). The client only applies the sigmoid (`bank_client.py:203`
     cmake -S . -B build -DFETCHCONTENT_FULLY_DISCONNECTED=ON
     cmake --build build -j --target vendor_server_160 vendor_server_160_cnp_test benchmark_160 test_he_core
     cmake --build build/bank_client -j --target seal_wrapper_160
-    .venv/bin/python -m pytest tests/test_cnp.py -q          # 24 tests, ~13 s, writes artifacts/errors_cnp.json
+    .venv/bin/python -m pytest tests/test_cnp.py -q          # 24 tests, ~13 s; reports go to $PPFD_CNP_TEST_OUT or a tmp dir
     .venv/bin/python scripts/cnp_parity.py --mode cnp|slot --out <path>
 
 `vendor_server_160_cnp_test` is TEST-ONLY (`-DPPFDAAS_CNP_TEST_NOMASK`): it honours `PPFD_CNP_TEST_MASK_OFF=1`
