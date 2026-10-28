@@ -72,6 +72,8 @@ COPY --from=build /out/ /opt/bench/
 COPY tools/transciphering/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN mkdir /results && chmod 1777 /results
 
+# Provenance, read by the CNP-B harness (rtf_cnp_test.go) into its JSON.
+ENV PPFDAAS_REPO_SHA=${GIT_SHA} PPFDAAS_RTF_SHA=${RTF_SHA} PPFDAAS_PATCH_SHA256=${PATCH_SHA256} PPFDAAS_BUILD_DATE=${BUILD_DATE}
 ENV RESULTS_DIR=/results
 VOLUME /results
 WORKDIR /results

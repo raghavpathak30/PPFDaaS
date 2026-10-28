@@ -12,10 +12,16 @@ package ckks_fv
 // E2E_LOGN (default 16; LogSlots = LogN-1 for the full-coefficient sets).
 
 import (
+	"math"
+	"math/big"
 	"os"
+	"runtime"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/ldsec/lattigo/v2/ring"
+	"github.com/ldsec/lattigo/v2/rlwe"
 )
 
 type cnpCfg struct {
@@ -46,6 +52,8 @@ type cnpCtx struct {
 	rotkeys   *RotationKeySet // StC^FV rotations only until cnpBuildHalfBoot adds more
 	pDcds     [][]*PtDiagMatrixT
 	setupMs   map[string]float64
+	heapKB    map[string]int64 // retained heap (after GC) added by each setup step
+	ringLvl   map[int]*ring.Ring
 	nBlocks   int // nonces per output ciphertext = N (full-coefficient packing)
 	key       []uint64
 }
@@ -95,12 +103,8 @@ func cnpConfig(t *testing.T, cipher string, logN int) cnpCfg {
 // cnpSetup builds the FV-only context (what CNP needs offline + online).
 func cnpSetup(t *testing.T, cipher string, logN int) *cnpCtx {
 	cfg := cnpConfig(t, cipher, logN)
-	x := &cnpCtx{cfg: cfg, setupMs: map[string]float64{}}
-	timed := func(name string, f func()) {
-		t0 := time.Now()
-		f()
-		x.setupMs[name] = cnpMs(time.Since(t0))
-	}
+	x := &cnpCtx{cfg: cfg, setupMs: map[string]float64{}, heapKB: map[string]int64{}, ringLvl: map[int]*ring.Ring{}}
+	timed := func(name string, f func()) { x.timedMem(name, f) }
 	params, err := cfg.hbtpParams.Params()
 	if err != nil {
 		t.Fatalf("params: %v", err)
@@ -117,12 +121,12 @@ func cnpSetup(t *testing.T, cipher string, logN int) *cnpCtx {
 		x.fvEnc = NewMFVEncryptorFromPk(params, x.pk)
 		x.fvDec = NewMFVDecryptor(params, x.sk)
 	})
-	timed("stc_matrices_rotation_keys_rlk", func() {
+	timed("stc_matrices", func() {
 		x.pDcds = x.fvEncoder.GenSlotToCoeffMatFV(cfg.radix)
 		x.stcRots = x.kgen.GenRotationIndexesForSlotsToCoeffsMat(x.pDcds)
-		x.rotkeys = x.kgen.GenRotationKeysForRotations(x.stcRots, true, x.sk)
-		x.rlk = x.kgen.GenRelinearizationKey(x.sk)
 	})
+	timed("stc_rotation_keys", func() { x.rotkeys = x.kgen.GenRotationKeysForRotations(x.stcRots, true, x.sk) })
+	timed("relinearization_key", func() { x.rlk = x.kgen.GenRelinearizationKey(x.sk) })
 	timed("fv_evaluator", func() {
 		x.fvEval = NewMFVEvaluator(params, EvaluationKey{Rlk: x.rlk, Rtks: x.rotkeys}, x.pDcds)
 	})
@@ -134,32 +138,103 @@ func cnpSetup(t *testing.T, cipher string, logN int) *cnpCtx {
 	return x
 }
 
-// cnpHalfBoot holds the baseline-only objects.
-type cnpHalfBoot struct {
-	hbtp        *HalfBootstrapper
-	ckksEnc     CKKSEncoder
-	ckksDec     CKKSDecryptor
-	ckksEval    CKKSEvaluator
-	rotkeysFull *RotationKeySet
+// timedMem times f and records the heap it retains (HeapAlloc after a forced GC, before and after).
+func (x *cnpCtx) timedMem(name string, f func()) {
+	var m0, m1 runtime.MemStats
+	runtime.GC()
+	runtime.ReadMemStats(&m0)
+	t0 := time.Now()
+	f()
+	x.setupMs[name] = cnpMs(time.Since(t0))
+	runtime.GC()
+	runtime.ReadMemStats(&m1)
+	x.heapKB[name] = (int64(m1.HeapAlloc) - int64(m0.HeapAlloc)) / 1024
 }
 
-// cnpBuildHalfBoot adds the HalfBoot CtS/EvalMod rotation keys and the HalfBootstrapper
-// (baseline arm only) and records their setup time under setupMs.
+func (x *cnpCtx) ringAt(level int) *ring.Ring {
+	if r, ok := x.ringLvl[level]; ok {
+		return r
+	}
+	r, err := ring.NewRing(x.params.N(), x.params.Qi()[:level+1])
+	if err != nil {
+		panic(err)
+	}
+	x.ringLvl[level] = r
+	return r
+}
+
+// cnpNoise: log2 of the max |FV decryption noise| and the headroom to the decryption bound Q_l/(2t),
+// in bits, for a decrypted Plaintext (any level). Needs the UNTOUCHED decryption (see cnpDecryptRingT).
+func cnpNoise(x *cnpCtx, raw *Plaintext) (noiseBits, headroomBits float64) {
+	poly := raw.Value()[0]
+	level := poly.Level()
+	rq := x.ringAt(level)
+	coeffs := make([]*big.Int, x.params.N())
+	rq.PolyToBigint(poly, coeffs)
+	Q := rq.ModulusBigint
+	tt := new(big.Int).SetUint64(x.params.PlainModulus())
+	half := new(big.Int).Rsh(Q, 1)
+	maxV := new(big.Int)
+	for _, p := range coeffs {
+		tp := new(big.Int).Mul(tt, p)
+		m := new(big.Int).Div(new(big.Int).Add(tp, half), Q)
+		v := tp.Sub(tp, m.Mul(m, Q))
+		if v.Abs(v).Cmp(maxV) > 0 {
+			maxV.Set(v)
+		}
+	}
+	nf, _ := new(big.Float).Quo(new(big.Float).SetInt(maxV), new(big.Float).SetInt(tt)).Float64()
+	if nf < 1 {
+		nf = 1
+	}
+	qf, _ := new(big.Float).SetInt(Q).Float64()
+	return math.Log2(nf), math.Log2(qf / (2 * float64(tt.Uint64())) / nf)
+}
+
+// cnpHalfBoot holds the baseline-only objects.
+type cnpHalfBoot struct {
+	hbtp     *HalfBootstrapper
+	ckksEnc  CKKSEncoder
+	ckksDec  CKKSDecryptor
+	ckksEval CKKSEvaluator
+	hbKeys   int // extra rotation keys the baseline adds on top of the StC ones
+}
+
+// cnpBuildHalfBoot adds ONLY the HalfBoot CtS/EvalMod rotation keys (the StC ones already exist in
+// x.rotkeys; the merged set shares them, nothing is duplicated) plus the HalfBootstrapper.
 func cnpBuildHalfBoot(t *testing.T, x *cnpCtx) *cnpHalfBoot {
 	h := &cnpHalfBoot{}
-	t0 := time.Now()
-	rotsHB := x.kgen.GenRotationIndexesForHalfBoot(x.params.LogSlots(), x.cfg.hbtpParams)
-	h.rotkeysFull = x.kgen.GenRotationKeysForRotations(append(rotsHB, x.stcRots...), true, x.sk)
-	x.setupMs["baseline_halfboot_rotation_keys"] = cnpMs(time.Since(t0))
-	t0 = time.Now()
-	var err error
-	h.hbtp, err = NewHalfBootstrapper(x.params, x.cfg.hbtpParams, BootstrappingKey{Rlk: x.rlk, Rtks: h.rotkeysFull})
-	if err != nil {
-		t.Fatalf("NewHalfBootstrapper: %v", err)
+	have := map[int]bool{}
+	for _, r := range x.stcRots {
+		have[r] = true
 	}
-	h.ckksEnc = NewCKKSEncoder(x.params)
-	h.ckksDec = NewCKKSDecryptor(x.params, x.sk)
-	h.ckksEval = NewCKKSEvaluator(x.params, EvaluationKey{Rlk: x.rlk, Rtks: h.rotkeysFull})
-	x.setupMs["baseline_halfbootstrapper"] = cnpMs(time.Since(t0))
+	var extra []int
+	for _, r := range x.kgen.GenRotationIndexesForHalfBoot(x.params.LogSlots(), x.cfg.hbtpParams) {
+		if !have[r] {
+			have[r] = true
+			extra = append(extra, r)
+		}
+	}
+	var hbKeys *RotationKeySet
+	x.timedMem("baseline_halfboot_rotation_keys", func() { hbKeys = x.kgen.GenRotationKeysForRotations(extra, false, x.sk) })
+	merged := &RotationKeySet{}
+	merged.Keys = map[uint64]*rlwe.SwitchingKey{}
+	for k, v := range x.rotkeys.Keys {
+		merged.Keys[k] = v
+	}
+	for k, v := range hbKeys.Keys {
+		merged.Keys[k] = v
+	}
+	h.hbKeys = len(hbKeys.Keys)
+	x.timedMem("baseline_halfbootstrapper_and_ckks_objects", func() {
+		var err error
+		h.hbtp, err = NewHalfBootstrapper(x.params, x.cfg.hbtpParams, BootstrappingKey{Rlk: x.rlk, Rtks: merged})
+		if err != nil {
+			t.Fatalf("NewHalfBootstrapper: %v", err)
+		}
+		h.ckksEnc = NewCKKSEncoder(x.params)
+		h.ckksDec = NewCKKSDecryptor(x.params, x.sk)
+		h.ckksEval = NewCKKSEvaluator(x.params, EvaluationKey{Rlk: x.rlk, Rtks: merged})
+	})
 	return h
 }

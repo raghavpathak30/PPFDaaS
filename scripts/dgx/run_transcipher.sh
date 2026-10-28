@@ -14,6 +14,9 @@
 #             rss                      committed RSS checkpoint test for $CIPHER
 #             e2e                      full-scale server online path, one batch, per stage
 #                                      (CIPHER unset = hera then rubato at 128af; writes e2e_<cipher>.json)
+#             cnp                      CNP-B: coefficient-native packing on the RtF path ($CIPHER, default hera) +
+#                                      the HalfBoot lower-bound baseline in the same run; writes cnp_<cipher>.json
+#                                      and cnp_<cipher>_{rows.i32,dec.i64}. Needs DATA_DIR (see below) for real data.
 #             test <cipher|ckks_fv> <filter> [flags]   any test binary + filter
 #
 # Environment (all optional):
@@ -23,7 +26,12 @@
 #   RSS_CHECKPOINT_RUN=0|1    default 1 for `rss`, unset otherwise
 #   REPS=<n>                  toy-repeat: runs per cipher (TOY_REPEAT_N, default 30);
 #                             bench: -rounds; rss/test: -test.count; e2e: repetitions per stage (default 5)
-#   GOGC, GOMEMLIMIT          passed into the container when set
+#   DATA_DIR=<dir>            cnp: output of scripts/cnp_b/prepare_inputs.py, mounted read-only at /data
+#                             (unset = seeded synthetic data; smoke only)
+#   CNP_ARMS="cnp baseline"   cnp: which arms run (default both); CNP_ROWS=auto|all|strat|<n> (auto: full test set
+#                             only if the estimate fits CNP_BUDGET_S=7200, else the stratified 4096 subset);
+#                             CNP_STC_MODE=lowest|keep; CNP_CLIENT_ENCODE=exact|fvscaleup (default exact)
+#   GOGC, GOMEMLIMIT          passed into the container when set (the CNP runs leave them unset)
 #   CPUS=<list>               --cpuset-cpus (default: all CPUs of NUMA node $NODE)
 #   NODE=<n>                  NUMA node for default CPUS and --cpuset-mems (default 0)
 #   MEM_LIMIT=<e.g. 64g>      optional --memory (recommended on a shared host)
@@ -53,7 +61,7 @@ fi
 NCPUS="$(echo "${CPUS}" | awk -F, '{n=0; for(i=1;i<=NF;i++){split($i,a,"-"); n+= (a[2]=="")?1:a[2]-a[1]+1}; print n}')"
 
 # ---- build the container command + env --------------------------------------
-ENVARGS=(-e "GOMAXPROCS=${NCPUS}")
+ENVARGS=(-e "GOMAXPROCS=${NCPUS}" -e "PPFDAAS_IMAGE_REF=${IMAGE}")
 add_env() { ENVARGS+=(-e "$1=$2"); }
 [[ -n "${GOGC:-}" ]] && add_env GOGC "${GOGC}"
 [[ -n "${GOMEMLIMIT:-}" ]] && add_env GOMEMLIMIT "${GOMEMLIMIT}"
@@ -80,6 +88,19 @@ case "${TARGET}" in
     [[ -n "${PARAM_INDEX:-}" ]] && add_env E2E_HERA_PARAM_INDEX "${PARAM_INDEX}"
     [[ -n "${REPS:-}" ]] && add_env E2E_REPS "${REPS}"    # per-stage repetitions, default 5
     CMD=(e2e) ;;
+  cnp)  # CNP-B online path + baseline, one cipher per run (one socket each; see the DGX commands)
+    add_env E2E_CIPHER "${CIPHER}"
+    [[ -n "${LOGN:-}" ]] && add_env E2E_LOGN "${LOGN}"
+    [[ -n "${REPS:-}" ]] && add_env E2E_REPS "${REPS}"
+    for v in CNP_ARMS CNP_ROWS CNP_BUDGET_S CNP_STC_MODE CNP_HEADROOM_GATE_BITS; do
+      [[ -n "${!v:-}" ]] && add_env "${v}" "${!v}"
+    done
+    add_env CNP_CLIENT_ENCODE "${CNP_CLIENT_ENCODE:-exact}"
+    if [[ -n "${DATA_DIR:-}" ]]; then
+      [[ -f "${DATA_DIR}/meta.json" ]] || { echo "DATA_DIR=${DATA_DIR} has no meta.json (run scripts/cnp_b/prepare_inputs.py)" >&2; exit 2; }
+      add_env CNP_DATA_DIR /data
+    fi
+    CMD=(cnp) ;;
   test)
     [[ $# -ge 2 ]] || usage
     CMD=(test "$1" "$2"); shift 2
@@ -150,6 +171,7 @@ DOCKER_ARGS=(run -d --name "${JOB}" --user "$(id -u):$(id -g)"
   --cpuset-cpus "${CPUS}" --cpuset-mems "${NODE}"
   --cap-drop ALL --security-opt no-new-privileges
   -v "${RDIR}:/results")
+[[ "${TARGET}" == cnp && -n "${DATA_DIR:-}" ]] && DOCKER_ARGS+=(-v "$(cd "${DATA_DIR}" && pwd):/data:ro")
 [[ -n "${MEM_LIMIT:-}" ]] && DOCKER_ARGS+=(--memory "${MEM_LIMIT}" --memory-swap "${MEM_LIMIT}")
 DOCKER_ARGS+=("${ENVARGS[@]}" "${IMAGE}" "${CMD[@]}")
 

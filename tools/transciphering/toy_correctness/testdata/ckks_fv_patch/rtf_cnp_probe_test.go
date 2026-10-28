@@ -10,7 +10,6 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"math"
-	"math/big"
 	"os"
 	"path/filepath"
 	"sort"
@@ -64,9 +63,15 @@ func cnpCrypt(t *testing.T, x *cnpCtx, nonces [][]byte, counter []byte) (crypt f
 }
 
 // cnpStC is the benchmarks' per-ciphertext StC step (RtF_bench_test.go:196-197).
-func cnpStC(x *cnpCtx, ct *Ciphertext) *Ciphertext {
+func cnpStC(x *cnpCtx, ct *Ciphertext) *Ciphertext { return cnpStCMode(x, ct, true) }
+
+// cnpStCMode: lowest=true is RtF's ModSwitchMany down to level 0 (RtF_bench_test.go:196-197);
+// lowest=false keeps the level SlotsToCoeffs leaves (more modulus, more noise headroom).
+func cnpStCMode(x *cnpCtx, ct *Ciphertext, lowest bool) *Ciphertext {
 	out := x.fvEval.SlotsToCoeffs(ct, x.cfg.stcModDown)
-	x.fvEval.ModSwitchMany(out, out, out.Level())
+	if lowest {
+		x.fvEval.ModSwitchMany(out, out, out.Level())
+	}
 	return out
 }
 
@@ -82,47 +87,20 @@ func cnpDecryptRingT(x *cnpCtx, ct *Ciphertext) (coeffs []uint64, raw *Plaintext
 	return append([]uint64(nil), ptRt.Value()[0].Coeffs[0]...), raw
 }
 
-// cnpNoise returns log2 of the max |FV decryption noise| and the headroom to the
-// decryption bound q0/(2t), both in bits. Level-0 ciphertexts only (single prime).
-func cnpNoise(x *cnpCtx, raw *Plaintext) (noiseBits, headroomBits float64) {
-	q0 := new(big.Int).SetUint64(x.params.Qi()[0])
-	tt := new(big.Int).SetUint64(x.params.PlainModulus())
-	maxNoise := new(big.Float)
-	half := new(big.Int).Rsh(q0, 1)
-	for _, p := range raw.Value()[0].Coeffs[0] {
-		P := new(big.Int).SetUint64(p)
-		tp := new(big.Int).Mul(tt, P)
-		// m = round(t*p/q0); v = t*p - m*q0, |v| <= q0/2, noise = |v|/t
-		m := new(big.Int).Div(new(big.Int).Add(tp, half), q0)
-		v := new(big.Int).Sub(tp, new(big.Int).Mul(m, q0))
-		v.Abs(v)
-		if f := new(big.Float).SetInt(v); f.Cmp(maxNoise) > 0 {
-			maxNoise = f
-		}
-	}
-	maxNoise.Quo(maxNoise, new(big.Float).SetInt(tt))
-	nf, _ := maxNoise.Float64()
-	bound := float64(x.params.Qi()[0]) / (2 * float64(x.params.PlainModulus()))
-	if nf < 1 {
-		nf = 1
-	}
-	return math.Log2(nf), math.Log2(bound / nf)
-}
-
 type cnpProbeOut struct {
-	Cipher           string         `json:"cipher"`
-	LogN             int            `json:"log_n"`
-	N                int            `json:"n"`
-	T                uint64         `json:"plain_modulus"`
-	Q0Bits           float64        `json:"q0_bits"`
-	OutputsChecked   int            `json:"output_ciphertexts_checked"`
-	MapMatchesBitrev bool           `json:"decrypted_keystream_index_equals_bitrev_logN"`
-	MapIsNatural     bool           `json:"decrypted_keystream_index_equals_natural"`
-	Unmatched        int            `json:"elements_with_no_unique_match"`
-	SampleIdxToCoeff map[int]int    `json:"sample_symmetric_index_to_fv_coefficient"`
-	OneHot           []cnpOneHot    `json:"one_hot_probe"`
-	NoiseBits        float64        `json:"ks_ct_noise_bits_log2_max"`
-	HeadroomBits     float64        `json:"ks_ct_headroom_bits_to_q0_over_2t"`
+	Cipher           string      `json:"cipher"`
+	LogN             int         `json:"log_n"`
+	N                int         `json:"n"`
+	T                uint64      `json:"plain_modulus"`
+	Q0Bits           float64     `json:"q0_bits"`
+	OutputsChecked   int         `json:"output_ciphertexts_checked"`
+	MapMatchesBitrev bool        `json:"decrypted_keystream_index_equals_bitrev_logN"`
+	MapIsNatural     bool        `json:"decrypted_keystream_index_equals_natural"`
+	Unmatched        int         `json:"elements_with_no_unique_match"`
+	SampleIdxToCoeff map[int]int `json:"sample_symmetric_index_to_fv_coefficient"`
+	OneHot           []cnpOneHot `json:"one_hot_probe"`
+	NoiseBits        float64     `json:"ks_ct_noise_bits_log2_max"`
+	HeadroomBits     float64     `json:"ks_ct_headroom_bits_to_q0_over_2t"`
 }
 
 type cnpOneHot struct {

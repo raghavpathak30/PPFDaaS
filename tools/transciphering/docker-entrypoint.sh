@@ -6,6 +6,7 @@
 #   toy                     LogN=10 toy harness, HERA-128as and Rubato-128L, once
 #   toy-repeat              toy harness N times per cipher (TOY_REPEAT_N, default 30)
 #   e2e                     full-scale online path for one batch (E2E_* env); see README
+#   cnp                     CNP-B online path + HalfBoot lower-bound baseline (E2E_CIPHER, CNP_* env); see rtf_cnp_test.go
 #   bench [bench flags]     client-side plaintext benchmark (cipher/bench)
 #   test <bin> <filter>     run a test binary (cipher | ckks_fv) with -test.run <filter>;
 #                           extra args are passed through (e.g. -test.timeout 30m)
@@ -34,6 +35,8 @@ case "${mode}" in
         -test.run '^TestRtFE2E$' -test.timeout 12h "$@" || rc=$?
     done
     exit "${rc}" ;;
+  cnp)
+    E2E_RUN=1 exec "${BIN}/ckks_fv.test" -test.count=1 -test.v -test.run '^TestCNPRun$' -test.timeout 24h "$@" ;;
   bench)
     exec "${BIN}/bench" -outdir "${RESULTS_DIR}" "$@" ;;
   test)
