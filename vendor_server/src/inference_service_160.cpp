@@ -1,5 +1,6 @@
 #include "inference_service_160.h"
 
+#include "cnp_codec.h"
 #include "eval_context_160.h"
 #include "provisioning_state.h"
 #include "rotation_hoisting.h"
@@ -8,12 +9,14 @@
 #include <inference.grpc.pb.h>
 #include <inference.pb.h>
 
+#include <atomic>
 #include <chrono>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -26,6 +29,22 @@ template <class A, class B>
 inline int64_t dur(A a, B b) {
     return std::chrono::duration_cast<us>(b - a).count();
 }
+
+namespace {
+
+// CNP-A: the packing mode is fixed for the whole process by PPFD_PACKING
+// (slot|cnp, default slot). An unrecognised value is a startup failure
+// (fail closed), never a silent fallback to the other path.
+PackingMode160 packing_mode_from_env() {
+    const char *e = std::getenv("PPFD_PACKING");
+    if (!e || !*e) return PackingMode160::SLOT;
+    const std::string v(e);
+    if (v == "slot") return PackingMode160::SLOT;
+    if (v == "cnp") return PackingMode160::CNP;
+    throw std::runtime_error("PPFD_PACKING must be 'slot' or 'cnp', got '" + v + "'");
+}
+
+}  // namespace
 
 // ─── Phase 1, §1.1/§1.2/§1.2b/§1.5 ──────────────────────────────────────────
 //
@@ -80,6 +99,12 @@ class FraudInferenceServiceImpl160 final
     double bias_ = 0.0;
     seal::Plaintext pt_weights_;
     seal::Plaintext pt_bias_;
+    // CNP-A: w_rev(X) = sum_j w_j X^(255-j), NTT form at first_parms_id,
+    // scale 2^40. Read-only after construction (thread-safe like pt_weights_).
+    seal::Plaintext pt_wrev_;
+    // Test-only: compiled in ONLY for the vendor_server_160_cnp_test target
+    // (PPFDAAS_CNP_TEST_NOMASK); the production binary has no such switch.
+    bool cnp_mask_enabled_ = true;
     static constexpr std::size_t CT_BUF = 320 * 1024;
 
 public:
@@ -90,7 +115,7 @@ public:
     // in-process PROV_INIT -> PROV_FAULT transition to model: a context that
     // cannot even be built never reaches a state where it could serve.
     explicit FraudInferenceServiceImpl160(const std::string &weights_path)
-        : ctx_(),
+        : ctx_(packing_mode_from_env()),
           sm_(),
           pt_weights_(load_weights_as_plaintext(weights_path, *ctx_.encoder, ctx_.scale, bias_)) {
         // §1.3: encode the bias once, at construction, at the EXACT scale and
@@ -123,15 +148,48 @@ public:
         }
         ctx_.encoder->encode(bias_vec, ctx_.second_parms_id, bias_scale, pt_bias_);
 
-        std::cout << "[Server-160] EvalContext160 ready (no secret key, no Galois keys yet); "
-                     "state=PROV_AWAITING_KEYS -- awaiting ProvisionGaloisKeys\n";
+        if (ctx_.packing_mode == PackingMode160::CNP) {
+            // CNP: no Galois keys exist to provision or canary-test, so the
+            // provisioning handshake has nothing to validate. Drive the
+            // existing state machine through its two legal transitions at
+            // startup (provisioning_state.h is unchanged).
+            std::vector<double> w;
+            double b = 0.0;
+            load_raw_weights(weights_path, w, b);
+            bias_ = b;
+            cnp::encode_coeffs(*ctx_.context, cnp::weights_to_wrev(w), ctx_.scale,
+                               ctx_.context->first_parms_id(), pt_wrev_);
+            ctx_.assert_no_galois_keys();
+#ifdef PPFDAAS_CNP_TEST_NOMASK
+            if (const char *e = std::getenv("PPFD_CNP_TEST_MASK_OFF"); e && std::string(e) == "1") {
+                cnp_mask_enabled_ = false;
+                std::cerr << "[Server-160] !!! TEST BUILD: CNP mask DISABLED -- outputs leak the weights !!!\n";
+            }
+#endif
+            sm_.on_structural_result(true, "CNP mode: no Galois keys to provision");
+            sm_.on_canary_result(true, "CNP mode: no rotation canary (no Galois keys); ready at startup");
+            std::cout << "[Server-160] packing mode = cnp (EvalContext160 ready, no secret key, "
+                         "NO Galois keys by design); state=PROV_READY at startup\n";
+        } else {
+            std::cout << "[Server-160] packing mode = slot\n";
+            std::cout << "[Server-160] EvalContext160 ready (no secret key, no Galois keys yet); "
+                         "state=PROV_AWAITING_KEYS -- awaiting ProvisionGaloisKeys\n";
+        }
     }
+
+    std::string state_name() const { return ppfdaas::ProvisioningState_Name(sm_.current_state()); }
 
     // ─── ProvisionGaloisKeys (§1.4 / §1.5 rung a — structural) ─────────────
     grpc::Status ProvisionGaloisKeys(
         grpc::ServerContext *,
         const ppfdaas::ProvisionGaloisKeysRequest *req,
         ppfdaas::ProvisionGaloisKeysResponse *resp) override {
+        if (ctx_.packing_mode == PackingMode160::CNP) {
+            // No state change: a CNP server must never hold Galois keys.
+            return grpc::Status(grpc::StatusCode::FAILED_PRECONDITION,
+                                "ProvisionGaloisKeys refused: server is in CNP packing mode "
+                                "(PPFD_PACKING=cnp) and never loads Galois keys");
+        }
         if (sm_.current_state() != ppfdaas::PROV_AWAITING_KEYS) {
             resp->set_state(sm_.current_state());
             resp->set_message(
@@ -173,6 +231,12 @@ public:
         grpc::ServerContext *,
         const ppfdaas::CanaryRequest *req,
         ppfdaas::CanaryResponse *resp) override {
+        if (ctx_.packing_mode == PackingMode160::CNP) {
+            // No state change: there is no rotation schedule to canary-test.
+            return grpc::Status(grpc::StatusCode::FAILED_PRECONDITION,
+                                "CanaryCheck refused: server is in CNP packing mode "
+                                "(PPFD_PACKING=cnp); the rotation canary does not apply");
+        }
         if (sm_.current_state() != ppfdaas::PROV_VALIDATING) {
             resp->set_state(sm_.current_state());
             resp->set_message(
@@ -257,6 +321,9 @@ public:
         ppfdaas::ProvisioningStatusResponse *resp) override {
         resp->set_state(sm_.current_state());
         resp->set_detail(sm_.last_message());
+        resp->set_packing_mode(ctx_.packing_mode == PackingMode160::CNP ? ppfdaas::CNP : ppfdaas::SLOT);
+        resp->set_galois_key_bytes(ctx_.galois_key_bytes());
+        resp->set_rotation_calls(rotation_calls_total());
         return grpc::Status::OK;
     }
 
@@ -295,6 +362,25 @@ public:
         const ppfdaas::InferenceRequest *req,
         ppfdaas::InferenceResponse *resp) override {
         auto t_start = hrc::now();
+
+        // CNP-A: the server's packing mode is fixed per process. A request for
+        // the other mode is refused outright -- never served by, or silently
+        // redirected to, the other path.
+        const ppfdaas::PackingMode server_mode =
+            ctx_.packing_mode == PackingMode160::CNP ? ppfdaas::CNP : ppfdaas::SLOT;
+        if (req->packing_mode() != server_mode) {
+            return grpc::Status(
+                grpc::StatusCode::FAILED_PRECONDITION,
+                "packing_mode mismatch: request is " + ppfdaas::PackingMode_Name(req->packing_mode()) +
+                    " but this server runs " + ppfdaas::PackingMode_Name(server_mode) +
+                    " (fixed per process by PPFD_PACKING)");
+        }
+        if (server_mode == ppfdaas::CNP &&
+            (req->n_transactions() < 1 || req->n_transactions() > static_cast<int>(cnp::kMaxLanes))) {
+            return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT,
+                                "CNP mode accepts 1..32 transactions per request, got " +
+                                    std::to_string(req->n_transactions()));
+        }
 
         if (sm_.current_state() != ppfdaas::PROV_READY) {
             resp->set_status(ppfdaas::ERR_NOT_PROVISIONED);
@@ -358,6 +444,55 @@ public:
         static thread_local seal::Ciphertext tl_acc_buf;
         static thread_local std::vector<char> tl_ct_buf;
         if (tl_ct_buf.size() < CT_BUF) tl_ct_buf.resize(CT_BUF);
+
+        if (server_mode == ppfdaas::CNP) {
+            try {
+                ctx_.assert_no_galois_keys();
+                const std::uint64_t rot_before = rotation_calls_total();
+
+                ctx_.evaluator->multiply_plain_inplace(ct, pt_wrev_);
+                ctx_.evaluator->rescale_to_next_inplace(ct);
+                auto t_mul = hrc::now();
+
+                // Fresh mask for THIS request (new CSPRNG seed every call):
+                // uniform mod q on every coefficient but 256k+255, which
+                // carries round(bias * ct.scale()) -- the ciphertext's ACTUAL
+                // post-rescale scale, same parms_id -- for all 32 outputs.
+                seal::Plaintext mask;
+                // Test-only unmasked build: the mask is all-zero (no randomness AND no
+                // bias), i.e. the raw product, so masked - unmasked == bias exactly.
+                cnp::build_output_mask(*ctx_.context, ct.parms_id(), ct.scale(),
+                                       cnp_mask_enabled_ ? bias_ : 0.0, cnp_mask_enabled_, mask);
+                ctx_.evaluator->add_plain_inplace(ct, mask);
+                auto t_mask = hrc::now();
+
+                if (rotation_calls_total() != rot_before) {
+                    throw std::logic_error("CNP invariant violated: a rotation was issued");
+                }
+
+                const std::size_t out_size = ct.save_size(seal::compr_mode_type::none);
+                ct.save(reinterpret_cast<seal::seal_byte *>(tl_ct_buf.data()), out_size,
+                        seal::compr_mode_type::none);
+                resp->set_result_ciphertext(tl_ct_buf.data(), out_size);
+                resp->set_request_id(req->request_id());
+                resp->set_status(ppfdaas::InferenceStatus::OK);
+                auto t_end = hrc::now();
+
+                auto *td = resp->mutable_timing();
+                td->set_deserialization_us(dur(t_start, t_deserialized));
+                td->set_multiply_plain_us(dur(t_deserialized, t_mul));
+                td->set_rotation_hoisting_us(0);
+                td->set_mask_us(dur(t_mul, t_mask));
+                td->set_serialization_us(dur(t_mask, t_end));
+                td->set_total_inference_us(dur(t_start, t_end));
+            } catch (const std::exception &e) {
+                std::cerr << "[Server-160] RunInference(CNP): internal error: " << e.what() << "\n";
+                resp->set_status(ppfdaas::ERR_INTERNAL);
+                resp->set_error_message(e.what());
+                resp->set_request_id(req->request_id());
+            }
+            return grpc::Status::OK;
+        }
 
         try {
             ctx_.evaluator->multiply_plain_inplace(ct, pt_weights_);
@@ -487,7 +622,7 @@ int RunVendorServer160(const std::string &weights_path, int port) {
         return 1;
     }
 
-    std::cout << "[Server-160] listening on " << address << " (state=PROV_AWAITING_KEYS)\n";
+    std::cout << "[Server-160] listening on " << address << " (state=" << service.state_name() << ")\n";
     server->Wait();
     return 0;
 }

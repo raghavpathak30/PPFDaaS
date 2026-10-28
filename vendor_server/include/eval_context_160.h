@@ -35,6 +35,8 @@
 // fallback of any kind). They arrive ONLY via the provisioning protocol
 // (ProvisionGaloisKeys RPC, see provisioning_state.h / inference_service_160.cpp)
 // and are validated structurally here before being accepted.
+enum class PackingMode160 { SLOT, CNP };
+
 struct EvalContext160 {
     // Restricted Galois rotation step set used by hoisted_tree_sum: log2(256) = 8 steps.
     static constexpr std::array<int, 8> ROTATION_STEPS = {1, 2, 4, 8, 16, 32, 64, 128};
@@ -50,7 +52,14 @@ struct EvalContext160 {
     bool             galois_keys_loaded = false;
     seal::GaloisKeys galois_keys;
 
-    explicit EvalContext160();
+    // CNP-A: in PackingMode160::CNP the context must never hold Galois keys
+    // (the circuit is one multiply_plain, no rotations). The mode is fixed at
+    // construction; load_and_validate_galois_keys() throws in CNP mode and
+    // assert_no_galois_keys() checks the invariant. SLOT (default) is
+    // behaviourally identical to the pre-CNP context.
+    const PackingMode160 packing_mode;
+
+    explicit EvalContext160(PackingMode160 mode = PackingMode160::SLOT);
     EvalContext160(const EvalContext160&) = delete;
     EvalContext160& operator=(const EvalContext160&) = delete;
 
@@ -68,4 +77,12 @@ struct EvalContext160 {
     // CANNOT verify that the keys were generated under the bank's secret key
     // (rung "b" -- the canary handshake -- is the only thing that can).
     void load_and_validate_galois_keys(std::istream& in);
+
+    // In-memory Galois key footprint: 0 unless keys were loaded.
+    std::size_t galois_key_bytes() const {
+        return galois_keys_loaded ? galois_keys.save_size(seal::compr_mode_type::none) : 0;
+    }
+
+    // CNP invariant: throws unless no Galois keys are loaded (and none can be).
+    void assert_no_galois_keys() const;
 };

@@ -28,6 +28,7 @@ PROTOBUF_CONSTEXPR TimingBreakdown::TimingBreakdown(
   , /*decltype(_impl_.rotation_hoisting_us_)*/int64_t{0}
   , /*decltype(_impl_.serialization_us_)*/int64_t{0}
   , /*decltype(_impl_.total_inference_us_)*/int64_t{0}
+  , /*decltype(_impl_.mask_us_)*/int64_t{0}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct TimingBreakdownDefaultTypeInternal {
   PROTOBUF_CONSTEXPR TimingBreakdownDefaultTypeInternal()
@@ -44,6 +45,7 @@ PROTOBUF_CONSTEXPR InferenceRequest::InferenceRequest(
   , /*decltype(_impl_.request_id_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.institution_id_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.n_transactions_)*/0
+  , /*decltype(_impl_.packing_mode_)*/0
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct InferenceRequestDefaultTypeInternal {
   PROTOBUF_CONSTEXPR InferenceRequestDefaultTypeInternal()
@@ -170,6 +172,9 @@ PROTOBUF_CONSTEXPR ProvisioningStatusResponse::ProvisioningStatusResponse(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.detail_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_.state_)*/0
+  , /*decltype(_impl_.packing_mode_)*/0
+  , /*decltype(_impl_.galois_key_bytes_)*/uint64_t{0u}
+  , /*decltype(_impl_.rotation_calls_)*/uint64_t{0u}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct ProvisioningStatusResponseDefaultTypeInternal {
   PROTOBUF_CONSTEXPR ProvisioningStatusResponseDefaultTypeInternal()
@@ -212,7 +217,7 @@ struct CanaryTranscipherResponseDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 CanaryTranscipherResponseDefaultTypeInternal _CanaryTranscipherResponse_default_instance_;
 }  // namespace ppfdaas
 static ::_pb::Metadata file_level_metadata_inference_2eproto[13];
-static const ::_pb::EnumDescriptor* file_level_enum_descriptors_inference_2eproto[2];
+static const ::_pb::EnumDescriptor* file_level_enum_descriptors_inference_2eproto[3];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_inference_2eproto = nullptr;
 
 const uint32_t TableStruct_inference_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
@@ -227,6 +232,7 @@ const uint32_t TableStruct_inference_2eproto::offsets[] PROTOBUF_SECTION_VARIABL
   PROTOBUF_FIELD_OFFSET(::ppfdaas::TimingBreakdown, _impl_.rotation_hoisting_us_),
   PROTOBUF_FIELD_OFFSET(::ppfdaas::TimingBreakdown, _impl_.serialization_us_),
   PROTOBUF_FIELD_OFFSET(::ppfdaas::TimingBreakdown, _impl_.total_inference_us_),
+  PROTOBUF_FIELD_OFFSET(::ppfdaas::TimingBreakdown, _impl_.mask_us_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::ppfdaas::InferenceRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -237,6 +243,7 @@ const uint32_t TableStruct_inference_2eproto::offsets[] PROTOBUF_SECTION_VARIABL
   PROTOBUF_FIELD_OFFSET(::ppfdaas::InferenceRequest, _impl_.request_id_),
   PROTOBUF_FIELD_OFFSET(::ppfdaas::InferenceRequest, _impl_.institution_id_),
   PROTOBUF_FIELD_OFFSET(::ppfdaas::InferenceRequest, _impl_.n_transactions_),
+  PROTOBUF_FIELD_OFFSET(::ppfdaas::InferenceRequest, _impl_.packing_mode_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::ppfdaas::InferenceResponse, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -310,6 +317,9 @@ const uint32_t TableStruct_inference_2eproto::offsets[] PROTOBUF_SECTION_VARIABL
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::ppfdaas::ProvisioningStatusResponse, _impl_.state_),
   PROTOBUF_FIELD_OFFSET(::ppfdaas::ProvisioningStatusResponse, _impl_.detail_),
+  PROTOBUF_FIELD_OFFSET(::ppfdaas::ProvisioningStatusResponse, _impl_.packing_mode_),
+  PROTOBUF_FIELD_OFFSET(::ppfdaas::ProvisioningStatusResponse, _impl_.galois_key_bytes_),
+  PROTOBUF_FIELD_OFFSET(::ppfdaas::ProvisioningStatusResponse, _impl_.rotation_calls_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::ppfdaas::CanaryTranscipherRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -331,18 +341,18 @@ const uint32_t TableStruct_inference_2eproto::offsets[] PROTOBUF_SECTION_VARIABL
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::ppfdaas::TimingBreakdown)},
-  { 11, -1, -1, sizeof(::ppfdaas::InferenceRequest)},
-  { 21, -1, -1, sizeof(::ppfdaas::InferenceResponse)},
-  { 32, -1, -1, sizeof(::ppfdaas::ProvisionGaloisKeysRequest)},
-  { 40, -1, -1, sizeof(::ppfdaas::ProvisionGaloisKeysResponse)},
-  { 48, -1, -1, sizeof(::ppfdaas::CanaryRequest)},
-  { 55, -1, -1, sizeof(::ppfdaas::CanaryResponse)},
-  { 64, -1, -1, sizeof(::ppfdaas::CanaryConfirmRequest)},
-  { 72, -1, -1, sizeof(::ppfdaas::CanaryConfirmResponse)},
-  { 80, -1, -1, sizeof(::ppfdaas::ProvisioningStatusRequest)},
-  { 86, -1, -1, sizeof(::ppfdaas::ProvisioningStatusResponse)},
-  { 94, -1, -1, sizeof(::ppfdaas::CanaryTranscipherRequest)},
-  { 102, -1, -1, sizeof(::ppfdaas::CanaryTranscipherResponse)},
+  { 12, -1, -1, sizeof(::ppfdaas::InferenceRequest)},
+  { 23, -1, -1, sizeof(::ppfdaas::InferenceResponse)},
+  { 34, -1, -1, sizeof(::ppfdaas::ProvisionGaloisKeysRequest)},
+  { 42, -1, -1, sizeof(::ppfdaas::ProvisionGaloisKeysResponse)},
+  { 50, -1, -1, sizeof(::ppfdaas::CanaryRequest)},
+  { 57, -1, -1, sizeof(::ppfdaas::CanaryResponse)},
+  { 66, -1, -1, sizeof(::ppfdaas::CanaryConfirmRequest)},
+  { 74, -1, -1, sizeof(::ppfdaas::CanaryConfirmResponse)},
+  { 82, -1, -1, sizeof(::ppfdaas::ProvisioningStatusRequest)},
+  { 88, -1, -1, sizeof(::ppfdaas::ProvisioningStatusResponse)},
+  { 99, -1, -1, sizeof(::ppfdaas::CanaryTranscipherRequest)},
+  { 107, -1, -1, sizeof(::ppfdaas::CanaryTranscipherResponse)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -362,62 +372,67 @@ static const ::_pb::Message* const file_default_instances[] = {
 };
 
 const char descriptor_table_protodef_inference_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\017inference.proto\022\007ppfdaas\"\234\001\n\017TimingBre"
+  "\n\017inference.proto\022\007ppfdaas\"\255\001\n\017TimingBre"
   "akdown\022\032\n\022deserialization_us\030\001 \001(\003\022\031\n\021mu"
   "ltiply_plain_us\030\002 \001(\003\022\034\n\024rotation_hoisti"
   "ng_us\030\003 \001(\003\022\030\n\020serialization_us\030\004 \001(\003\022\032\n"
-  "\022total_inference_us\030\005 \001(\003\"j\n\020InferenceRe"
-  "quest\022\022\n\nciphertext\030\001 \001(\014\022\022\n\nrequest_id\030"
-  "\002 \001(\t\022\026\n\016institution_id\030\003 \001(\t\022\026\n\016n_trans"
-  "actions\030\004 \001(\005\"\255\001\n\021InferenceResponse\022(\n\006s"
-  "tatus\030\001 \001(\0162\030.ppfdaas.InferenceStatus\022\031\n"
-  "\021result_ciphertext\030\002 \001(\014\022\022\n\nrequest_id\030\003"
-  " \001(\t\022\025\n\rerror_message\030\004 \001(\t\022(\n\006timing\030\005 "
-  "\001(\0132\030.ppfdaas.TimingBreakdown\"@\n\032Provisi"
-  "onGaloisKeysRequest\022\023\n\013galois_keys\030\001 \001(\014"
-  "\022\r\n\005parms\030\002 \001(\014\"Y\n\033ProvisionGaloisKeysRe"
-  "sponse\022)\n\005state\030\001 \001(\0162\032.ppfdaas.Provisio"
-  "ningState\022\017\n\007message\030\002 \001(\t\"#\n\rCanaryRequ"
-  "est\022\022\n\nciphertext\030\001 \001(\014\"g\n\016CanaryRespons"
-  "e\022)\n\005state\030\001 \001(\0162\032.ppfdaas.ProvisioningS"
-  "tate\022\031\n\021result_ciphertext\030\002 \001(\014\022\017\n\007messa"
-  "ge\030\003 \001(\t\"7\n\024CanaryConfirmRequest\022\016\n\006pass"
-  "ed\030\001 \001(\010\022\017\n\007message\030\002 \001(\t\"S\n\025CanaryConfi"
-  "rmResponse\022)\n\005state\030\001 \001(\0162\032.ppfdaas.Prov"
-  "isioningState\022\017\n\007message\030\002 \001(\t\"\033\n\031Provis"
-  "ioningStatusRequest\"W\n\032ProvisioningStatu"
-  "sResponse\022)\n\005state\030\001 \001(\0162\032.ppfdaas.Provi"
-  "sioningState\022\016\n\006detail\030\002 \001(\t\"A\n\030CanaryTr"
-  "anscipherRequest\022\026\n\016sym_ciphertext\030\001 \001(\014"
-  "\022\r\n\005nonce\030\002 \001(\014\"\202\001\n\031CanaryTranscipherRes"
-  "ponse\022)\n\005state\030\001 \001(\0162\032.ppfdaas.Provision"
-  "ingState\022\023\n\013result_ckks\030\002 \001(\014\022\017\n\007message"
-  "\030\003 \001(\t\022\024\n\014pending_impl\030\004 \001(\010*\253\001\n\017Inferen"
-  "ceStatus\022\006\n\002OK\020\000\022\036\n\032ERR_NOISE_BUDGET_EXH"
-  "AUSTED\020\001\022\034\n\030ERR_MALFORMED_CIPHERTEXT\020\002\022\026"
-  "\n\022ERR_PARAM_MISMATCH\020\003\022\017\n\013ERR_TIMEOUT\020\004\022"
-  "\020\n\014ERR_INTERNAL\020\005\022\027\n\023ERR_NOT_PROVISIONED"
-  "\020\006*o\n\021ProvisioningState\022\r\n\tPROV_INIT\020\000\022\026"
-  "\n\022PROV_AWAITING_KEYS\020\001\022\023\n\017PROV_VALIDATIN"
-  "G\020\002\022\016\n\nPROV_READY\020\003\022\016\n\nPROV_FAULT\020\0042\223\004\n\025"
-  "FraudInferenceService\022E\n\014RunInference\022\031."
-  "ppfdaas.InferenceRequest\032\032.ppfdaas.Infer"
-  "enceResponse\022`\n\023ProvisionGaloisKeys\022#.pp"
-  "fdaas.ProvisionGaloisKeysRequest\032$.ppfda"
-  "as.ProvisionGaloisKeysResponse\022>\n\013Canary"
-  "Check\022\026.ppfdaas.CanaryRequest\032\027.ppfdaas."
-  "CanaryResponse\022N\n\rCanaryConfirm\022\035.ppfdaa"
-  "s.CanaryConfirmRequest\032\036.ppfdaas.CanaryC"
-  "onfirmResponse\022`\n\025GetProvisioningStatus\022"
-  "\".ppfdaas.ProvisioningStatusRequest\032#.pp"
-  "fdaas.ProvisioningStatusResponse\022_\n\026Cana"
-  "ryCheckTranscipher\022!.ppfdaas.CanaryTrans"
-  "cipherRequest\032\".ppfdaas.CanaryTransciphe"
-  "rResponseb\006proto3"
+  "\022total_inference_us\030\005 \001(\003\022\017\n\007mask_us\030\006 \001"
+  "(\003\"\226\001\n\020InferenceRequest\022\022\n\nciphertext\030\001 "
+  "\001(\014\022\022\n\nrequest_id\030\002 \001(\t\022\026\n\016institution_i"
+  "d\030\003 \001(\t\022\026\n\016n_transactions\030\004 \001(\005\022*\n\014packi"
+  "ng_mode\030\005 \001(\0162\024.ppfdaas.PackingMode\"\255\001\n\021"
+  "InferenceResponse\022(\n\006status\030\001 \001(\0162\030.ppfd"
+  "aas.InferenceStatus\022\031\n\021result_ciphertext"
+  "\030\002 \001(\014\022\022\n\nrequest_id\030\003 \001(\t\022\025\n\rerror_mess"
+  "age\030\004 \001(\t\022(\n\006timing\030\005 \001(\0132\030.ppfdaas.Timi"
+  "ngBreakdown\"@\n\032ProvisionGaloisKeysReques"
+  "t\022\023\n\013galois_keys\030\001 \001(\014\022\r\n\005parms\030\002 \001(\014\"Y\n"
+  "\033ProvisionGaloisKeysResponse\022)\n\005state\030\001 "
+  "\001(\0162\032.ppfdaas.ProvisioningState\022\017\n\007messa"
+  "ge\030\002 \001(\t\"#\n\rCanaryRequest\022\022\n\nciphertext\030"
+  "\001 \001(\014\"g\n\016CanaryResponse\022)\n\005state\030\001 \001(\0162\032"
+  ".ppfdaas.ProvisioningState\022\031\n\021result_cip"
+  "hertext\030\002 \001(\014\022\017\n\007message\030\003 \001(\t\"7\n\024Canary"
+  "ConfirmRequest\022\016\n\006passed\030\001 \001(\010\022\017\n\007messag"
+  "e\030\002 \001(\t\"S\n\025CanaryConfirmResponse\022)\n\005stat"
+  "e\030\001 \001(\0162\032.ppfdaas.ProvisioningState\022\017\n\007m"
+  "essage\030\002 \001(\t\"\033\n\031ProvisioningStatusReques"
+  "t\"\265\001\n\032ProvisioningStatusResponse\022)\n\005stat"
+  "e\030\001 \001(\0162\032.ppfdaas.ProvisioningState\022\016\n\006d"
+  "etail\030\002 \001(\t\022*\n\014packing_mode\030\003 \001(\0162\024.ppfd"
+  "aas.PackingMode\022\030\n\020galois_key_bytes\030\004 \001("
+  "\004\022\026\n\016rotation_calls\030\005 \001(\004\"A\n\030CanaryTrans"
+  "cipherRequest\022\026\n\016sym_ciphertext\030\001 \001(\014\022\r\n"
+  "\005nonce\030\002 \001(\014\"\202\001\n\031CanaryTranscipherRespon"
+  "se\022)\n\005state\030\001 \001(\0162\032.ppfdaas.Provisioning"
+  "State\022\023\n\013result_ckks\030\002 \001(\014\022\017\n\007message\030\003 "
+  "\001(\t\022\024\n\014pending_impl\030\004 \001(\010*\253\001\n\017InferenceS"
+  "tatus\022\006\n\002OK\020\000\022\036\n\032ERR_NOISE_BUDGET_EXHAUS"
+  "TED\020\001\022\034\n\030ERR_MALFORMED_CIPHERTEXT\020\002\022\026\n\022E"
+  "RR_PARAM_MISMATCH\020\003\022\017\n\013ERR_TIMEOUT\020\004\022\020\n\014"
+  "ERR_INTERNAL\020\005\022\027\n\023ERR_NOT_PROVISIONED\020\006*"
+  "o\n\021ProvisioningState\022\r\n\tPROV_INIT\020\000\022\026\n\022P"
+  "ROV_AWAITING_KEYS\020\001\022\023\n\017PROV_VALIDATING\020\002"
+  "\022\016\n\nPROV_READY\020\003\022\016\n\nPROV_FAULT\020\004* \n\013Pack"
+  "ingMode\022\010\n\004SLOT\020\000\022\007\n\003CNP\020\0012\223\004\n\025FraudInfe"
+  "renceService\022E\n\014RunInference\022\031.ppfdaas.I"
+  "nferenceRequest\032\032.ppfdaas.InferenceRespo"
+  "nse\022`\n\023ProvisionGaloisKeys\022#.ppfdaas.Pro"
+  "visionGaloisKeysRequest\032$.ppfdaas.Provis"
+  "ionGaloisKeysResponse\022>\n\013CanaryCheck\022\026.p"
+  "pfdaas.CanaryRequest\032\027.ppfdaas.CanaryRes"
+  "ponse\022N\n\rCanaryConfirm\022\035.ppfdaas.CanaryC"
+  "onfirmRequest\032\036.ppfdaas.CanaryConfirmRes"
+  "ponse\022`\n\025GetProvisioningStatus\022\".ppfdaas"
+  ".ProvisioningStatusRequest\032#.ppfdaas.Pro"
+  "visioningStatusResponse\022_\n\026CanaryCheckTr"
+  "anscipher\022!.ppfdaas.CanaryTranscipherReq"
+  "uest\032\".ppfdaas.CanaryTranscipherResponse"
+  "b\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_inference_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_inference_2eproto = {
-    false, false, 2057, descriptor_table_protodef_inference_2eproto,
+    false, false, 2248, descriptor_table_protodef_inference_2eproto,
     "inference.proto",
     &descriptor_table_inference_2eproto_once, nullptr, 0, 13,
     schemas, file_default_instances, TableStruct_inference_2eproto::offsets,
@@ -467,6 +482,20 @@ bool ProvisioningState_IsValid(int value) {
   }
 }
 
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* PackingMode_descriptor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_inference_2eproto);
+  return file_level_enum_descriptors_inference_2eproto[2];
+}
+bool PackingMode_IsValid(int value) {
+  switch (value) {
+    case 0:
+    case 1:
+      return true;
+    default:
+      return false;
+  }
+}
+
 
 // ===================================================================
 
@@ -489,12 +518,13 @@ TimingBreakdown::TimingBreakdown(const TimingBreakdown& from)
     , decltype(_impl_.rotation_hoisting_us_){}
     , decltype(_impl_.serialization_us_){}
     , decltype(_impl_.total_inference_us_){}
+    , decltype(_impl_.mask_us_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::memcpy(&_impl_.deserialization_us_, &from._impl_.deserialization_us_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.total_inference_us_) -
-    reinterpret_cast<char*>(&_impl_.deserialization_us_)) + sizeof(_impl_.total_inference_us_));
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.mask_us_) -
+    reinterpret_cast<char*>(&_impl_.deserialization_us_)) + sizeof(_impl_.mask_us_));
   // @@protoc_insertion_point(copy_constructor:ppfdaas.TimingBreakdown)
 }
 
@@ -508,6 +538,7 @@ inline void TimingBreakdown::SharedCtor(
     , decltype(_impl_.rotation_hoisting_us_){int64_t{0}}
     , decltype(_impl_.serialization_us_){int64_t{0}}
     , decltype(_impl_.total_inference_us_){int64_t{0}}
+    , decltype(_impl_.mask_us_){int64_t{0}}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -536,8 +567,8 @@ void TimingBreakdown::Clear() {
   (void) cached_has_bits;
 
   ::memset(&_impl_.deserialization_us_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&_impl_.total_inference_us_) -
-      reinterpret_cast<char*>(&_impl_.deserialization_us_)) + sizeof(_impl_.total_inference_us_));
+      reinterpret_cast<char*>(&_impl_.mask_us_) -
+      reinterpret_cast<char*>(&_impl_.deserialization_us_)) + sizeof(_impl_.mask_us_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -583,6 +614,14 @@ const char* TimingBreakdown::_InternalParse(const char* ptr, ::_pbi::ParseContex
       case 5:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 40)) {
           _impl_.total_inference_us_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // int64 mask_us = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 48)) {
+          _impl_.mask_us_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -646,6 +685,12 @@ uint8_t* TimingBreakdown::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteInt64ToArray(5, this->_internal_total_inference_us(), target);
   }
 
+  // int64 mask_us = 6;
+  if (this->_internal_mask_us() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteInt64ToArray(6, this->_internal_mask_us(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -687,6 +732,11 @@ size_t TimingBreakdown::ByteSizeLong() const {
     total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(this->_internal_total_inference_us());
   }
 
+  // int64 mask_us = 6;
+  if (this->_internal_mask_us() != 0) {
+    total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(this->_internal_mask_us());
+  }
+
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -720,6 +770,9 @@ void TimingBreakdown::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const 
   if (from._internal_total_inference_us() != 0) {
     _this->_internal_set_total_inference_us(from._internal_total_inference_us());
   }
+  if (from._internal_mask_us() != 0) {
+    _this->_internal_set_mask_us(from._internal_mask_us());
+  }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -738,8 +791,8 @@ void TimingBreakdown::InternalSwap(TimingBreakdown* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(TimingBreakdown, _impl_.total_inference_us_)
-      + sizeof(TimingBreakdown::_impl_.total_inference_us_)
+      PROTOBUF_FIELD_OFFSET(TimingBreakdown, _impl_.mask_us_)
+      + sizeof(TimingBreakdown::_impl_.mask_us_)
       - PROTOBUF_FIELD_OFFSET(TimingBreakdown, _impl_.deserialization_us_)>(
           reinterpret_cast<char*>(&_impl_.deserialization_us_),
           reinterpret_cast<char*>(&other->_impl_.deserialization_us_));
@@ -771,6 +824,7 @@ InferenceRequest::InferenceRequest(const InferenceRequest& from)
     , decltype(_impl_.request_id_){}
     , decltype(_impl_.institution_id_){}
     , decltype(_impl_.n_transactions_){}
+    , decltype(_impl_.packing_mode_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -798,7 +852,9 @@ InferenceRequest::InferenceRequest(const InferenceRequest& from)
     _this->_impl_.institution_id_.Set(from._internal_institution_id(), 
       _this->GetArenaForAllocation());
   }
-  _this->_impl_.n_transactions_ = from._impl_.n_transactions_;
+  ::memcpy(&_impl_.n_transactions_, &from._impl_.n_transactions_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.packing_mode_) -
+    reinterpret_cast<char*>(&_impl_.n_transactions_)) + sizeof(_impl_.packing_mode_));
   // @@protoc_insertion_point(copy_constructor:ppfdaas.InferenceRequest)
 }
 
@@ -811,6 +867,7 @@ inline void InferenceRequest::SharedCtor(
     , decltype(_impl_.request_id_){}
     , decltype(_impl_.institution_id_){}
     , decltype(_impl_.n_transactions_){0}
+    , decltype(_impl_.packing_mode_){0}
     , /*decltype(_impl_._cached_size_)*/{}
   };
   _impl_.ciphertext_.InitDefault();
@@ -856,7 +913,9 @@ void InferenceRequest::Clear() {
   _impl_.ciphertext_.ClearToEmpty();
   _impl_.request_id_.ClearToEmpty();
   _impl_.institution_id_.ClearToEmpty();
-  _impl_.n_transactions_ = 0;
+  ::memset(&_impl_.n_transactions_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.packing_mode_) -
+      reinterpret_cast<char*>(&_impl_.n_transactions_)) + sizeof(_impl_.packing_mode_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -900,6 +959,15 @@ const char* InferenceRequest::_InternalParse(const char* ptr, ::_pbi::ParseConte
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
           _impl_.n_transactions_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .ppfdaas.PackingMode packing_mode = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 40)) {
+          uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_packing_mode(static_cast<::ppfdaas::PackingMode>(val));
         } else
           goto handle_unusual;
         continue;
@@ -964,6 +1032,13 @@ uint8_t* InferenceRequest::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteInt32ToArray(4, this->_internal_n_transactions(), target);
   }
 
+  // .ppfdaas.PackingMode packing_mode = 5;
+  if (this->_internal_packing_mode() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteEnumToArray(
+      5, this->_internal_packing_mode(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -1006,6 +1081,12 @@ size_t InferenceRequest::ByteSizeLong() const {
     total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(this->_internal_n_transactions());
   }
 
+  // .ppfdaas.PackingMode packing_mode = 5;
+  if (this->_internal_packing_mode() != 0) {
+    total_size += 1 +
+      ::_pbi::WireFormatLite::EnumSize(this->_internal_packing_mode());
+  }
+
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -1035,6 +1116,9 @@ void InferenceRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const
   }
   if (from._internal_n_transactions() != 0) {
     _this->_internal_set_n_transactions(from._internal_n_transactions());
+  }
+  if (from._internal_packing_mode() != 0) {
+    _this->_internal_set_packing_mode(from._internal_packing_mode());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -1067,7 +1151,12 @@ void InferenceRequest::InternalSwap(InferenceRequest* other) {
       &_impl_.institution_id_, lhs_arena,
       &other->_impl_.institution_id_, rhs_arena
   );
-  swap(_impl_.n_transactions_, other->_impl_.n_transactions_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(InferenceRequest, _impl_.packing_mode_)
+      + sizeof(InferenceRequest::_impl_.packing_mode_)
+      - PROTOBUF_FIELD_OFFSET(InferenceRequest, _impl_.n_transactions_)>(
+          reinterpret_cast<char*>(&_impl_.n_transactions_),
+          reinterpret_cast<char*>(&other->_impl_.n_transactions_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata InferenceRequest::GetMetadata() const {
@@ -2923,6 +3012,9 @@ ProvisioningStatusResponse::ProvisioningStatusResponse(const ProvisioningStatusR
   new (&_impl_) Impl_{
       decltype(_impl_.detail_){}
     , decltype(_impl_.state_){}
+    , decltype(_impl_.packing_mode_){}
+    , decltype(_impl_.galois_key_bytes_){}
+    , decltype(_impl_.rotation_calls_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -2934,7 +3026,9 @@ ProvisioningStatusResponse::ProvisioningStatusResponse(const ProvisioningStatusR
     _this->_impl_.detail_.Set(from._internal_detail(), 
       _this->GetArenaForAllocation());
   }
-  _this->_impl_.state_ = from._impl_.state_;
+  ::memcpy(&_impl_.state_, &from._impl_.state_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.rotation_calls_) -
+    reinterpret_cast<char*>(&_impl_.state_)) + sizeof(_impl_.rotation_calls_));
   // @@protoc_insertion_point(copy_constructor:ppfdaas.ProvisioningStatusResponse)
 }
 
@@ -2945,6 +3039,9 @@ inline void ProvisioningStatusResponse::SharedCtor(
   new (&_impl_) Impl_{
       decltype(_impl_.detail_){}
     , decltype(_impl_.state_){0}
+    , decltype(_impl_.packing_mode_){0}
+    , decltype(_impl_.galois_key_bytes_){uint64_t{0u}}
+    , decltype(_impl_.rotation_calls_){uint64_t{0u}}
     , /*decltype(_impl_._cached_size_)*/{}
   };
   _impl_.detail_.InitDefault();
@@ -2978,7 +3075,9 @@ void ProvisioningStatusResponse::Clear() {
   (void) cached_has_bits;
 
   _impl_.detail_.ClearToEmpty();
-  _impl_.state_ = 0;
+  ::memset(&_impl_.state_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.rotation_calls_) -
+      reinterpret_cast<char*>(&_impl_.state_)) + sizeof(_impl_.rotation_calls_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -3004,6 +3103,31 @@ const char* ProvisioningStatusResponse::_InternalParse(const char* ptr, ::_pbi::
           ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
           CHK_(::_pbi::VerifyUTF8(str, "ppfdaas.ProvisioningStatusResponse.detail"));
+        } else
+          goto handle_unusual;
+        continue;
+      // .ppfdaas.PackingMode packing_mode = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
+          uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_packing_mode(static_cast<::ppfdaas::PackingMode>(val));
+        } else
+          goto handle_unusual;
+        continue;
+      // uint64 galois_key_bytes = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
+          _impl_.galois_key_bytes_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // uint64 rotation_calls = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 40)) {
+          _impl_.rotation_calls_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
         } else
           goto handle_unusual;
         continue;
@@ -3053,6 +3177,25 @@ uint8_t* ProvisioningStatusResponse::_InternalSerialize(
         2, this->_internal_detail(), target);
   }
 
+  // .ppfdaas.PackingMode packing_mode = 3;
+  if (this->_internal_packing_mode() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteEnumToArray(
+      3, this->_internal_packing_mode(), target);
+  }
+
+  // uint64 galois_key_bytes = 4;
+  if (this->_internal_galois_key_bytes() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(4, this->_internal_galois_key_bytes(), target);
+  }
+
+  // uint64 rotation_calls = 5;
+  if (this->_internal_rotation_calls() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt64ToArray(5, this->_internal_rotation_calls(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -3082,6 +3225,22 @@ size_t ProvisioningStatusResponse::ByteSizeLong() const {
       ::_pbi::WireFormatLite::EnumSize(this->_internal_state());
   }
 
+  // .ppfdaas.PackingMode packing_mode = 3;
+  if (this->_internal_packing_mode() != 0) {
+    total_size += 1 +
+      ::_pbi::WireFormatLite::EnumSize(this->_internal_packing_mode());
+  }
+
+  // uint64 galois_key_bytes = 4;
+  if (this->_internal_galois_key_bytes() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_galois_key_bytes());
+  }
+
+  // uint64 rotation_calls = 5;
+  if (this->_internal_rotation_calls() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_rotation_calls());
+  }
+
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -3106,6 +3265,15 @@ void ProvisioningStatusResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_
   if (from._internal_state() != 0) {
     _this->_internal_set_state(from._internal_state());
   }
+  if (from._internal_packing_mode() != 0) {
+    _this->_internal_set_packing_mode(from._internal_packing_mode());
+  }
+  if (from._internal_galois_key_bytes() != 0) {
+    _this->_internal_set_galois_key_bytes(from._internal_galois_key_bytes());
+  }
+  if (from._internal_rotation_calls() != 0) {
+    _this->_internal_set_rotation_calls(from._internal_rotation_calls());
+  }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -3129,7 +3297,12 @@ void ProvisioningStatusResponse::InternalSwap(ProvisioningStatusResponse* other)
       &_impl_.detail_, lhs_arena,
       &other->_impl_.detail_, rhs_arena
   );
-  swap(_impl_.state_, other->_impl_.state_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(ProvisioningStatusResponse, _impl_.rotation_calls_)
+      + sizeof(ProvisioningStatusResponse::_impl_.rotation_calls_)
+      - PROTOBUF_FIELD_OFFSET(ProvisioningStatusResponse, _impl_.state_)>(
+          reinterpret_cast<char*>(&_impl_.state_),
+          reinterpret_cast<char*>(&other->_impl_.state_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ProvisioningStatusResponse::GetMetadata() const {

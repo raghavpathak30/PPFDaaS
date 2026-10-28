@@ -37,6 +37,7 @@ def step2_proto_contract() -> None:
         "rotation_hoisting_us": 3,
         "serialization_us": 4,
         "total_inference_us": 5,
+        "mask_us": 6,
     }
     for name, number in fields.items():
         pat = rf"int64\s+{name}\s*=\s*{number}\s*;"

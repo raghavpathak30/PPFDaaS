@@ -174,16 +174,48 @@ target_compile_definitions(vendor_server_160 PRIVATE
     PPFDAAS_REPO_ROOT="${CMAKE_SOURCE_DIR}"
 )
 
-include(FetchContent)
-FetchContent_Declare(
-    Catch2
-    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG v3.5.4
+# CNP-A TEST-ONLY server: identical sources, plus -DPPFDAAS_CNP_TEST_NOMASK, which
+# compiles in the PPFD_CNP_TEST_MASK_OFF switch used to demonstrate that the
+# unmasked CNP output leaks the weights. The production vendor_server_160
+# target above does NOT define the macro, so it contains no way to disable the
+# mask (tests assert the env-var string is absent from that binary).
+add_executable(vendor_server_160_cnp_test
+    src/vendor_server_160.cpp
+    src/inference_service_160.cpp
+    src/eval_context_160.cpp
 )
-FetchContent_MakeAvailable(Catch2)
+target_link_libraries(vendor_server_160_cnp_test PRIVATE
+    he_core
+    SEAL::seal
+    gRPC::grpc++
+    protobuf::libprotobuf
+    OpenMP::OpenMP_CXX
+)
+target_include_directories(vendor_server_160_cnp_test PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${GENERATED_DIR}"
+)
+target_compile_definitions(vendor_server_160_cnp_test PRIVATE
+    PPFDAAS_REPO_ROOT="${CMAKE_SOURCE_DIR}"
+    PPFDAAS_CNP_TEST_NOMASK=1
+)
 
-add_executable(test_he_core tests/test_he_core.cpp)
-target_link_libraries(test_he_core PRIVATE he_core Catch2::Catch2WithMain)
+# Catch2 is fetched from GitHub at configure time only when the C++ unit tests are
+# built. The benchmark image (tools/cnp/Dockerfile.cnpbench) passes
+# -DPPFDAAS_BUILD_TESTS=OFF; the default (ON) is unchanged.
+option(PPFDAAS_BUILD_TESTS "Build the Catch2 C++ unit tests" ON)
+if(PPFDAAS_BUILD_TESTS)
+    include(FetchContent)
+    FetchContent_Declare(
+        Catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG v3.5.4
+    )
+    FetchContent_MakeAvailable(Catch2)
 
-enable_testing()
-add_test(NAME he_core COMMAND test_he_core)
+    add_executable(test_he_core tests/test_he_core.cpp)
+    target_link_libraries(test_he_core PRIVATE he_core Catch2::Catch2WithMain)
+
+    enable_testing()
+    add_test(NAME he_core COMMAND test_he_core)
+endif()

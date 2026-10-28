@@ -1,0 +1,22 @@
+# Allow-list: nothing is sent to the daemon unless named here.
+*
+!proto
+!vendor_server
+!tools/local_benchmark
+!tools/cnp/docker-entrypoint.sh
+!bank_client/CMakeLists.txt
+!bank_client/bank_client.py
+!bank_client/he_wrapper
+!bank_client/tools
+!generated
+!inference_pb2.py
+!inference_pb2_grpc.py
+!scripts/cnp_bench.py
+!scripts/cnp_common.py
+!scripts/cnp_parity.py
+# ...minus bulky / key material that happens to live under allowed dirs
+vendor_server/artifacts
+vendor_server/build
+**/*.bin
+**/*.so
+**/__pycache__

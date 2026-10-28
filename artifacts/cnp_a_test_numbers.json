@@ -1,0 +1,47 @@
+{
+  "t1_max_roundtrip_err": 4.547473508864641e-13,
+  "t2_max_enc_dec_err": 9.642997511605245e-11,
+  "t3_max_err_lanes_1": 1.0748202328159095e-10,
+  "t3_max_err_lanes_2": 5.171507666545949e-11,
+  "t3_max_err_lanes_16": 2.410756039239459e-10,
+  "t3_max_err_lanes_31": 2.433058199358129e-10,
+  "t3_max_err_lanes_32": 2.3637092283479433e-10,
+  "t4": {
+    "n_samples": 56962,
+    "max_abs_error": 3.7132252828087076e-10,
+    "mean_abs_error": 6.889071770147661e-11,
+    "median_abs_error": 5.809752678942459e-11,
+    "roc_auc_encrypted": 0.9793983927279409,
+    "pr_auc_encrypted": 0.8238348513573128
+  },
+  "t5a_max_dev_from_bias": 9.059419880941277e-14,
+  "t5b": {
+    "masked_single_request_p": [
+      0.6881860660731192,
+      0.36214126710929934,
+      0.5517707161857665,
+      0.5833646109143673,
+      0.2988679179715694,
+      0.7213360083853164,
+      0.903096861953427,
+      0.9271546377559703
+    ],
+    "masked_pooled_p": 0.30660746485808593,
+    "pooled_n": 65280,
+    "unmasked_p": 0.0
+  },
+  "t5c": {
+    "unmasked_max_weight_err": 2.956507816342935e-10,
+    "masked_max_weight_err": 1205395.3403571222,
+    "masked_abs_corr": 0.1850133230806804
+  },
+  "t6_cnp": {
+    "galois_key_bytes": 0,
+    "rotation_calls": 0
+  },
+  "t6_slot_rotations_per_request": 8,
+  "t_timing_max_residual_us": {
+    "cnp": 3,
+    "slot": 3
+  }
+}

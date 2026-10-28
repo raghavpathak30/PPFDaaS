@@ -20,6 +20,8 @@ set_target_properties(seal_wrapper PROPERTIES
 
 pybind11_add_module(seal_wrapper_160 MODULE he_wrapper/seal_wrapper_160.cpp)
 target_link_libraries(seal_wrapper_160 PRIVATE SEAL::seal OpenMP::OpenMP_CXX)
+# CNP-A: key-free coefficient codec shared with the vendor server.
+target_include_directories(seal_wrapper_160 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../vendor_server/include")
 set_target_properties(seal_wrapper_160 PROPERTIES
     PREFIX ""
     OUTPUT_NAME "seal_wrapper_160"

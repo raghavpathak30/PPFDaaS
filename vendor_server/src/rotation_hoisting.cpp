@@ -4,6 +4,7 @@
 
 #include "seal/util/galois.h"
 
+#include <atomic>
 #include <stdexcept>
 #include <vector>
 
@@ -55,6 +56,13 @@
 // ciphertext at each step (acc += rotate(ct, step)), which only ever sums the
 // 9-slot subset {0,1,2,4,8,16,32,64,128} of each window, not the full 256.
 
+// CNP-A: every Evaluator::rotate_vector issued from this translation unit is
+// counted, so a server can report (and a test can assert) that the CNP path
+// performs zero rotations. Relaxed ordering: this is a statistic, not a lock.
+static std::atomic<std::uint64_t> g_rotation_calls{0};
+
+std::uint64_t rotation_calls_total() { return g_rotation_calls.load(std::memory_order_relaxed); }
+
 static constexpr int STEPS[] = {1, 2, 4, 8, 16, 32, 64, 128};
 
 seal::Ciphertext& hoisted_tree_sum(
@@ -71,6 +79,7 @@ seal::Ciphertext& hoisted_tree_sum(
     seal::Ciphertext tmp;
 
     for (int r = 0; r < 8; ++r) {
+        g_rotation_calls.fetch_add(1, std::memory_order_relaxed);
         ev.rotate_vector(acc, STEPS[r], gk, tmp);
         ev.add_inplace(acc, tmp);
     }
@@ -148,6 +157,7 @@ void bsgs_reduction(
     std::vector<seal::Ciphertext> baby_rot(baby_step > 0 ? baby_step - 1 : 0);
     #pragma omp parallel for
     for (int j = 1; j < baby_step; ++j) {
+        g_rotation_calls.fetch_add(1, std::memory_order_relaxed);
         evaluator.rotate_vector(ct_in, j, galois_keys, baby_rot[j - 1]);
     }
 
@@ -160,6 +170,7 @@ void bsgs_reduction(
     std::vector<seal::Ciphertext> giant_rot(giant_step > 0 ? giant_step - 1 : 0);
     #pragma omp parallel for
     for (int i = 1; i < giant_step; ++i) {
+        g_rotation_calls.fetch_add(1, std::memory_order_relaxed);
         evaluator.rotate_vector(baby_acc, i * baby_step, galois_keys, giant_rot[i - 1]);
     }
 
@@ -192,6 +203,7 @@ seal::Ciphertext naive_tree_sum(
 
     for (int step = 1; step < n_features; ++step) {
 
+        g_rotation_calls.fetch_add(1, std::memory_order_relaxed);
         ev.rotate_vector(ct, step, gk_full, rotated);
 
         ev.add_inplace(acc, rotated);

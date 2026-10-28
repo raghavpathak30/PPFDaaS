@@ -3,6 +3,7 @@
 #include <seal/seal.h>
 
 #include <array>
+#include <cstdint>
 
 // ─── TERMINOLOGY NOTE (Phase 4, §4.2) ──────────────────────────────────────
 //
@@ -139,3 +140,7 @@ seal::Ciphertext naive_tree_sum(
 
         seal::Evaluator& ev,
         int n_features);
+
+// CNP-A: total Evaluator::rotate_vector calls made through this module since
+// process start (hoisted_tree_sum / bsgs_reduction / naive_tree_sum).
+std::uint64_t rotation_calls_total();

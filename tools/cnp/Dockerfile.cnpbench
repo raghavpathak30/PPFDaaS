@@ -1,0 +1,99 @@
+# syntax=docker/dockerfile:1
+#
+# Benchmark image for the CNP-A comparison (scripts/cnp_bench.py): the real
+# vendor_server_160 (PPFD_PACKING=slot|cnp), benchmark_160 (server-compute-only
+# circuits for fold/bsgs/naive/cnp), the pybind11 bank-client wrappers and the
+# Python harness. SEAL 4.1.2, CPU only. Same pinned base and SEAL build as
+# tools/ckks/Dockerfile.bench.
+#
+# Build from the REPO ROOT:
+#   docker build -f tools/cnp/Dockerfile.cnpbench \
+#     --build-arg GIT_SHA="$(git rev-parse HEAD)" \
+#     --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+#     -t ppfdaas-cnp-bench .
+#
+# NOT baked in: artifacts/ (secret_key_160.bin etc. must never be in an image). Mount the
+# host's artifacts/ read-only at /app/artifacts and a writable dir at /results
+# (scripts/dgx/run_ckks.sh does both for the `cnp` / `smoke` targets).
+
+FROM debian:bookworm-slim@sha256:7ff6ba31527b9e336162fa061746c366c4b2032f4d2cff2078bea43f78efe3f8 AS build
+
+ARG SEAL_VERSION=4.1.2
+ARG SEAL_COMMIT=119dc32e135cb89c1062076a69310d4413ebc824
+ARG GCC_VERSION=12.2.0
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      build-essential cmake git ca-certificates python3-dev python3-pybind11 \
+      libgrpc++-dev libprotobuf-dev protobuf-compiler protobuf-compiler-grpc \
+ && rm -rf /var/lib/apt/lists/* \
+ && test "$(g++ -dumpfullversion)" = "${GCC_VERSION}"
+
+# SEAL, static, pinned commit (tag v4.1.2); no -march flags, no HEXL (runs on any x86-64 Haswell+).
+RUN git init -q /tmp/SEAL \
+ && git -C /tmp/SEAL fetch -q --depth 1 https://github.com/microsoft/SEAL.git "${SEAL_COMMIT}" \
+ && git -C /tmp/SEAL checkout -q FETCH_HEAD \
+ && test "$(git -C /tmp/SEAL rev-parse HEAD)" = "${SEAL_COMMIT}" \
+ && cmake -S /tmp/SEAL -B /tmp/SEAL/build \
+      -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local \
+      -DSEAL_BUILD_DEPS=ON -DSEAL_USE_MSGSL=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+ && cmake --build /tmp/SEAL/build -j"$(nproc)" \
+ && cmake --install /tmp/SEAL/build \
+ && grep -q "PACKAGE_VERSION \"${SEAL_VERSION}\"" /usr/local/lib/cmake/SEAL-4.1/SEALConfigVersion.cmake \
+ && rm -rf /tmp/SEAL
+
+WORKDIR /app
+COPY proto/ proto/
+COPY vendor_server/ vendor_server/
+COPY tools/local_benchmark/ tools/local_benchmark/
+COPY bank_client/CMakeLists.txt bank_client/CMakeLists.txt
+COPY bank_client/he_wrapper/ bank_client/he_wrapper/
+COPY bank_client/tools/ bank_client/tools/
+
+# Server + benchmark_160. -DPPFDAAS_BUILD_TESTS=OFF skips Catch2 (no GitHub fetch for it).
+RUN cmake -S vendor_server -B /tmp/vs -DCMAKE_BUILD_TYPE=Release -DPPFDAAS_BUILD_TESTS=OFF \
+ && cmake --build /tmp/vs --target vendor_server_160 benchmark_160 -j"$(nproc)" \
+ && install -D /tmp/vs/vendor_server_160 /out/build/vendor_server/vendor_server_160 \
+ && install -D /tmp/vs/benchmark_160     /out/build/vendor_server/benchmark_160 \
+ && strip /out/build/vendor_server/*
+
+# pybind11 wrappers (written into /app/bank_client by the project's own CMake).
+RUN cmake -S bank_client -B /tmp/bc -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_DEFAULT_CMP0057=NEW \
+      -DPython3_EXECUTABLE=/usr/bin/python3 \
+ && cmake --build /tmp/bc --target seal_wrapper seal_wrapper_160 -j"$(nproc)" \
+ && ls /app/bank_client/*.so
+
+
+FROM debian:bookworm-slim@sha256:7ff6ba31527b9e336162fa061746c366c4b2032f4d2cff2078bea43f78efe3f8
+
+ARG GIT_SHA=unknown
+ARG BUILD_DATE=unknown
+LABEL org.opencontainers.image.title="ppfdaas-cnp-bench" \
+      org.opencontainers.image.revision="${GIT_SHA}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      ppfdaas.repo_sha="${GIT_SHA}" ppfdaas.build_date="${BUILD_DATE}" \
+      ppfdaas.seal_version="4.1.2" ppfdaas.compiler_version="g++ 12.2.0" \
+      ppfdaas.mounts="artifacts:/app/artifacts:ro results:/results:rw"
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      python3 python3-numpy python3-scipy python3-sklearn python3-grpcio python3-protobuf \
+      libgrpc++1.51 libprotobuf32 libgomp1 \
+ && rm -rf /var/lib/apt/lists/* \
+ && mkdir /results && chmod 1777 /results
+
+COPY --from=build /out/build /opt/cnp/build
+COPY --from=build /app/bank_client/*.so /app/bank_client/
+COPY bank_client/bank_client.py /app/bank_client/bank_client.py
+COPY generated/ /app/generated/
+# repo-root shims: generated/inference_pb2_grpc.py does a top-level `import inference_pb2`
+COPY inference_pb2.py inference_pb2_grpc.py /app/
+COPY scripts/cnp_bench.py scripts/cnp_common.py scripts/cnp_parity.py /app/scripts/
+COPY tools/cnp/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+
+# PYTHONDONTWRITEBYTECODE: the wrapper runs as an arbitrary --user with no writable HOME.
+ENV PPFD_BUILD_DIR=/opt/cnp/build PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=/app PPFDAAS_REPO_SHA=${GIT_SHA}
+VOLUME /results
+WORKDIR /results
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["smoke"]
