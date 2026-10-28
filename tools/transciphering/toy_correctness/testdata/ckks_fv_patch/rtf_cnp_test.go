@@ -243,13 +243,11 @@ func cnpMaskRingT(x *cnpCtx, biasQ int64, lanes int, randomize bool) *PlaintextR
 	return ptRt
 }
 
-// cnpMaskFV FV-encodes the mask: FVScaleUp multiplies by Q_l/t per limb at the ciphertext's level.
-// A raw coefficient add would be wrong (cnpRawMaskPlaintext is the negative control for it).
+// cnpMaskFV FV-encodes the mask with the same exact scale-up as the upload (cnpScaleUp: round(m*q0/t)).
+// FVScaleUp's m*floor(q0/t) on a uniform-mod-t mask costs ~2^20 of noise (headroom 22 -> 13.9 bits at toy
+// scale). A raw coefficient add would be wrong (cnpRawMaskPlaintext is the negative control for it).
 func cnpMaskFV(x *cnpCtx, level int, biasQ int64, lanes int, randomize bool) *Plaintext {
-	ptRt := cnpMaskRingT(x, biasQ, lanes, randomize)
-	pt := NewPlaintextFVLvl(x.params, level)
-	x.fvEncoder.FVScaleUp(ptRt, pt)
-	return pt
+	return cnpScaleUp(x, level, cnpMaskRingT(x, biasQ, lanes, randomize).Value()[0].Coeffs[0])
 }
 
 func cnpRawMaskPlaintext(x *cnpCtx, level int, biasQ int64, lanes int) *Plaintext {
@@ -623,13 +621,13 @@ func TestCNPRun(t *testing.T) {
 	hbMul := noiseAt("after_pmul", ctMul)
 	ctMask := ctMul.CopyNew().Ciphertext()
 	x.fvEval.Add(ctMask, cnpMaskFV(x, level, d.biasQ, lanes, true), ctMask)
-	noiseAt("after_mask_add", ctMask)
-	if hbMul < gateBits {
-		out.Gate = fmt.Sprintf("STOPPED: headroom after pmul %.2f bits < %.0f (level %d, mode %s). Nothing beyond output 0 was run.", hbMul, gateBits, level, stcMode)
+	hbMask := noiseAt("after_mask_add", ctMask)
+	if hbMask < gateBits {
+		out.Gate = fmt.Sprintf("STOPPED: headroom of the FINAL ciphertext (after the mask add) %.2f bits < %.0f (after pmul %.2f; level %d, mode %s). Nothing beyond output 0 was run.", hbMask, gateBits, hbMul, level, stcMode)
 		write()
 		t.Fatalf("%s", out.Gate)
 	}
-	out.Gate = fmt.Sprintf("passed: headroom after pmul %.2f bits >= %.0f", hbMul, gateBits)
+	out.Gate = fmt.Sprintf("passed: headroom of the final ciphertext (after mask add) %.2f bits >= %.0f (after pmul %.2f)", hbMask, gateBits, hbMul)
 	cp("after_noise_checks")
 
 	// ---- online stages, REPS times ----
@@ -647,10 +645,9 @@ func TestCNPRun(t *testing.T) {
 		tMul := time.Since(ts)
 		ts = time.Now()
 		mk := cnpMaskRingT(x, d.biasQ, lanes, true)
-		mpt := NewPlaintextFVLvl(x.params, level)
 		tGen := time.Since(ts)
 		ts = time.Now()
-		x.fvEncoder.FVScaleUp(mk, mpt)
+		mpt := cnpScaleUp(x, level, mk.Value()[0].Coeffs[0])
 		x.fvEval.Add(ct, mpt, ct)
 		tAdd := time.Since(ts)
 		subRuns = append(subRuns, cnpMs(tSub))

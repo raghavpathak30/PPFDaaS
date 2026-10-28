@@ -28,6 +28,8 @@ No HalfBoot, no CKKS. Lane k, feature j = coefficient 256k+j; lanes = N/256 (256
    `CNP_STC_MODE=keep CNP_SCALEUP=fvscaleup` (no modswitch to level 0; >160 bits at toy scale, 5-6 limbs per ciphertext).
    Wire bytes are in the JSON (`wire_bytes`): upload 25 bits x N per output ct (3.2 KB/txn at 256 lanes if bit-packed, 4 KB as uint32),
    download 2 x N x 8 B per output ct at level 0.
-3. Mask: uniform mod t (crypto/rand, rejection sampling on 32-bit draws), `round(bias*2^14) mod t` at 256k+255, FV-encoded with
-   `FVScaleUp` at the ciphertext's level. Its own rounding adds ~2^20 noise after pmul (headroom 13.9 bits at toy).
-4. Headroom gate: harness stops after output 0 if headroom after pmul < `CNP_HEADROOM_GATE_BITS` (5). HERA bit-exactness is a hard stop.
+3. Mask: uniform mod t (crypto/rand, rejection sampling on 32-bit draws), `round(bias*2^14) mod t` at 256k+255, scaled up with the
+   same exact round(m*q0/t) as the upload (`cnpMaskFV` -> `cnpScaleUp`) at the ciphertext's level. With FVScaleUp's floor the mask
+   cost ~2^20 of noise (22 -> 13.9 bits at toy scale); with the exact scale-up post-mask headroom equals post-pmul headroom.
+4. Headroom gate: evaluated on the FINAL ciphertext (after the mask add), threshold `CNP_HEADROOM_GATE_BITS` (5); all four checkpoints
+   (before Sub, after Sub, after pmul, after mask add) are logged. The harness stops after output 0 if it fails. HERA bit-exactness is a hard stop.
