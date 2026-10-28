@@ -25,7 +25,7 @@ func TestCNPSignedLift(t *testing.T) {
 	// (1) Production level 0 (one 60-bit prime): the [0,t) lift eats ~19 bits of headroom (it would fall
 	// past the decryption bound at LogN 16, where the noise is larger); the signed lift keeps >20.
 	level := ks0.Level()
-	ct := cnpSubStage(x, cnpClientPolyExact(x, cnpDataVec(d, N, lanes, 0), ks, 0), ks0)
+	ct := cnpSubStage(x, cnpClientSym(x, cnpDataVec(d, N, lanes, 0), ks, 0), ks0)
 	sg := cnpPmulStage(x, ct, cnpPtMulSigned(x, level, w))
 	us := cnpPmulStage(x, ct, cnpPtMulUnsignedLift(x, level, w))
 	cs, rawS := cnpDecryptRingT(x, sg)

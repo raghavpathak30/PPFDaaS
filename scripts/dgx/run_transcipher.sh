@@ -30,7 +30,7 @@
 #                             (unset = seeded synthetic data; smoke only)
 #   CNP_ARMS="cnp baseline"   cnp: which arms run (default both); CNP_ROWS=auto|all|strat|<n> (auto: full test set
 #                             only if the estimate fits CNP_BUDGET_S=7200, else the stratified 4096 subset);
-#                             CNP_STC_MODE=lowest|keep; CNP_CLIENT_ENCODE=exact|fvscaleup (default exact)
+#                             CNP_STC_MODE=lowest|keep; CNP_SCALEUP=exact|fvscaleup (default exact)
 #   GOGC, GOMEMLIMIT          passed into the container when set (the CNP runs leave them unset)
 #   CPUS=<list>               --cpuset-cpus (default: all CPUs of NUMA node $NODE)
 #   NODE=<n>                  NUMA node for default CPUS and --cpuset-mems (default 0)
@@ -95,7 +95,7 @@ case "${TARGET}" in
     for v in CNP_ARMS CNP_ROWS CNP_BUDGET_S CNP_STC_MODE CNP_HEADROOM_GATE_BITS; do
       [[ -n "${!v:-}" ]] && add_env "${v}" "${!v}"
     done
-    add_env CNP_CLIENT_ENCODE "${CNP_CLIENT_ENCODE:-exact}"
+    add_env CNP_SCALEUP "${CNP_SCALEUP:-exact}"
     if [[ -n "${DATA_DIR:-}" ]]; then
       [[ -f "${DATA_DIR}/meta.json" ]] || { echo "DATA_DIR=${DATA_DIR} has no meta.json (run scripts/cnp_b/prepare_inputs.py)" >&2; exit 2; }
       add_env CNP_DATA_DIR /data

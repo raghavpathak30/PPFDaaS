@@ -20,10 +20,14 @@ No HalfBoot, no CKKS. Lane k, feature j = coefficient 256k+j; lanes = N/256 (256
 ## Design decisions beyond the brief (all reported)
 1. **Signed lift of w_q** for the pmul plaintext (limb i holds w mod q_i). The fork's `RingTToMul` lifts to [0,t): same result mod t,
    ~2^23 more noise at level 3 and ~19 bits less headroom at level 0 (`TestCNPSignedLift`).
-2. **Exact client scale-up** (`CNP_CLIENT_ENCODE=exact`, level 0): client limb = round(m*q0/t) instead of m*floor(q0/t).
-   With the keystream every client coefficient is uniform mod t, so FVScaleUp's floor costs ~2^20 of noise; after pmul that left
-   4.75 bits of headroom at LogN 10 (gate is 5). Exact encoding: ~22 bits after pmul. Fallback: `CNP_STC_MODE=keep` (skip the
-   modswitch to level 0; headroom >160 bits at toy scale but 5-6 limbs per ciphertext).
+2. **Exact scale-up, done on the SERVER** (`CNP_SCALEUP=exact`, level 0, `cnpScaleUp` in rtf_cnp_test.go): limb = round(m*q0/t) via
+   128-bit arithmetic instead of the fork's m*floor(q0/t). It is public and keyless, timed inside the "scale-up + Sub" stage.
+   The upload stays RtF's symmetric ciphertext: N elements mod t (25 bits each), no client scale-up (`cnpClientSym`).
+   Why: with the keystream every coefficient is uniform mod t, so FVScaleUp's floor costs ~2^20 of noise; after pmul that left
+   4.75 bits of headroom at LogN 10 (gate is 5). Exact: ~22 bits after pmul. Fallback (not used in the DGX commands):
+   `CNP_STC_MODE=keep CNP_SCALEUP=fvscaleup` (no modswitch to level 0; >160 bits at toy scale, 5-6 limbs per ciphertext).
+   Wire bytes are in the JSON (`wire_bytes`): upload 25 bits x N per output ct (3.2 KB/txn at 256 lanes if bit-packed, 4 KB as uint32),
+   download 2 x N x 8 B per output ct at level 0.
 3. Mask: uniform mod t (crypto/rand, rejection sampling on 32-bit draws), `round(bias*2^14) mod t` at 256k+255, FV-encoded with
    `FVScaleUp` at the ciphertext's level. Its own rounding adds ~2^20 noise after pmul (headroom 13.9 bits at toy).
 4. Headroom gate: harness stops after output 0 if headroom after pmul < `CNP_HEADROOM_GATE_BITS` (5). HERA bit-exactness is a hard stop.

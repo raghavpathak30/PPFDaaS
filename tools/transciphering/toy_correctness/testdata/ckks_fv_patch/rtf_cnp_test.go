@@ -263,61 +263,56 @@ func cnpRawMaskPlaintext(x *cnpCtx, level int, biasQ int64, lanes int) *Plaintex
 
 // ---- client, online server, bank -------------------------------------------------------------------
 
-// cnpClientPoly is the client's upload for output ct kk: feature coefficient c carries
-// (xq_c + keystream[bitrev(c)][kk]) mod t, scaled up into FV (level `level`).
-func cnpClientPoly(x *cnpCtx, level int, data []int64, ks [][]uint64, kk int) *Plaintext {
+// cnpClientSym is the CLIENT's upload for output ct kk: RtF's symmetric ciphertext, one element per
+// coefficient, each (xq_c + keystream[bitrev(c)][kk]) mod t (~25 bits). Nothing is scaled up here.
+func cnpClientSym(x *cnpCtx, data []int64, ks [][]uint64, kk int) []uint64 {
 	t := int64(x.params.PlainModulus())
 	logn := uint64(x.params.LogN())
-	ptRt := NewPlaintextRingT(x.params)
-	c := ptRt.Value()[0].Coeffs[0]
-	for i := range c {
+	sym := make([]uint64, len(data))
+	for i := range sym {
 		v := (data[i] + int64(ks[utils.BitReverse64(uint64(i), logn)][kk])) % t
 		if v < 0 {
 			v += t
 		}
-		c[i] = uint64(v)
+		sym[i] = uint64(v)
 	}
+	return sym
+}
+
+// cnpScaleUp is the SERVER's public, keyless scale-up of the uploaded elements into R_q at `level`.
+// CNP_SCALEUP=exact (default, level 0): limb = round(m*q0/t), computed with 128-bit arithmetic. For
+// full-range m (the keystream makes every coefficient uniform mod t) FVScaleUp's m*floor(q0/t) costs
+// ~2^20 of noise at level 0, which after pmul left 4.75 bits of headroom at LogN 10.
+// CNP_SCALEUP=fvscaleup: the fork's FVScaleUp (any level; use with CNP_STC_MODE=keep).
+func cnpScaleUp(x *cnpCtx, level int, sym []uint64) *Plaintext {
+	t := x.params.PlainModulus()
 	pt := NewPlaintextFVLvl(x.params, level)
+	if cnpEnvStr("CNP_SCALEUP", "exact") == "exact" {
+		if level != 0 {
+			panic("CNP_SCALEUP=exact is implemented for level 0 only (use CNP_SCALEUP=fvscaleup with CNP_STC_MODE=keep)")
+		}
+		q0 := x.params.Qi()[0]
+		row := pt.Value()[0].Coeffs[0]
+		for i, v := range sym {
+			hi, lo := bits.Mul64(v, q0)
+			lo, carry := bits.Add64(lo, t/2, 0)
+			quo, _ := bits.Div64(hi+carry, lo, t)
+			row[i] = quo % q0
+		}
+		return pt
+	}
+	ptRt := NewPlaintextRingT(x.params)
+	copy(ptRt.Value()[0].Coeffs[0], sym)
 	x.fvEncoder.FVScaleUp(ptRt, pt)
 	return pt
 }
 
-// cnpClientPolyExact is the same upload but scaled up EXACTLY: limb value round(m*q0/t) instead of
-// m*floor(q0/t) (what FVScaleUp does). For full-range m (the keystream makes every coefficient
-// uniform mod t) the floor costs m*frac(q0/t) ~ 2^20 of noise at level 0. Client-side only; level 0.
-func cnpClientPolyExact(x *cnpCtx, data []int64, ks [][]uint64, kk int) *Plaintext {
-	t := x.params.PlainModulus()
-	q0 := x.params.Qi()[0]
-	logn := uint64(x.params.LogN())
-	pt := NewPlaintextFVLvl(x.params, 0)
-	row := pt.Value()[0].Coeffs[0]
-	for i := range row {
-		v := (data[i] + int64(ks[utils.BitReverse64(uint64(i), logn)][kk])) % int64(t)
-		if v < 0 {
-			v += int64(t)
-		}
-		hi, lo := bits.Mul64(uint64(v), q0)
-		lo, carry := bits.Add64(lo, t/2, 0)
-		hi += carry
-		quo, _ := bits.Div64(hi, lo, t)
-		row[i] = quo % q0
-	}
-	return pt
-}
-
-func cnpClient(x *cnpCtx, level int, data []int64, ks [][]uint64, kk int) *Plaintext {
-	if cnpEnvStr("CNP_CLIENT_ENCODE", "fvscaleup") == "exact" {
-		if level != 0 {
-			panic("CNP_CLIENT_ENCODE=exact is implemented for level 0 only")
-		}
-		return cnpClientPolyExact(x, data, ks, kk)
-	}
-	return cnpClientPoly(x, level, data, ks, kk)
-}
-
-func cnpSubStage(x *cnpCtx, clientPt *Plaintext, ks0 *Ciphertext) *Ciphertext {
+// cnpSubStage is the online "scale-up + Sub" step: server scale-up of the uploaded symmetric
+// elements, then ciphertext(0, scaled) - keystream ciphertext.
+func cnpSubStage(x *cnpCtx, sym []uint64, ks0 *Ciphertext) *Ciphertext {
+	pt := cnpScaleUp(x, ks0.Level(), sym)
 	ct := NewCiphertextFVLvl(x.params, 1, ks0.Level())
-	ct.Value()[0] = clientPt.Value()[0].CopyNew()
+	ct.Value()[0] = pt.Value()[0].CopyNew()
 	x.fvEval.Sub(ct, ks0, ct)
 	return ct
 }
@@ -447,7 +442,8 @@ type cnpOut struct {
 	T             uint64                 `json:"plain_modulus"`
 	Q0Bits        float64                `json:"q0_bits"`
 	StCMode       string                 `json:"stc_modswitch_mode"`
-	ClientEncode  string                 `json:"client_scale_up"`
+	ScaleUp       string                 `json:"scale_up_server_side"`
+	Wire          map[string]interface{} `json:"wire_bytes"`
 	Level         int                    `json:"fv_level_at_pmul"`
 	Arms          string                 `json:"arms"`
 	Reps          int                    `json:"reps"`
@@ -515,7 +511,7 @@ func TestCNPRun(t *testing.T) {
 	wantBaseline := strings.Contains(arms, "baseline")
 
 	out := &cnpOut{DateUTC: time.Now().UTC().Format(time.RFC3339), Cipher: cipher, Arms: arms, Reps: reps,
-		StCMode: stcMode, ClientEncode: cnpEnvStr("CNP_CLIENT_ENCODE", "fvscaleup"), GateBits: gateBits, LoadAvgStart: cnpLoad(), GOMAXPROCS: runtime.GOMAXPROCS(0),
+		StCMode: stcMode, ScaleUp: cnpEnvStr("CNP_SCALEUP", "exact"), GateBits: gateBits, LoadAvgStart: cnpLoad(), GOMAXPROCS: runtime.GOMAXPROCS(0),
 		GOGC: os.Getenv("GOGC"), GOMEMLIMIT: os.Getenv("GOMEMLIMIT"),
 		Online: map[string]*e2eStage{}, Correctness: map[string]interface{}{}, RotKeys: map[string]int{},
 		Seeding: "Unseeded: HE keys, nonces, Rubato counter and noise, and the masks come from crypto/rand each run. Symmetric key is fixed (1..blocksize). Synthetic data (if used) is seeded.",
@@ -590,13 +586,30 @@ func TestCNPRun(t *testing.T) {
 	level := ks0.Level()
 	out.Level = level
 	cp("after_stc")
+	{
+		bpe := bits.Len64(tmod - 1) // bits per symmetric element
+		limbs := level + 1
+		out.Wire = map[string]interface{}{
+			"upload":                  "RtF symmetric ciphertext: N elements mod t (client does NO scale-up; the server does, inside scaleup_sub)",
+			"upload_bits_per_element": bpe, "upload_bytes_per_output_ct_bitpacked": (N*bpe + 7) / 8,
+			"upload_bytes_per_output_ct_uint32_wire":   4 * N,
+			"upload_bytes_per_transaction_bitpacked":   float64((N*bpe+7)/8) / float64(lanes),
+			"upload_bytes_per_transaction_uint32_wire": float64(4*N) / float64(lanes),
+			"download":       "FV ciphertext (2 polys x (level+1) limbs x N); no compression",
+			"download_limbs": limbs, "download_bytes_per_output_ct_uint64_limbs": 2 * limbs * N * 8,
+			"download_bytes_per_output_ct_60bit_packed":   2 * limbs * N * 60 / 8,
+			"download_bytes_per_transaction_uint64_limbs": float64(2*limbs*N*8) / float64(lanes),
+			"download_bytes_per_transaction_60bit_packed": float64(2*limbs*N*60/8) / float64(lanes),
+			"note": "computed from the object layout (the fork has no ciphertext marshaller); transactions per ct = lanes",
+		}
+	}
 
 	var ptMul *PlaintextMul
 	x.timedMem("encode_weights_ptmul_signed_lift", func() { ptMul = cnpPtMulSigned(x, level, cnpWRev(d.wq, N)) })
 
 	// ---- first output: noise headroom at each point + gate (BEFORE any more work) ----
 	data0 := cnpDataVec(d, N, lanes, 0)
-	clientPt0 := cnpClient(x, level, data0, ks, 0)
+	sym0 := cnpClientSym(x, data0, ks, 0)
 	noiseAt := func(point string, ct *Ciphertext) float64 {
 		raw := x.fvDec.DecryptNew(ct)
 		nb, hb := cnpNoise(x, raw)
@@ -604,7 +617,7 @@ func TestCNPRun(t *testing.T) {
 		return hb
 	}
 	noiseAt("before_sub (keystream ct after StC)", ks0)
-	ctSub := cnpSubStage(x, clientPt0, ks0)
+	ctSub := cnpSubStage(x, sym0, ks0)
 	noiseAt("after_sub", ctSub)
 	ctMul := cnpPmulStage(x, ctSub, ptMul)
 	hbMul := noiseAt("after_pmul", ctMul)
@@ -623,7 +636,7 @@ func TestCNPRun(t *testing.T) {
 	var subRuns, mulRuns, maskGenRuns, maskAddRuns, totRuns, bankRuns, clientRuns []float64
 	for r := 0; r < reps; r++ {
 		t0 := time.Now()
-		cl := cnpClient(x, level, data0, ks, 0) // client work, reported separately, not in the server total
+		cl := cnpClientSym(x, data0, ks, 0) // client work, reported separately, not in the server total
 		clientRuns = append(clientRuns, cnpMs(time.Since(t0)))
 
 		ts := time.Now()
@@ -649,16 +662,16 @@ func TestCNPRun(t *testing.T) {
 		_ = cnpBankRead(x, ct, lanes)
 		bankRuns = append(bankRuns, cnpMs(time.Since(ts)))
 	}
-	out.Online["sub"] = cnpSummarise(subRuns)
+	out.Online["scaleup_sub (server scale-up + Sub)"] = cnpSummarise(subRuns)
 	out.Online["pmul"] = cnpSummarise(mulRuns)
 	out.Online["mask_generate (CSPRNG, rejection sampling)"] = cnpSummarise(maskGenRuns)
 	out.Online["mask_fv_encode_and_add"] = cnpSummarise(maskAddRuns)
-	out.Online["online_total (sub+pmul+mask)"] = cnpSummarise(totRuns)
-	out.Online["client_build_upload_poly (not server)"] = cnpSummarise(clientRuns)
+	out.Online["online_total (scaleup+sub+pmul+mask)"] = cnpSummarise(totRuns)
+	out.Online["client_build_symmetric_ct (not server)"] = cnpSummarise(clientRuns)
 	out.Online["bank_decrypt_and_read (not server)"] = cnpSummarise(bankRuns)
 	med := func(n string) float64 { return out.Online[n].Median }
-	out.PerOutputMs = map[string]float64{"sub": med("sub"), "pmul": med("pmul"),
-		"mask": med("mask_generate (CSPRNG, rejection sampling)") + med("mask_fv_encode_and_add"), "total": med("online_total (sub+pmul+mask)")}
+	out.PerOutputMs = map[string]float64{"scaleup_sub": med("scaleup_sub (server scale-up + Sub)"), "pmul": med("pmul"),
+		"mask": med("mask_generate (CSPRNG, rejection sampling)") + med("mask_fv_encode_and_add"), "total": med("online_total (scaleup+sub+pmul+mask)")}
 	out.PerTxnMs = map[string]float64{}
 	for k, v := range out.PerOutputMs {
 		out.PerTxnMs[k] = v / float64(lanes)
@@ -724,7 +737,7 @@ func TestCNPRun(t *testing.T) {
 		q[0] = 1
 		zeroQ := make([]int64, N)
 		run := func(data []int64, masked bool) []uint64 {
-			prod := cnpPmulStage(x, cnpSubStage(x, cnpClient(x, level, data, ks, 0), ks0), ptMul)
+			prod := cnpPmulStage(x, cnpSubStage(x, cnpClientSym(x, data, ks, 0), ks0), ptMul)
 			if masked {
 				x.fvEval.Add(prod, cnpMaskFV(x, level, d.biasQ, lanes, true), prod)
 			}
@@ -763,7 +776,7 @@ func TestCNPRun(t *testing.T) {
 	nRowsAvail := len(d.rows)
 	rowsSel := make([]int, 0, nRowsAvail)
 	rowMode := cnpEnvStr("CNP_ROWS", "auto")
-	perOutExtra := med("client_build_upload_poly (not server)") + med("bank_decrypt_and_read (not server)")
+	perOutExtra := med("client_build_symmetric_ct (not server)") + med("bank_decrypt_and_read (not server)")
 	perOutAll := med("stc_modswitch (offline)") + out.PerOutputMs["total"] + perOutExtra
 	if d.source[:4] == "real" {
 		nTot := len(d.xq)
@@ -832,7 +845,7 @@ func TestCNPRun(t *testing.T) {
 			cp(fmt.Sprintf("after_crypt_batch_%d", b))
 		}
 		ks0o := cnpStCMode(x, curAll[kk].CopyNew().Ciphertext(), lowest)
-		clo := cnpClient(x, level, cnpDataVec(d, N, lanes, o*lanes), curBatchKS, kk)
+		clo := cnpClientSym(x, cnpDataVec(d, N, lanes, o*lanes), curBatchKS, kk)
 		ct := cnpPmulStage(x, cnpSubStage(x, clo, ks0o), ptMul)
 		x.fvEval.Add(ct, cnpMaskFV(x, level, d.biasQ, lanes, true), ct)
 		vals := cnpBankRead(x, ct, lanes)
