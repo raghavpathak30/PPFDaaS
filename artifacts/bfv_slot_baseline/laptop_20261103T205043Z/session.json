@@ -1,0 +1,61 @@
+{
+ "started": {
+  "timestamp_utc": "2026-11-03T20:50:43Z",
+  "cpu_governor": "powersave",
+  "power_source": "AC",
+  "online": {
+   "ADP0": "1",
+   "ucsi-source-psy-USBC000:001": "0"
+  },
+  "battery_status": {
+   "BAT0": "Charging"
+  },
+  "load_avg_1_5_15": [
+   1.111328125,
+   1.27685546875,
+   1.06982421875
+  ],
+  "cpu_count": 20,
+  "scaling_cur_mhz_min": 800.25,
+  "scaling_cur_mhz_max": 3249.805,
+  "mem_total_kb": 15987304,
+  "mem_available_kb": 4785772,
+  "swap_free_kb": 10284024,
+  "kernel": "6.17.13+2-amd64"
+ },
+ "repo_sha": "aa3527785cd2d020fc29162cca62775f2d02df7e",
+ "reps": 5,
+ "rows": "strat",
+ "logn": [
+  10,
+  12
+ ],
+ "gomemlimit": "11GiB",
+ "rss_limit_kb": 11000000,
+ "data": "/home/raghavp/cnpb_data",
+ "go_version": "go version go1.25.0 linux/amd64",
+ "ended": {
+  "timestamp_utc": "2026-11-03T21:02:41Z",
+  "cpu_governor": "powersave",
+  "power_source": "AC",
+  "online": {
+   "ADP0": "1",
+   "ucsi-source-psy-USBC000:001": "0"
+  },
+  "battery_status": {
+   "BAT0": "Charging"
+  },
+  "load_avg_1_5_15": [
+   1.02099609375,
+   1.36474609375,
+   1.37939453125
+  ],
+  "cpu_count": 20,
+  "scaling_cur_mhz_min": 800.0,
+  "scaling_cur_mhz_max": 4747.642,
+  "mem_total_kb": 15987304,
+  "mem_available_kb": 6739676,
+  "swap_free_kb": 9987336,
+  "kernel": "6.17.13+2-amd64"
+ }
+}

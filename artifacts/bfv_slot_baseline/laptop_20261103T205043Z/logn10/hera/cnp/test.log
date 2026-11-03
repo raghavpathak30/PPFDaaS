@@ -1,0 +1,5 @@
+=== RUN   TestCNPRun
+    rtf_cnp_test.go:826: row set: STRATIFIED subset (4096 rows: all frauds + seeded random non-frauds); full-set estimate 905 s > budget 7200 s
+    rtf_cnp_test.go:1012: cnp hera LogN=10 lanes=4: online total 0.078 ms per output ct (0.01950 ms/txn), headroom after pmul 22.28 bits, STRATIFIED subset (4096 rows: all frauds + seeded random non-frauds); full-set estimate 905 s > budget 7200 s
+--- PASS: TestCNPRun (78.25s)
+PASS

@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+"""Observe contention during the Step 3 run; abort it if something heavy appears. Reads /proc only.
+
+Heavy, fixed before the run started: other processes use more than 4 of 20 cores for 6 consecutive 10 s samples,
+or a second ckks_fv.test appears. The power check stays in the runner and is not touched here.
+"""
+import json
+import os
+import signal
+import subprocess
+import sys
+import time
+
+runner_pid, log_path = int(sys.argv[1]), sys.argv[2]
+HZ = os.sysconf("SC_CLK_TCK")
+LIMIT_CORES, LIMIT_SAMPLES, PERIOD = 4.0, 6, 10
+
+
+def total_busy():
+    f = open("/proc/stat").readline().split()[1:]
+    v = list(map(int, f))
+    return sum(v) - v[3] - v[4]
+
+
+def test_pids():
+    out = []
+    for p in os.listdir("/proc"):
+        if p.isdigit():
+            try:
+                if open(f"/proc/{p}/comm").read().strip() == "ckks_fv.test":
+                    out.append(int(p))
+            except OSError:
+                pass
+    return out
+
+
+def ticks(pid):
+    try:
+        s = open(f"/proc/{pid}/stat").read()
+        f = s[s.rindex(")") + 2:].split()
+        return int(f[11]) + int(f[12])
+    except (OSError, ValueError):
+        return None
+
+
+def alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
+over = 0
+prev_busy, prev_t = total_busy(), time.time()
+prev_tick = {}
+with open(log_path, "a") as log:
+    while alive(runner_pid):
+        time.sleep(PERIOD)
+        pids = test_pids()
+        cur = {p: ticks(p) for p in pids}
+        busy, now = total_busy(), time.time()
+        dt = now - prev_t
+        own = sum(max(0, (cur[p] or 0) - prev_tick.get(p, cur[p] or 0)) for p in pids) / HZ / dt
+        other = max(0.0, (busy - prev_busy) / HZ / dt - own)
+        over = over + 1 if other > LIMIT_CORES else 0
+        rec = {"utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "other_cores": round(other, 2), "run_cores": round(own, 2),
+               "test_procs": len(pids), "load1": os.getloadavg()[0]}
+        reason = None
+        if over >= LIMIT_SAMPLES:
+            reason = f"other processes above {LIMIT_CORES} cores for {LIMIT_SAMPLES * PERIOD} s"
+        elif len(pids) > 1:
+            reason = "a second ckks_fv.test appeared"
+        if reason:
+            rec["abort"] = reason
+            rec["top"] = subprocess.run(["top", "-b", "-n", "1", "-o", "%CPU"], capture_output=True, text=True).stdout.splitlines()[6:16]
+        log.write(json.dumps(rec) + "\n")
+        log.flush()
+        if reason:
+            os.kill(runner_pid, signal.SIGTERM)
+            for p in pids:
+                try:
+                    os.kill(p, signal.SIGKILL)
+                except OSError:
+                    pass
+            sys.exit(5)
+        prev_busy, prev_t, prev_tick = busy, now, {p: (cur[p] or 0) for p in pids}
