@@ -1,0 +1,13 @@
+{
+  "cipher": "rubato",
+  "level_after_crypt": 9,
+  "log_n": 10,
+  "n": 1024,
+  "one_hot_wrong_slots": 0,
+  "q_count": 24,
+  "rotation_wrong_slots": 0,
+  "slots_not_matching_keystream": 0,
+  "t": 33292289,
+  "t_minus_1_mod_2N": 0,
+  "usable_outputs": 60
+}

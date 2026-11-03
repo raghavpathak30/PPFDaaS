@@ -1,0 +1,5 @@
+=== RUN   TestSlotRun
+    rtf_slot_test.go:869: row set: full test set (56962 rows, 238 Crypt calls); estimate 147 s <= budget 7200 s
+    rtf_slot_test.go:973: slot rubato LogN=10: 240 lanes per Crypt in 4 output cts; online 9.714 ms per batch, offline 608.432 ms; passed: min headroom of the final ciphertexts (after mask add) 25.80 bits >= 5 (before mask 25.80); full test set (56962 rows, 238 Crypt calls); estimate 147 s <= budget 7200 s
+--- PASS: TestSlotRun (217.50s)
+PASS

@@ -1,0 +1,5 @@
+=== RUN   TestSlotRun
+    rtf_slot_test.go:869: row set: full test set (56962 rows, 891 Crypt calls); estimate 787 s <= budget 7200 s
+    rtf_slot_test.go:973: slot hera LogN=10: 64 lanes per Crypt in 1 output cts; online 1.655 ms per batch, offline 881.505 ms; passed: min headroom of the final ciphertexts (after mask add) 27.08 bits >= 5 (before mask 27.08); full test set (56962 rows, 891 Crypt calls); estimate 787 s <= budget 7200 s
+--- PASS: TestSlotRun (863.15s)
+PASS
