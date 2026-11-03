@@ -8,27 +8,25 @@ Path shorthand: `A/` = `artifacts/bfv_slot_baseline/`. `patch/` = `tools/transci
 
 ## 1. Outcome
 
-**Step 3 has not run: the runner has refused twice because the laptop was on battery, so there is no same-session timing comparison, and CNP-B vs slot on time is not answered.** CONFIRMED-RAN.
-
-| Attempt (UTC) | Power reading | Record |
-|---|---|---|
-| 2026-11-03 17:24 | ADP0 online=0, USB-C online=0, BAT0 Discharging, 23% | `A/STOPPED_20261103T172456Z.json` |
-| 2026-11-03 19:06 | ADP0 online=0, USB-C online=0, BAT0 Discharging, about 70%; `upower` also reports the adapter offline | `A/STOPPED_20261103T190601Z.json` |
+**Step 3 ran on AC. At toy scale CNP-B wins online by about 2.3x at LogN 12, and slot wins offline and in total: about 1.1x with HERA and 2.2x with Rubato.** The full verdict is in section 8, and it says what must change in the B claim. Nothing here measures LogN 16. CONFIRMED-RAN: `A/laptop_20261103T205043Z/`.
 
 | Step | Status |
 |---|---|
 | 0 Design | Done: `docs/bfv_slot_baseline_design.md`, committed before any code |
 | 1 Implement `slot` | Done: `patch/rtf_slot_test.go`, new files only |
 | 2 Correctness | **Passed**: HERA bit-exact on all 56,962 rows, Rubato delta AUC -2.5e-5, headroom 27.08 / 25.80 bits |
-| 3 Comparison | **NOT RUN: on battery. No timing results** |
+| 3 Comparison | **Done on AC**, LogN 10 and 12, HERA and Rubato, REPS=5: section 5 |
 | 4 DGX prep | Done, not run: section 7 |
 
-To finish Step 3, connect AC and run this. The runner re-checks power before every arm and stops if AC is lost.
+The runner refused twice on battery before this run, and each refusal is recorded.
 
-    python3 scripts/cnp_b/prepare_inputs.py --artifacts /home/raghavp/BTP/artifacts --out $HOME/cnpb_data
-    python3 scripts/bfv_slot_baseline/run_laptop_compare.py --data $HOME/cnpb_data --logn 10 12 --reps 5
+| Attempt (UTC) | Power reading | Result | Record |
+|---|---|---|---|
+| 2026-11-03 17:24 | ADP0 online=0, USB-C online=0, BAT0 Discharging, 23% | Refused | `A/STOPPED_20261103T172456Z.json` |
+| 2026-11-03 19:06 | ADP0 online=0, USB-C online=0, BAT0 Discharging, about 70% | Refused | `A/STOPPED_20261103T190601Z.json` |
+| 2026-11-03 20:50 to 21:02 | ADP0 online=1, BAT0 Charging, on every arm | Completed, exit 0 | `A/laptop_20261103T205043Z/session.json` |
 
-It writes `A/laptop_<UTC>/comparison.md` and `comparison.json`, with machine state for each arm and source paths. Use system `python3` as shown. With the project venv (numpy 2.4.4), `prepare_inputs.py` writes a `plain_logit.f64` that differs by up to 1.8e-14 per value, with the same AUC; system `python3` (numpy 2.2.4) reproduces the bytes used for Step 2, and all other inputs match under both. CONFIRMED-RAN.
+Inputs: use system `python3` for `prepare_inputs.py`. With the project venv (numpy 2.4.4) it writes a `plain_logit.f64` that differs by up to 1.8e-14 per value, with the same AUC; system `python3` (numpy 2.2.4) reproduces the bytes used for Step 2 and Step 3, and all other inputs match under both. CONFIRMED-RAN.
 
 **Decisions:**
 
@@ -106,7 +104,7 @@ Same 4096 rows against CNP-B, from different runs. Delta AUC HERA: slot -7.7e-6,
 | Same selection in both arms | `slotSetup` calls `cnpConfig`, which picks `RtFHeraParams[2]`, `RtFRubatoParams[0]` | CONFIRMED-SOURCE | `patch/rtf_slot_test.go:111`, `patch/rtf_cnp_setup_test.go:81,88` |
 | Observed | `param_set` 128af, `mod_count` 24, `plain_modulus` 33292289, `q_bits_at_eval_level` 105.0 | CONFIRMED-RAN | `A/correctness_logn10/slot_{hera,rubato}.json`, `A/memory_scaling/logn12/slot_{hera,rubato}.json` |
 
-**The extra RNS limb is a cost of the slot path.** CONFIRMED-SOURCE for the structure. Time per stage needs the Step 3 run. Download and rotations stay at level 0, so they do not pay for the limb.
+**The extra RNS limb is a cost of the slot path.** CONFIRMED-SOURCE for the structure; measured time is in section 5 (about half of the online gap at LogN 12). Download and rotations stay at level 0, so they do not pay for the limb.
 
 | Item | CNP-B, level 0 | Slot, level 1 | Source |
 |---|---|---|---|
@@ -209,7 +207,104 @@ Peak RSS, 16 rows, `CNP_ARMS=cnp`. CONFIRMED-RAN.
 
 ## 5. Step 3 comparison
 
-**Not measured.** The requested tables (offline, online and total server time per transaction at LogN 10 and 12, AUC and max error under one session) do not exist yet. No timing result is stated in this report. The Galois key, lane, upload, download and accuracy columns are in sections 2 to 4.
+All numbers are from one session on this laptop: `A/laptop_20261103T205043Z/`, repo SHA aa35277, REPS=5 medians, stratified 4096 rows for slot and CNP-B (all 98 frauds), 128af, t = 33,292,289, (8, 6), LogN 10 and 12. CONFIRMED-RAN. Headline values: `comparison.json`, `comparison.md`. Ranges: `replicate_ranges.json`, from `scripts/bfv_slot_baseline/replicate_ranges.py`.
+
+**Machine state.** AC on all 16 arms, at start and end of each (`machine_state_start.json`, `machine_state_end.json`); the battery was charging. Governor `powersave`, which needs root to change. Load average 1.0 to 2.8. Chrome stayed open. Other processes used a median of 0.61 cores, p95 1.78 and max 2.34 of 20, never reaching the abort limit of 4 fixed before the run (`contention_monitor.jsonl`). The harness used about 1 core. Parameters are in `param_state` in each slot JSON and `param_set` in each CNP JSON.
+
+**How to read the ranges.** Each arm ran twice. Slot: `slot`, `slot_repeat`. CNP-B: `cnp`, and the same CNP code inside the `halfboot` arm (16 rows, so only 4 output cts at LogN 10 and 1 at LogN 12). A range is the lowest and highest winner ratio over all pairs. Times are milliseconds per transaction, amortized over full batches.
+
+### Offline
+
+| Cipher | Arm | LogN 10 | LogN 10 replicate | LogN 12 | LogN 12 replicate |
+|---|---|---|---|---|---|
+| HERA | CNP-B | 15.848 | 17.127 | 16.763 | 16.562 |
+| HERA | Slot | 13.932 | 14.151 | 15.105 | 14.153 |
+| Rubato | CNP-B | 5.252 | 5.103 | 5.448 | 5.438 |
+| Rubato | Slot | 2.486 | 2.542 | 2.478 | 2.510 |
+
+### Online
+
+| Cipher | Arm | LogN 10 | LogN 10 replicate | LogN 12 | LogN 12 replicate |
+|---|---|---|---|---|---|
+| HERA | CNP-B | 0.01950 | 0.01475 | 0.01275 | 0.01194 |
+| HERA | Slot | 0.02503 | 0.06711 | 0.02892 | 0.02607 |
+| Rubato | CNP-B | 0.01200 | 0.01725 | 0.01294 | 0.01350 |
+| Rubato | Slot | 0.03335 | 0.03014 | 0.02958 | 0.02848 |
+
+### Total
+
+| Cipher | Arm | LogN 10 | LogN 10 replicate | LogN 12 | LogN 12 replicate |
+|---|---|---|---|---|---|
+| HERA | CNP-B | 15.868 | 17.141 | 16.776 | 16.574 |
+| HERA | Slot | 13.957 | 14.218 | 15.134 | 14.179 |
+| Rubato | CNP-B | 5.264 | 5.121 | 5.461 | 5.451 |
+| Rubato | Slot | 2.519 | 2.572 | 2.508 | 2.538 |
+
+### HalfBoot lower bound, same session
+
+The 2x+1 circuit, not the LR, with no AUC. Source: `A/laptop_20261103T205043Z/comparison.json`, `halfboot` arm.
+
+| Cipher | LogN | Offline | Online | Total | Total / CNP-B | Total / slot | CKKS max abs error |
+|---|---|---|---|---|---|---|---|
+| HERA | 10 | 17.127 | 30.194 | 47.320 | 2.98x | 3.39x | 3.12e-5 |
+| HERA | 12 | 16.562 | 31.320 | 47.882 | 2.85x | 3.16x | 3.16e-5 |
+| Rubato | 10 | 5.103 | 29.917 | 35.020 | 6.65x | 13.90x | 3.24e-5 |
+| Rubato | 12 | 5.438 | 31.443 | 36.881 | 6.75x | 14.71x | 3.42e-5 |
+
+### Why the numbers come out this way
+
+**Offline.** Crypt costs the same per transaction in both arms, so the offline gap is almost entirely StC. Milliseconds per transaction, from the `cnp` and `slot` arms:
+
+| Cipher | LogN | Crypt, CNP-B run | Crypt, slot run | StC, CNP-B only | Modswitch, slot only |
+|---|---|---|---|---|---|
+| HERA | 10 | 13.524 | 13.911 | 2.325 | 0.022 |
+| HERA | 12 | 14.084 | 15.082 | 2.680 | 0.023 |
+| Rubato | 10 | 2.499 | 2.457 | 2.753 | 0.029 |
+| Rubato | 12 | 2.512 | 2.453 | 2.937 | 0.025 |
+
+That explains the split between the ciphers: HERA's expensive Crypt dilutes StC, while Rubato's Crypt is about the same size as StC. StC per transaction rose 15% (HERA) and 7% (Rubato) from LogN 10 to 12 while Crypt per transaction stayed about flat. That is two points; it is not a measurement of LogN 16.
+
+**Online.** Milliseconds per Crypt batch at LogN 12, where timings were stable. CNP-B is its per-ciphertext stage times 16 or 60; both arms process the same number of lanes per batch.
+
+| Stage | HERA, CNP-B | HERA, slot | HERA, slot extra | Rubato, CNP-B | Rubato, slot | Rubato, slot extra |
+|---|---|---|---|---|---|---|
+| pmul (slot: at level 1, with group add) | 1.840 | 3.728 | +1.888 | 6.480 | 13.455 | +6.975 |
+| Scale-up + Sub (slot: at level 1) | 0.592 | 0.837 | +0.245 | 2.160 | 2.786 | +0.626 |
+| Slot encode (inverse NTT mod t) | 0 | 0.555 | +0.555 | 0 | 1.930 | +1.930 |
+| Rotate-and-sum | 0 | 2.248 | +2.248 | 0 | 9.431 | +9.431 |
+| Modswitch to level 0 | 0 | 0.010 | +0.010 | 0 | 0.040 | +0.040 |
+| Mask | 0.848 | 0.085 | -0.763 | 3.300 | 0.346 | -2.954 |
+| **Online total, as recorded** | **3.264** | **7.404** | **+4.140** | **12.420** | **28.400** | **+15.980** |
+
+**The extra limb (first two rows) accounts for about half of the online gap: 2.13 of 4.14 ms for HERA and 7.60 of 15.98 ms for Rubato.** Rotations are the other large cost. Fewer masks give back part of it. The first row's slot figure includes group add, and stage medians do not sum exactly to the recorded total (the extras sum to +4.18 and +16.05), so treat "half" as approximate.
+
+### Online for one ciphertext, not amortized
+
+The per-transaction figures assume every lane in a batch is full. Serving even one lane needs the whole output ciphertext, and a slot output needs all of its group's pmuls. Milliseconds per output ciphertext, from `per_output_ct_ms`:
+
+| Cipher | Arm | LogN 10 | LogN 12 | Lanes in that ct, LogN 10 / 12 |
+|---|---|---|---|---|
+| HERA | CNP-B | 0.078 | 0.204 | 4 / 16 |
+| HERA | Slot | 1.602 | 7.404 | 64 / 256 |
+| Rubato | CNP-B | 0.048 | 0.207 | 4 / 16 |
+| Rubato | Slot, mean of 4 cts | 2.001 | 7.100 | mean 60 / 240 |
+
+So on a lightly loaded server CNP-B's online advantage is larger: 20x to 42x per ciphertext, against about 2.3x amortized. Partial-batch offline cost and queueing delay were not measured.
+
+### Correctness and memory in the same session
+
+| Cipher | LogN | Arm | Max integer diff | Bit-exact (4096 rows) | Delta AUC, run / repeat | Max logit error | Final headroom, run / repeat | Peak RSS (KB) |
+|---|---|---|---|---|---|---|---|---|
+| HERA | 10 | CNP-B | 0 | Yes | -7.7e-6 | 0.0763 | 22.28 | 722,212 |
+| HERA | 10 | Slot | 0 | Yes | -7.7e-6 / -7.7e-6 | 0.0763 | 27.01 / 26.97 | 258,468 |
+| HERA | 12 | CNP-B | 0 | Yes | -7.7e-6 | 0.0763 | 22.13 | 3,062,560 |
+| HERA | 12 | Slot | 0 | Yes | -7.7e-6 / -7.7e-6 | 0.0763 | 26.87 / 26.17 | 775,208 |
+| Rubato | 10 | CNP-B | 1,630 | n/a | -1.35e-4 | 0.1179 | 22.19 | 874,648 |
+| Rubato | 10 | Slot | 1,751 | n/a | -3.08e-4 / +5.35e-4 | 0.1240 | 24.83 / 25.16 | 395,936 |
+| Rubato | 12 | CNP-B | 1,911 | n/a | +2.50e-4 | 0.1214 | 21.89 | 3,534,368 |
+| Rubato | 12 | Slot | 1,771 | n/a | +7.62e-4 / -5.1e-5 | 0.1117 | 24.96 / 25.90 | 1,255,972 |
+
+Sources: `*_score.json`, `headroom_gate` and `vm_hwm_kb_end` in each arm's JSON. All delta AUC values are inside the 0.001 bound, and all headroom is above the 5-bit gate. Slot Rubato at LogN 12 reached +7.62e-4 once and -5.1e-5 on repeat. That spread is cipher noise on a subset with 98 frauds: the same run varies by about 8e-4. The Rubato comparison has only one scored CNP-B run per LogN, so this data cannot rank the arms on accuracy.
 
 ## 6. Caveats
 
@@ -219,8 +314,10 @@ Peak RSS, 16 rows, `CNP_ARMS=cnp`. CONFIRMED-RAN.
 | Neither arm applies noise flooding, so neither claims circuit privacy. Whether the arms' final noise leaks differently was not analysed | UNVERIFIED |
 | Slot headroom at LogN 16. The trend 27.08, 27.04, 26.29 (HERA) and 25.80, 24.66, 24.46 (Rubato) is well above 5 bits | UNVERIFIED |
 | The HalfBoot arm is still the existing 2x+1 lower bound, with no LR. It has no AUC, only a CKKS max error | CONFIRMED-SOURCE (`patch/rtf_cnp_test.go:1008`) |
-| `baseline_halfboot_extra` is 0 at LogN 10: HalfBoot's rotations appear to be a subset of StC's at toy scale. I did not check whether this holds at larger LogN | UNVERIFIED |
-| Governor is `powersave` and needs root to change. It will be recorded, as in earlier sessions | CONFIRMED-RAN |
+| `baseline_halfboot_extra` is 0 at LogN 10 but 3 at LogN 12, so the HalfBoot arm holds 36 keys there. It does not hold in general that HalfBoot's rotations are a subset of StC's | CONFIRMED-RAN (`A/laptop_20261103T205043Z/logn12/*/halfboot/cnp_*.json`) |
+| Rubato delta AUC at LogN 12 is on the 4096-row subset only. The full 56,962 rows were run at LogN 10 only | CONFIRMED-RAN |
+| LogN 10 online timings are tens of microseconds per ciphertext and noisy: identical CNP-B code gave 0.048 to 0.078 ms, and slot HERA gave 1.6 and 4.3 ms per batch. The LogN 12 values agree within about 10% | CONFIRMED-RAN |
+| This session has 1 process per arm, Chrome open and governor `powersave`. Treat small differences as noise; first and repeat slot totals differed by up to 6.3% (LogN 12 HERA) | CONFIRMED-RAN |
 
 Pre-existing issues I noticed and did not change:
 - `docs/cnp_b.md:29` overstates upload per transaction by 4x. Arithmetic and every occurrence are in section 4.
@@ -269,29 +366,39 @@ Score, wherever Python with numpy and scikit-learn is available (a copy of `$HOM
 
 **Peak memory at LogN 16, slot path. ESTIMATE, not measured.**
 
-| Cipher | LogN 12 | LogN 14 | Growth 12 to 14 | **ESTIMATE, one batch at LogN 16 (LogN 14 x 4)** |
-|---|---|---|---|---|
-| HERA | 0.72 GB | 2.60 GB | 3.59x | **about 10.4 GB** |
-| Rubato | 1.06 GB | 4.14 GB | 3.91x | **about 16.6 GB** |
+| Cipher | LogN 12, 1 batch | LogN 14, 1 batch | One batch at LogN 16 (LogN 14 x 4) | Many-batch factor (LogN 12, 4096 rows / 16 rows) | **ESTIMATE** |
+|---|---|---|---|---|---|
+| HERA | 723,416 KB | 2,599,184 KB | 10.4 GB | 775,208 / 723,416 = x1.07 | **about 11 GB** |
+| Rubato | 1,057,868 KB | 4,139,312 KB | 16.6 GB | 1,255,972 / 1,057,868 = x1.19 | **about 20 GB** |
 
-Sources: `A/memory_scaling/logn12/`, `A/memory_scaling/logn14/`. **Treat these as lower bounds for a full run:** the LogN 14 runs used 16 rows, one batch, so memory growth over many batches is not included. The stratified 4096-row arms in Step 3 can supply a factor at LogN 12. The DGX runs leave GOGC and GOMEMLIMIT unset. Both figures are near or above this laptop's 11 GB limit, so LogN 16 stays on the DGX.
+Sources: `A/memory_scaling/logn12/`, `A/memory_scaling/logn14/`, `A/laptop_20261103T205043Z/logn12/*/slot/`. The factor comes from one LogN and is the weakest part of the estimate. For scale, those LogN 12 runs have 16 batches (HERA) and 5 (Rubato), and the full test set at LogN 16 needs 14 and 4. The DGX runs leave GOGC and GOMEMLIMIT unset. Both figures are at or above this laptop's 11 GB limit, so LogN 16 stays on the DGX.
 
 ## 8. Verdict
 
-**At toy scale, does CNP-B still beat the slot baseline?**
+**At toy scale, does CNP-B still beat the slot baseline? Online yes; offline and in total no.** Same session, AC, REPS=5, per transaction, amortized over full batches. Source: `A/laptop_20261103T205043Z/replicate_ranges.json`.
 
-| Metric | Answer |
-|---|---|
-| Online | **Not measured** |
-| Offline | **Not measured** |
-| Total server time per transaction | **Not measured** |
+| Metric | Cipher | LogN 10: winner, by how much (range) | LogN 12: winner, by how much (range) |
+|---|---|---|---|
+| Online | HERA | **CNP-B, 1.28x** (1.28 to 4.55) | **CNP-B, 2.27x** (2.05 to 2.42) |
+| Online | Rubato | **CNP-B, 2.78x** (1.75 to 2.78) | **CNP-B, 2.29x** (2.11 to 2.29) |
+| Offline | HERA | **Slot, 1.14x** (1.12 to 1.23) | **Slot, 1.11x** (1.10 to 1.18) |
+| Offline | Rubato | **Slot, 2.11x** (2.01 to 2.11) | **Slot, 2.20x** (2.17 to 2.20) |
+| Total | HERA | **Slot, 1.14x** (1.12 to 1.23) | **Slot, 1.11x** (1.10 to 1.18) |
+| Total | Rubato | **Slot, 2.09x** (1.99 to 2.09) | **Slot, 2.18x** (2.15 to 2.18) |
 
-There is no verdict because the runner has only seen the laptop on battery. The run in section 1 settles it at toy scale, and only the DGX settles it at LogN 16.
+- **The winner is the same in every replicate pair**, in all 12 cells. The sizes are less certain. Use LogN 12 for online; the LogN 10 online values are too noisy for their size to mean much (section 6).
+- **HERA's total gap is small.** At 10% to 23%, it is only a few times the 6.3% session drift, and HERA's cost is mostly Crypt, which both arms share.
+- **Online is at most 1.3% of total time in either arm**, so total is effectively the offline comparison.
+- **Unamortized online favours CNP-B more:** 20x to 42x per output ciphertext (section 5).
+- **Trend, LogN 10 to 12:** offline and total ratios are about flat. Two toy points cannot say what happens at LogN 16, so **only the DGX settles LogN 16**, and no LogN 16 timing is claimed here.
 
-**What must change in the paper's B claim, whatever the timings show:**
+**What must change in the paper's B claim:**
 
 1. **Do not present the CNP-vs-HalfBoot gap as CNP-B's speedup over the alternatives.** That baseline is a lower bound on a toy 2x+1 circuit. A correct, bit-exact slot-domain LR exists at the same parameters with no HalfBoot and no CKKS. CONFIRMED-RAN at LogN 10.
-2. **Report offline, online and total separately.** Slot skips StC offline and adds an inverse NTT, an extra limb and rotations online, so one combined figure could hide a trade. CONFIRMED-SOURCE for the structure; the timings are not measured.
+2. **Report offline, online and total separately, and do not claim CNP-B is faster overall.** At toy scale CNP-B has lower online time and slot has lower offline and total time. CONFIRMED-RAN at LogN 10 and 12. LogN 16 is unmeasured, so a total-time claim at that scale must wait for the DGX runs.
 3. **Do not claim CNP-B's rotation or key advantage in general.** CNP-B needs no online rotations, but it needs far more Galois keys for StC than slot needs: 26 vs 4 to 6 at LogN 10 (CONFIRMED-RAN), and an estimated 47 vs 4 to 6 at LogN 16.
 4. **State the download cost.** CNP-B downloads 15x to 16x more per transaction (4,096 B vs 256 to 273 B). CONFIRMED-SOURCE. Upload is equal.
 5. **Do not claim an accuracy advantage.** Delta AUC is within the bound for both arms, and HERA is bit-exact in both.
+6. **State the memory cost.** At LogN 12, CNP-B's peak RSS is 2.8x to 4.0x slot's (3.06 vs 0.78 GB with HERA, 3.53 vs 1.26 GB with Rubato). CONFIRMED-RAN.
+
+**The defensible toy-scale claim:** CNP-B has lower online latency than a correct slot-domain baseline, about 2.3x amortized at LogN 12 and 20x to 42x per ciphertext. It pays for that with more server time in total (1.1x with HERA, 2.2x with Rubato), and more Galois keys, download and memory. It needs a setting where online latency matters more than total server cost, and LogN 16 could still change the time comparison.
