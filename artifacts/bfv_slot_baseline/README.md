@@ -8,6 +8,7 @@ Everything here came from the FV-slot baseline work (reports/bfv_slot_baseline_r
 |---|---|
 | STOPPED_*.json | The Step 3 runner refusing to measure on battery |
 | correctness_logn10/ | Slot path, LogN 10, full test set (56,962 rows), REPS=5. Step 2 evidence |
+| level0_gate_stop_logn10/ | SLOT_EVAL_LEVEL=0, the literal round(c*q0/t) reading: stopped at the headroom gate |
 | probe_logn10/ | TestSlotProbeLayout output |
 | cnp_regression_logn10/ | Existing TestCNPRun (cnp + baseline), LogN 10, REPS=2, stratified 4096 rows, unmodified code |
 | memory_scaling/ | Slot at LogN 12 and 14, CNP at LogN 12, 16 rows, REPS=1. Peak RSS, headroom and key counts for the LogN 16 estimate |

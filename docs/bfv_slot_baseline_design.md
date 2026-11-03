@@ -190,9 +190,9 @@ The slot path skips SlotToCoeff^FV offline. Its online stage is heavier per keys
 
 ## 8. Addendum after running (CONFIRMED-RAN; the design above is unchanged)
 
-Sources: `artifacts/bfv_slot_baseline/correctness_logn10/`, `artifacts/bfv_slot_baseline/memory_scaling/`. Numbers and paths are in `reports/bfv_slot_baseline_report.md`.
+Sources: `artifacts/bfv_slot_baseline/correctness_logn10/`, `artifacts/bfv_slot_baseline/level0_gate_stop_logn10/`, `artifacts/bfv_slot_baseline/probe_logn10/`, `artifacts/bfv_slot_baseline/memory_scaling/`. Numbers and paths are in `reports/bfv_slot_baseline_report.md`.
 
 - Section 1 layout, one-hot and rotation semantics: `TestSlotProbeLayout` passed for HERA and Rubato at LogN 10 with 0 wrong slots.
 - Section 3 scale-up: `TestSlotScaleUpExact` passed. It found one bug in the first version: the chain contains a 22-bit prime (`DiffScaleModulus` 0x2a0001) smaller than t, so the rounding term must be reduced per limb. This only affects level 8 and above, not the level-1 evaluation.
-- Section 4.4 noise: the prediction held. LogN 10, HERA: input 2^3.86, after the first pmul 2^29.60 (growth 2^25.7, predicted 2^25.7), after the group sum 2^31.37 (growth 2^27.5, predicted 2^27.7). Literal level 0 stops at the gate: 0.73 bits HERA, 0.01 bits Rubato. Level 1 passes: 26.98 and 25.81 bits.
+- Section 4.4 noise: the prediction held. LogN 10, HERA: input 2^3.71, after the first pmul 2^29.48 (growth 2^25.8, predicted 2^25.7), after the group sum 2^31.44 (growth 2^27.7, predicted 2^27.7). Literal level 0 stops at the gate: 0.73 bits HERA, 0.01 bits Rubato. Level 1 passes: 27.08 and 25.80 bits, slightly above the predicted 20 to 26.
 - Section 4.5 key bytes: 2688 N per key confirmed by walking the allocated key objects (4 keys = 11,010,048 bytes at LogN 10).

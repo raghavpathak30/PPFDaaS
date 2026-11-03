@@ -1,0 +1,206 @@
+{
+  "date_utc": "2026-11-03T17:05:18Z",
+  "arm": "slot",
+  "param_state": {
+    "cipher": "hera",
+    "param_set": "128af",
+    "param_index": 2,
+    "log_n": 10,
+    "log_slots": 9,
+    "mod_count": 24,
+    "rounds": 5,
+    "block_size": 16,
+    "radix": 2,
+    "full_coeffs": true
+  },
+  "n": 1024,
+  "plain_modulus": 33292289,
+  "q0_bits": 60.000000000009024,
+  "q_bits_at_eval_level": 60.000000000009024,
+  "scale_up_server_side": "exact: round(c*Q_l/t) at the evaluation level (slotScaler); level-0 mask uses cnpScaleUp",
+  "groups": [
+    {
+      "base_ct": 0,
+      "cts_G": 16,
+      "slots_per_lane_S": 16,
+      "lanes": 64
+    }
+  ],
+  "keystream_level_after_crypt": 8,
+  "eval_level": 0,
+  "final_ct_level": 0,
+  "lanes_per_crypt": 64,
+  "output_cts_per_crypt": 1,
+  "keystream_cts_per_crypt": 16,
+  "lanes_per_output_ct_mean": 64,
+  "rotations_per_crypt": 4,
+  "weight_poly_nonzero_coeffs_per_group": [
+    31
+  ],
+  "rotation_key_indexes": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "rotation_key_counts": {
+    "slot_rotations": 4
+  },
+  "rotation_key_bytes_allocated": 11010048,
+  "rotation_key_bytes_touched_at_level0_computed": 327680,
+  "wire_bytes": {
+    "download": "FV ciphertext at level 0: 2 polys x 1 limb x N; no compression",
+    "download_bytes_per_output_ct_60bit_packed": 15360,
+    "download_bytes_per_output_ct_uint64_limbs": 16384,
+    "download_bytes_per_transaction_60bit_packed": 240,
+    "download_bytes_per_transaction_uint64_limbs": 256,
+    "download_limbs": 1,
+    "note": "computed from the object layout (the fork has no ciphertext marshaller)",
+    "upload": "RtF symmetric ciphertext: N elements mod t per keystream ciphertext; the server does the slot encoding and scale-up",
+    "upload_bits_per_element": 25,
+    "upload_bytes_per_crypt_bitpacked": 51200,
+    "upload_bytes_per_transaction_bitpacked": 800,
+    "upload_bytes_per_transaction_uint32_wire": 1024
+  },
+  "reps": 2,
+  "data_source": "real test set from /tmp/claude-1000/-home-raghavp-BTP-cnpb/84c2401b-c650-4230-a777-c5d606a33fbb/scratchpad/cnpb_data",
+  "data_check": "Go integer sim vs expected.i64 (numpy): 0 mismatching rows of 56962",
+  "seeding_note": "Unseeded: HE keys, nonces, Rubato counter and noise, and the masks come from crypto/rand each run. Symmetric key is fixed (1..blocksize). Synthetic data (if used) is seeded.",
+  "host_loadavg_start": "4.21 2.86 1.61 2/1747 27240",
+  "host_loadavg_end": "4.21 2.86 1.61 1/1748 27248",
+  "gomaxprocs": 20,
+  "gogc_env": "",
+  "gomemlimit_env": "11GiB",
+  "provenance": {
+    "build_date": "",
+    "image_ref": "",
+    "repo_sha": "",
+    "rtf_patch_sha256": "",
+    "rtf_sha": ""
+  },
+  "setup_ms": {
+    "encode_weights_ptmul_signed_lift": 0.458,
+    "fv_evaluator": 20.563,
+    "keygen": 109.3,
+    "relinearization_key": 8.587,
+    "slot_rotation_keys": 79.217
+  },
+  "setup_retained_heap_kb": {
+    "encode_weights_ptmul_signed_lift": 127,
+    "fv_evaluator": 28280,
+    "keygen": 22191,
+    "relinearization_key": 5393,
+    "slot_rotation_keys": 10786
+  },
+  "slot_stages_per_crypt_batch": {
+    "keystream_crypt (offline)": {
+      "runs_ms": [
+        914.203,
+        903.692
+      ],
+      "median_ms": 908.9475,
+      "min_ms": 903.692,
+      "max_ms": 914.203,
+      "vm_hwm_kb_after": 264952
+    },
+    "keystream_modswitch (offline, all usable cts)": {
+      "runs_ms": [
+        1.661,
+        1.51
+      ],
+      "median_ms": 1.5855000000000001,
+      "min_ms": 1.51,
+      "max_ms": 1.661,
+      "vm_hwm_kb_after": 264956
+    }
+  },
+  "per_crypt_batch_ms": null,
+  "per_keystream_ct_ms": null,
+  "per_output_ct_ms": null,
+  "per_transaction_ms": null,
+  "offline_note": "Offline (keystream_crypt, keystream_modswitch) depends only on nonces. No SlotToCoeff on this path. Online = client-dependent stages only.",
+  "noise_headroom": [
+    {
+      "point": "group0(G=16,S=16) before_sub",
+      "level": 0,
+      "log2_max_noise": 3.8019248536640577,
+      "headroom_bits_to_Q_over_2t": 30.209390416238588
+    },
+    {
+      "point": "group0(G=16,S=16) after_sub",
+      "level": 0,
+      "log2_max_noise": 3.8401950422560827,
+      "headroom_bits_to_Q_over_2t": 30.17112022764656
+    },
+    {
+      "point": "group0(G=16,S=16) after_pmul_first_ct",
+      "level": 0,
+      "log2_max_noise": 29.298109417186396,
+      "headroom_bits_to_Q_over_2t": 4.713205852716247
+    },
+    {
+      "point": "group0(G=16,S=16) after_group_sum",
+      "level": 0,
+      "log2_max_noise": 31.357410976943022,
+      "headroom_bits_to_Q_over_2t": 2.653904292959622
+    },
+    {
+      "point": "group0(G=16,S=16) after_rotate_sum",
+      "level": 0,
+      "log2_max_noise": 33.281723997188536,
+      "headroom_bits_to_Q_over_2t": 0.7295912727141097
+    },
+    {
+      "point": "group0(G=16,S=16) before_mask",
+      "level": 0,
+      "log2_max_noise": 33.281723997188536,
+      "headroom_bits_to_Q_over_2t": 0.7295912727141097
+    },
+    {
+      "point": "group0(G=16,S=16) after_mask_add",
+      "level": 0,
+      "log2_max_noise": 33.28172399718637,
+      "headroom_bits_to_Q_over_2t": 0.7295912727162743
+    }
+  ],
+  "headroom_gate_bits": 5,
+  "headroom_gate": "STOPPED: headroom of the FINAL ciphertext (after the mask add) 0.73 bits \u003c 5 (eval level 0). Nothing beyond batch 0 was run.",
+  "memory_checkpoints": [
+    {
+      "name": "after_fv_setup",
+      "vm_hwm_kb": 80252,
+      "total_alloc_kb": 89937,
+      "heap_alloc_kb": 66982
+    },
+    {
+      "name": "after_cipher_init_and_enckey",
+      "vm_hwm_kb": 169876,
+      "total_alloc_kb": 218958,
+      "heap_alloc_kb": 162687
+    },
+    {
+      "name": "after_crypt",
+      "vm_hwm_kb": 264952,
+      "total_alloc_kb": 640258,
+      "heap_alloc_kb": 150925
+    },
+    {
+      "name": "after_keystream_modswitch",
+      "vm_hwm_kb": 264956,
+      "total_alloc_kb": 644893,
+      "heap_alloc_kb": 155560
+    },
+    {
+      "name": "after_weight_plaintexts",
+      "vm_hwm_kb": 263812,
+      "total_alloc_kb": 645414,
+      "heap_alloc_kb": 100610
+    }
+  ],
+  "correctness": {},
+  "crypt_calls": 0,
+  "row_set": "",
+  "row_set_estimate_s": 0,
+  "vm_hwm_kb_end": 263812,
+  "total_alloc_kb_end": 648188
+}
