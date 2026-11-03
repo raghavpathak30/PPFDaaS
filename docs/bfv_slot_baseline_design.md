@@ -17,7 +17,7 @@ Tags: CONFIRMED-SOURCE = read in the code cited. CONFIRMED-RAN = observed in a r
 | Scale-up | round(c * Q_l / t), which is exactly CNP-B's round(c * q0 / t) at level 0 (section 3) |
 | Mask | Reuses `cnpUniformModT` and `cnpScaleUp` from CNP-B, drawn per SLOT not per coefficient (section 5) |
 
-**One deviation from the brief, and it is forced by noise:** the brief says "the same exact scale-up as CNP-B: round(c*q0/t)". Taken literally this means level 0 for Sub and pmul, and the predicted headroom there is below the 5-bit gate. The design uses the same formula at level 1 and keeps level 0 for the output. `SLOT_EVAL_LEVEL=0` runs the literal version so the failure is measured, with the gate still enforced.
+**One deviation from the brief, forced by noise and accepted by the project owner:** the brief says "the same exact scale-up as CNP-B: round(c*q0/t)". Taken literally this means level 0 for Sub and pmul. Slot-encoded weights have coefficients of size ~t, and the measured final headroom at level 0 is 0.73 bits (HERA) and 0.01 bits (Rubato), below the 5-bit gate. The design uses the same formula at level 1 and keeps level 0 for the output. The level-1 modulus belongs to the same unchanged parameter set (section 4.6), and the extra RNS limb in Sub and pmul is a cost of the slot path (section 4.7). `SLOT_EVAL_LEVEL=0` runs the literal version so the failure is measured, with the gate still enforced.
 
 ## 1. Keystream layout after cipher evaluation, before SlotToCoeff^FV
 
@@ -151,6 +151,35 @@ One rotation key holds beta x 2 polynomials x (Q+P limbs) x N x 8 bytes (`ckks_f
 | CNP-B (StC only) | measured at toy scale by `rotation_key_counts`, projected for LogN 16 in the report | see report |
 
 Only 1 block x 2 polys x (1 Q limb + 4 P limbs) of each slot key is touched at level 0 (`ckks_fv/mfv_evaluator.go:953-956`), so a deployment could store 80N bytes per key (5.2 MB at LogN 16). That is arithmetic, not implemented or measured, and the comparison uses the full-chain bytes the fork actually allocates.
+
+### 4.6 The level-1 modulus is part of the same parameter set
+
+Level 1 is not a new modulus. Q_1 = q0 * q1, the first two primes of the chain both arms already use. CONFIRMED-SOURCE unless marked.
+
+| Item | Value | Source |
+|---|---|---|
+| q0 | 0x10000000006e0001 (60 bits) | `ckks_fv/rtf_params.go:418` (HERA), `:555` (Rubato) |
+| q1 | 0x2000000a0001 (45 bits) | `ckks_fv/rtf_params.go:419` (HERA), `:556` (Rubato) |
+| Set selection, CNP-B | `RtFHeraParams[2]`, `RtFRubatoParams[0]`, 128af | `patch/rtf_cnp_setup_test.go:81`, `:88` |
+| Set selection, slot | Calls the same `cnpConfig` | `patch/rtf_slot_test.go:111` |
+| Observed in runs | `param_set` 128af, `mod_count` 24, `plain_modulus` 33292289, `q0_bits` 60.0, `q_bits_at_eval_level` 105.0 | CONFIRMED-RAN: `artifacts/bfv_slot_baseline/correctness_logn10/slot_{hera,rubato}.json`, `memory_scaling/logn12/slot_{hera,rubato}.json` |
+
+No modulus was added, removed or changed, and neither were t, the key-switch moduli or the quantisation. Only the point on the chain where Sub and pmul run differs.
+
+### 4.7 Cost of the extra RNS limb
+
+These are costs of the slot path against CNP-B's level 0. CONFIRMED-SOURCE for the structure; time per stage comes from the same-session comparison, not from here.
+
+| Item | CNP-B, level 0 | Slot, level 1 | Source |
+|---|---|---|---|
+| Scale-up | 1 limb per coefficient | 2 limbs per coefficient | `patch/rtf_slot_test.go:185` |
+| Sub | 1 limb | 2 limbs | `patch/rtf_slot_test.go:337` |
+| pmul and group add | 2 polys x 1 limb | 2 polys x 2 limbs | `patch/rtf_slot_test.go:310`, `:603` (weights at `evalLevel`) |
+| Weight plaintext held in memory | 1 limb x N | 2 limbs x N, per ciphertext | `patch/rtf_slot_test.go:310` |
+| Offline keystream ciphertext held for online use | 16N bytes | 32N bytes | `patch/rtf_slot_test.go:592` |
+| Modswitch to level 0 | Offline, inside `stc_modswitch` | Online, once per output ciphertext (a new online stage) | `patch/rtf_slot_test.go:362` |
+
+The download does not change: the output ciphertext is back at level 0, 2 polys x 1 limb. Rotations also run at level 0, so they use one decomposition block. Offline, the slot path's `ModSwitchMany` stops one level sooner than a switch to level 0 would.
 
 ## 5. Masking
 
