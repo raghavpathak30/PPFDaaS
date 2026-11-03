@@ -17,6 +17,8 @@
 #             cnp                      CNP-B: coefficient-native packing on the RtF path ($CIPHER, default hera) +
 #                                      the HalfBoot lower-bound baseline in the same run; writes cnp_<cipher>.json
 #                                      and cnp_<cipher>_{rows.i32,dec.i64}. Needs DATA_DIR (see below) for real data.
+#             slot                     FV-slot baseline: the same LR in FV slots, no StC/HalfBoot/CKKS ($CIPHER, default hera);
+#                                      writes slot_<cipher>.json and slot_<cipher>_{rows.i32,dec.i64}. Needs DATA_DIR for real data.
 #             test <cipher|ckks_fv> <filter> [flags]   any test binary + filter
 #
 # Environment (all optional):
@@ -31,6 +33,7 @@
 #   CNP_ARMS="cnp baseline"   cnp: which arms run (default both); CNP_ROWS=auto|all|strat|<n> (auto: full test set
 #                             only if the estimate fits CNP_BUDGET_S=7200, else the stratified 4096 subset);
 #                             CNP_STC_MODE=lowest|keep; CNP_SCALEUP=exact|fvscaleup (default exact)
+#                             slot: DATA_DIR, CNP_ROWS, CNP_BUDGET_S, CNP_HEADROOM_GATE_BITS as cnp; SLOT_EVAL_LEVEL (default 1)
 #   GOGC, GOMEMLIMIT          passed into the container when set (the CNP runs leave them unset)
 #   CPUS=<list>               --cpuset-cpus (default: all CPUs of NUMA node $NODE)
 #   NODE=<n>                  NUMA node for default CPUS and --cpuset-mems (default 0)
@@ -101,6 +104,18 @@ case "${TARGET}" in
       add_env CNP_DATA_DIR /data
     fi
     CMD=(cnp) ;;
+  slot)  # FV-slot baseline, one cipher per run (one socket each; same inputs as cnp)
+    add_env E2E_CIPHER "${CIPHER}"
+    [[ -n "${LOGN:-}" ]] && add_env E2E_LOGN "${LOGN}"
+    [[ -n "${REPS:-}" ]] && add_env E2E_REPS "${REPS}"
+    for v in CNP_ROWS CNP_BUDGET_S CNP_HEADROOM_GATE_BITS SLOT_EVAL_LEVEL; do
+      [[ -n "${!v:-}" ]] && add_env "${v}" "${!v}"
+    done
+    if [[ -n "${DATA_DIR:-}" ]]; then
+      [[ -f "${DATA_DIR}/meta.json" ]] || { echo "DATA_DIR=${DATA_DIR} has no meta.json (run scripts/cnp_b/prepare_inputs.py)" >&2; exit 2; }
+      add_env CNP_DATA_DIR /data
+    fi
+    CMD=(slot) ;;
   test)
     [[ $# -ge 2 ]] || usage
     CMD=(test "$1" "$2"); shift 2
@@ -171,7 +186,7 @@ DOCKER_ARGS=(run -d --name "${JOB}" --user "$(id -u):$(id -g)"
   --cpuset-cpus "${CPUS}" --cpuset-mems "${NODE}"
   --cap-drop ALL --security-opt no-new-privileges
   -v "${RDIR}:/results")
-[[ "${TARGET}" == cnp && -n "${DATA_DIR:-}" ]] && DOCKER_ARGS+=(-v "$(cd "${DATA_DIR}" && pwd):/data:ro")
+[[ ( "${TARGET}" == cnp || "${TARGET}" == slot ) && -n "${DATA_DIR:-}" ]] && DOCKER_ARGS+=(-v "$(cd "${DATA_DIR}" && pwd):/data:ro")
 [[ -n "${MEM_LIMIT:-}" ]] && DOCKER_ARGS+=(--memory "${MEM_LIMIT}" --memory-swap "${MEM_LIMIT}")
 DOCKER_ARGS+=("${ENVARGS[@]}" "${IMAGE}" "${CMD[@]}")
 

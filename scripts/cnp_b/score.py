@@ -19,10 +19,11 @@ def main():
     ap.add_argument("--data", required=True)
     ap.add_argument("--results", required=True)
     ap.add_argument("--cipher", required=True, choices=["hera", "rubato"])
+    ap.add_argument("--arm", default="cnp", choices=["cnp", "slot"], help="file prefix; slot = the FV-slot baseline (rtf_slot_test.go)")
     a = ap.parse_args()
     d, r = Path(a.data), Path(a.results)
-    rows = np.fromfile(r / f"cnp_{a.cipher}_rows.i32", dtype="<i4")
-    dec = np.fromfile(r / f"cnp_{a.cipher}_dec.i64", dtype="<i8")
+    rows = np.fromfile(r / f"{a.arm}_{a.cipher}_rows.i32", dtype="<i4")
+    dec = np.fromfile(r / f"{a.arm}_{a.cipher}_dec.i64", dtype="<i8")
     assert len(rows) == len(dec) and len(rows) > 0
     y = np.fromfile(d / "y.u8", dtype=np.uint8)[rows]
     plain = np.fromfile(d / "plain_logit.f64", dtype="<f8")[rows]
@@ -42,7 +43,7 @@ def main():
         "pr_auc_plaintext_float": float(average_precision_score(y, plain)),
     }
     rep["delta_roc_auc"] = rep["roc_auc_encrypted"] - rep["roc_auc_plaintext_float"]
-    (r / f"cnp_{a.cipher}_score.json").write_text(json.dumps(rep, indent=1))
+    (r / f"{a.arm}_{a.cipher}_score.json").write_text(json.dumps(rep, indent=1))
     print(json.dumps(rep, indent=1))
 
 
