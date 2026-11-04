@@ -1,0 +1,5 @@
+=== RUN   TestSlotRun
+    rtf_slot_test.go:869: row set: STRATIFIED subset (4096 rows: all frauds + seeded random non-frauds); full-set estimate 810 s
+    rtf_slot_test.go:973: slot hera LogN=12: 256 lanes per Crypt in 1 output cts; online 6.675 ms per batch, offline 3623.202 ms; passed: min headroom of the final ciphertexts (after mask add) 26.17 bits >= 5 (before mask 26.18); STRATIFIED subset (4096 rows: all frauds + seeded random non-frauds); full-set estimate 810 s
+--- PASS: TestSlotRun (77.53s)
+PASS

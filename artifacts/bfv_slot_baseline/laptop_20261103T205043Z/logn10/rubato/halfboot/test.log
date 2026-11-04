@@ -1,0 +1,5 @@
+=== RUN   TestCNPRun
+    rtf_cnp_test.go:826: row set: first 16 rows (CNP_ROWS=16)
+    rtf_cnp_test.go:1012: cnp rubato LogN=10 lanes=4: online total 0.069 ms per output ct (0.01725 ms/txn), headroom after pmul 22.21 bits, first 16 rows (CNP_ROWS=16)
+--- PASS: TestCNPRun (5.47s)
+PASS

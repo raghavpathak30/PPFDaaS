@@ -1,0 +1,5 @@
+=== RUN   TestCNPRun
+    rtf_cnp_test.go:826: row set: first 16 rows (CNP_ROWS=16)
+    rtf_cnp_test.go:1012: cnp hera LogN=10 lanes=4: online total 0.059 ms per output ct (0.01475 ms/txn), headroom after pmul 21.94 bits, first 16 rows (CNP_ROWS=16)
+--- PASS: TestCNPRun (6.23s)
+PASS

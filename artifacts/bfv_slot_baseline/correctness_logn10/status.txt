@@ -1,0 +1,4 @@
+rubato exit=0
+rubato ac=0 bat=47 2026-11-03T17:10:12Z
+hera exit=0
+hera ac=0 bat=23 2026-11-03T17:24:35Z

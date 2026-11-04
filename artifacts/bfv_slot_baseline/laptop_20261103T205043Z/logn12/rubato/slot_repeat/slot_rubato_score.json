@@ -1,0 +1,16 @@
+{
+ "cipher": "rubato",
+ "rows": 4096,
+ "frauds": 98,
+ "bit_exact_vs_integer_simulation": false,
+ "rows_differing_from_integer_simulation": 4092,
+ "max_abs_integer_diff": 1673,
+ "max_abs_logit_error": 0.12241933994673637,
+ "mean_abs_logit_error": 0.02363338660035926,
+ "median_abs_logit_error": 0.019771160133048582,
+ "roc_auc_encrypted": 0.9795331339138957,
+ "roc_auc_plaintext_float": 0.9795841798450245,
+ "pr_auc_encrypted": 0.906474374602198,
+ "pr_auc_plaintext_float": 0.9067312982886606,
+ "delta_roc_auc": -5.1045931128812505e-05
+}

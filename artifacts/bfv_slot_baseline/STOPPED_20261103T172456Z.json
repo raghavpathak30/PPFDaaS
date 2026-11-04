@@ -1,0 +1,28 @@
+{
+ "stopped": "power source is 'battery' at session start: {'power_source': 'battery', 'online': {'ADP0': '0', 'ucsi-source-psy-USBC000:001': '0'}, 'battery_status': {'BAT0': 'Discharging'}}",
+ "machine_state": {
+  "timestamp_utc": "2026-11-03T17:24:56Z",
+  "cpu_governor": "powersave",
+  "power_source": "battery",
+  "online": {
+   "ADP0": "0",
+   "ucsi-source-psy-USBC000:001": "0"
+  },
+  "battery_status": {
+   "BAT0": "Discharging"
+  },
+  "load_avg_1_5_15": [
+   2.3271484375,
+   2.248046875,
+   2.08740234375
+  ],
+  "cpu_count": 20,
+  "scaling_cur_mhz_min": 800.373,
+  "scaling_cur_mhz_max": 2381.866,
+  "mem_total_kb": 15987304,
+  "mem_available_kb": 5548604,
+  "swap_free_kb": 10277376,
+  "kernel": "6.17.13+2-amd64"
+ },
+ "repo_sha": "ad0a5dfd7e94683fa0d493f9659d3782d213122d"
+}

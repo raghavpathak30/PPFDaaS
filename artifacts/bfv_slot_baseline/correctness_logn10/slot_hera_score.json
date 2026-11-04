@@ -1,0 +1,16 @@
+{
+ "cipher": "hera",
+ "rows": 56962,
+ "frauds": 98,
+ "bit_exact_vs_integer_simulation": true,
+ "rows_differing_from_integer_simulation": 0,
+ "max_abs_integer_diff": 0,
+ "max_abs_logit_error": 0.09531080923655022,
+ "mean_abs_logit_error": 0.007887081664416103,
+ "median_abs_logit_error": 0.006368026287027817,
+ "roc_auc_encrypted": 0.9793903176070653,
+ "roc_auc_plaintext_float": 0.9793983927279408,
+ "pr_auc_encrypted": 0.8234469673256598,
+ "pr_auc_plaintext_float": 0.8238348513573129,
+ "delta_roc_auc": -8.075120875528086e-06
+}

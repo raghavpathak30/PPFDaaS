@@ -1,0 +1,15 @@
+{
+ "note": "Same 4096 stratified rows (strat4096.i32: all 98 frauds + seeded non-frauds). Slot from correctness_logn10, CNP from cnp_regression_logn10. Different runs, so different keystreams and Rubato noise draws. Bound: |delta AUC| <= 0.001 (docs/cnp_gate.md:8).",
+ "hera": {
+  "rows": 4096,
+  "plaintext_auc": 0.9795841798450245,
+  "slot_delta_auc": -7.656889669416245e-06,
+  "cnp_delta_auc": -7.656889669416245e-06
+ },
+ "rubato": {
+  "rows": 4096,
+  "plaintext_auc": 0.9795841798450245,
+  "slot_delta_auc": 5.104593112759126e-06,
+  "cnp_delta_auc": -0.00024119202458383615
+ }
+}

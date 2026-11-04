@@ -1,0 +1,5 @@
+=== RUN   TestSlotRun
+    rtf_slot_test.go:869: row set: STRATIFIED subset (4096 rows: all frauds + seeded random non-frauds); full-set estimate 146 s
+    rtf_slot_test.go:973: slot rubato LogN=12: 960 lanes per Crypt in 4 output cts; online 27.345 ms per batch, offline 2409.418 ms; passed: min headroom of the final ciphertexts (after mask add) 25.90 bits >= 5 (before mask 25.90); STRATIFIED subset (4096 rows: all frauds + seeded random non-frauds); full-set estimate 146 s
+--- PASS: TestSlotRun (30.41s)
+PASS

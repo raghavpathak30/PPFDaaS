@@ -1,0 +1,24 @@
+{
+ "timestamp_utc": "2026-11-03T21:01:48Z",
+ "cpu_governor": "powersave",
+ "power_source": "AC",
+ "online": {
+  "ADP0": "1",
+  "ucsi-source-psy-USBC000:001": "0"
+ },
+ "battery_status": {
+  "BAT0": "Charging"
+ },
+ "load_avg_1_5_15": [
+  1.056640625,
+  1.44140625,
+  1.40625
+ ],
+ "cpu_count": 20,
+ "scaling_cur_mhz_min": 799.583,
+ "scaling_cur_mhz_max": 4727.514,
+ "mem_total_kb": 15987304,
+ "mem_available_kb": 6710200,
+ "swap_free_kb": 10008904,
+ "kernel": "6.17.13+2-amd64"
+}

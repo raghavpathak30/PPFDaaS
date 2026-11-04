@@ -1,0 +1,545 @@
+{
+  "date_utc": "2026-11-03T17:12:13Z",
+  "arm": "slot",
+  "param_state": {
+    "cipher": "rubato",
+    "param_set": "128af",
+    "param_index": 0,
+    "log_n": 12,
+    "log_slots": 11,
+    "mod_count": 24,
+    "rounds": 2,
+    "block_size": 64,
+    "radix": 2,
+    "full_coeffs": true
+  },
+  "n": 4096,
+  "plain_modulus": 33292289,
+  "q0_bits": 60.000000000009024,
+  "q_bits_at_eval_level": 105.00000002688135,
+  "scale_up_server_side": "exact: round(c*Q_l/t) at the evaluation level (slotScaler); level-0 mask uses cnpScaleUp",
+  "groups": [
+    {
+      "base_ct": 0,
+      "cts_G": 32,
+      "slots_per_lane_S": 8,
+      "lanes": 512
+    },
+    {
+      "base_ct": 32,
+      "cts_G": 16,
+      "slots_per_lane_S": 16,
+      "lanes": 256
+    },
+    {
+      "base_ct": 48,
+      "cts_G": 8,
+      "slots_per_lane_S": 32,
+      "lanes": 128
+    },
+    {
+      "base_ct": 56,
+      "cts_G": 4,
+      "slots_per_lane_S": 64,
+      "lanes": 64
+    }
+  ],
+  "keystream_level_after_crypt": 9,
+  "eval_level": 1,
+  "final_ct_level": 0,
+  "lanes_per_crypt": 960,
+  "output_cts_per_crypt": 4,
+  "keystream_cts_per_crypt": 60,
+  "lanes_per_output_ct_mean": 240,
+  "rotations_per_crypt": 18,
+  "weight_poly_nonzero_coeffs_per_group": [
+    15,
+    31,
+    63,
+    127
+  ],
+  "rotation_key_indexes": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32
+  ],
+  "rotation_key_counts": {
+    "slot_rotations": 6
+  },
+  "rotation_key_bytes_allocated": 66060288,
+  "rotation_key_bytes_touched_at_level0_computed": 1966080,
+  "wire_bytes": {
+    "download": "FV ciphertext at level 0: 2 polys x 1 limb x N; no compression",
+    "download_bytes_per_output_ct_60bit_packed": 61440,
+    "download_bytes_per_output_ct_uint64_limbs": 65536,
+    "download_bytes_per_transaction_60bit_packed": 256,
+    "download_bytes_per_transaction_uint64_limbs": 273.06666666666666,
+    "download_limbs": 1,
+    "note": "computed from the object layout (the fork has no ciphertext marshaller)",
+    "upload": "RtF symmetric ciphertext: N elements mod t per keystream ciphertext; the server does the slot encoding and scale-up",
+    "upload_bits_per_element": 25,
+    "upload_bytes_per_crypt_bitpacked": 768000,
+    "upload_bytes_per_transaction_bitpacked": 800,
+    "upload_bytes_per_transaction_uint32_wire": 1024
+  },
+  "reps": 1,
+  "data_source": "real test set from /tmp/claude-1000/-home-raghavp-BTP-cnpb/84c2401b-c650-4230-a777-c5d606a33fbb/scratchpad/cnpb_data",
+  "data_check": "Go integer sim vs expected.i64 (numpy): 0 mismatching rows of 56962",
+  "seeding_note": "Unseeded: HE keys, nonces, Rubato counter and noise, and the masks come from crypto/rand each run. Symmetric key is fixed (1..blocksize). Synthetic data (if used) is seeded.",
+  "host_loadavg_start": "2.39 2.40 1.82 2/1810 29731",
+  "host_loadavg_end": "2.39 2.40 1.82 2/1818 29742",
+  "gomaxprocs": 20,
+  "gogc_env": "",
+  "gomemlimit_env": "11GiB",
+  "provenance": {
+    "build_date": "",
+    "image_ref": "",
+    "repo_sha": "ad0a5dfd7e94683fa0d493f9659d3782d213122d",
+    "rtf_patch_sha256": "",
+    "rtf_sha": ""
+  },
+  "setup_ms": {
+    "encode_weights_ptmul_signed_lift": 8.99,
+    "fv_evaluator": 33.539,
+    "keygen": 58.554,
+    "relinearization_key": 30.673,
+    "slot_rotation_keys": 170.966
+  },
+  "setup_retained_heap_kb": {
+    "encode_weights_ptmul_signed_lift": 3846,
+    "fv_evaluator": 111242,
+    "keygen": 87827,
+    "relinearization_key": 21521,
+    "slot_rotation_keys": 64569
+  },
+  "slot_stages_per_crypt_batch": {
+    "bank_decrypt_and_read (not server)": {
+      "runs_ms": [
+        0.615
+      ],
+      "median_ms": 0.615,
+      "min_ms": 0.615,
+      "max_ms": 0.615,
+      "vm_hwm_kb_after": 1057868
+    },
+    "client_build_symmetric_cts (not server)": {
+      "runs_ms": [
+        3.491
+      ],
+      "median_ms": 3.491,
+      "min_ms": 3.491,
+      "max_ms": 3.491,
+      "vm_hwm_kb_after": 1057868
+    },
+    "keystream_crypt (offline)": {
+      "runs_ms": [
+        2611.16
+      ],
+      "median_ms": 2611.16,
+      "min_ms": 2611.16,
+      "max_ms": 2611.16,
+      "vm_hwm_kb_after": 1059332
+    },
+    "keystream_modswitch (offline, all usable cts)": {
+      "runs_ms": [
+        25.276
+      ],
+      "median_ms": 25.276,
+      "min_ms": 25.276,
+      "max_ms": 25.276,
+      "vm_hwm_kb_after": 1059340
+    },
+    "mask_encode_scaleup_add": {
+      "runs_ms": [
+        0.215
+      ],
+      "median_ms": 0.215,
+      "min_ms": 0.215,
+      "max_ms": 0.215,
+      "vm_hwm_kb_after": 1057868
+    },
+    "mask_generate (CSPRNG, rejection sampling)": {
+      "runs_ms": [
+        0.133
+      ],
+      "median_ms": 0.133,
+      "min_ms": 0.133,
+      "max_ms": 0.133,
+      "vm_hwm_kb_after": 1057868
+    },
+    "modswitch_to_level0": {
+      "runs_ms": [
+        0.052
+      ],
+      "median_ms": 0.052,
+      "min_ms": 0.052,
+      "max_ms": 0.052,
+      "vm_hwm_kb_after": 1057868
+    },
+    "online_total": {
+      "runs_ms": [
+        27.006
+      ],
+      "median_ms": 27.006,
+      "min_ms": 27.006,
+      "max_ms": 27.006,
+      "vm_hwm_kb_after": 1057868
+    },
+    "pmul_and_group_add": {
+      "runs_ms": [
+        12.807
+      ],
+      "median_ms": 12.807,
+      "min_ms": 12.807,
+      "max_ms": 12.807,
+      "vm_hwm_kb_after": 1057868
+    },
+    "rotate_and_sum": {
+      "runs_ms": [
+        9.295
+      ],
+      "median_ms": 9.295,
+      "min_ms": 9.295,
+      "max_ms": 9.295,
+      "vm_hwm_kb_after": 1057868
+    },
+    "scaleup (exact)": {
+      "runs_ms": [
+        1.402
+      ],
+      "median_ms": 1.402,
+      "min_ms": 1.402,
+      "max_ms": 1.402,
+      "vm_hwm_kb_after": 1057868
+    },
+    "slot_encode (inverse NTT mod t)": {
+      "runs_ms": [
+        1.856
+      ],
+      "median_ms": 1.856,
+      "min_ms": 1.856,
+      "max_ms": 1.856,
+      "vm_hwm_kb_after": 1057868
+    },
+    "sub": {
+      "runs_ms": [
+        1.243
+      ],
+      "median_ms": 1.243,
+      "min_ms": 1.243,
+      "max_ms": 1.243,
+      "vm_hwm_kb_after": 1057868
+    }
+  },
+  "per_crypt_batch_ms": {
+    "offline": 2636.4359999999997,
+    "online": 27.006,
+    "total": 2663.4419999999996
+  },
+  "per_keystream_ct_ms": {
+    "offline": 43.940599999999996,
+    "online": 0.4501,
+    "total": 44.390699999999995
+  },
+  "per_output_ct_ms": {
+    "offline": 659.1089999999999,
+    "online": 6.7515,
+    "total": 665.8604999999999
+  },
+  "per_transaction_ms": {
+    "offline": 2.7462874999999998,
+    "online": 0.02813125,
+    "total": 2.7744187499999997
+  },
+  "offline_note": "Offline (keystream_crypt, keystream_modswitch) depends only on nonces. No SlotToCoeff on this path. Online = client-dependent stages only.",
+  "noise_headroom": [
+    {
+      "point": "group0(G=32,S=8) before_sub",
+      "level": 1,
+      "log2_max_noise": 4.011517012934626,
+      "headroom_bits_to_Q_over_2t": 74.99979828384035
+    },
+    {
+      "point": "group0(G=32,S=8) after_sub",
+      "level": 1,
+      "log2_max_noise": 3.9795142411224003,
+      "headroom_bits_to_Q_over_2t": 75.03180105565258
+    },
+    {
+      "point": "group0(G=32,S=8) after_pmul_first_ct",
+      "level": 1,
+      "log2_max_noise": 29.240752401299357,
+      "headroom_bits_to_Q_over_2t": 49.770562895475614
+    },
+    {
+      "point": "group0(G=32,S=8) after_group_sum",
+      "level": 1,
+      "log2_max_noise": 31.431824065551,
+      "headroom_bits_to_Q_over_2t": 47.57949123122397
+    },
+    {
+      "point": "group0(G=32,S=8) after_modswitch_to_level0",
+      "level": 0,
+      "log2_max_noise": 3.909880205524123,
+      "headroom_bits_to_Q_over_2t": 30.10143506437852
+    },
+    {
+      "point": "group0(G=32,S=8) after_rotate_sum",
+      "level": 0,
+      "log2_max_noise": 6.2679551859555085,
+      "headroom_bits_to_Q_over_2t": 27.743360083947135
+    },
+    {
+      "point": "group0(G=32,S=8) before_mask",
+      "level": 0,
+      "log2_max_noise": 6.2679551859555085,
+      "headroom_bits_to_Q_over_2t": 27.743360083947135
+    },
+    {
+      "point": "group0(G=32,S=8) after_mask_add",
+      "level": 0,
+      "log2_max_noise": 6.26071073980548,
+      "headroom_bits_to_Q_over_2t": 27.750604530097164
+    },
+    {
+      "point": "group1(G=16,S=16) before_sub",
+      "level": 1,
+      "log2_max_noise": 3.953880650439352,
+      "headroom_bits_to_Q_over_2t": 75.05743464633562
+    },
+    {
+      "point": "group1(G=16,S=16) after_sub",
+      "level": 1,
+      "log2_max_noise": 3.911750084892875,
+      "headroom_bits_to_Q_over_2t": 75.0995652118821
+    },
+    {
+      "point": "group1(G=16,S=16) after_pmul_first_ct",
+      "level": 1,
+      "log2_max_noise": 29.609806832183608,
+      "headroom_bits_to_Q_over_2t": 49.401508464591366
+    },
+    {
+      "point": "group1(G=16,S=16) after_group_sum",
+      "level": 1,
+      "log2_max_noise": 31.622134457278033,
+      "headroom_bits_to_Q_over_2t": 47.389180839496944
+    },
+    {
+      "point": "group1(G=16,S=16) after_modswitch_to_level0",
+      "level": 0,
+      "log2_max_noise": 3.988701469297512,
+      "headroom_bits_to_Q_over_2t": 30.022613800605132
+    },
+    {
+      "point": "group1(G=16,S=16) after_rotate_sum",
+      "level": 0,
+      "log2_max_noise": 6.784823289601714,
+      "headroom_bits_to_Q_over_2t": 27.22649198030093
+    },
+    {
+      "point": "group1(G=16,S=16) before_mask",
+      "level": 0,
+      "log2_max_noise": 6.784823289601714,
+      "headroom_bits_to_Q_over_2t": 27.22649198030093
+    },
+    {
+      "point": "group1(G=16,S=16) after_mask_add",
+      "level": 0,
+      "log2_max_noise": 6.786661774810823,
+      "headroom_bits_to_Q_over_2t": 27.22465349509182
+    },
+    {
+      "point": "group2(G=8,S=32) before_sub",
+      "level": 1,
+      "log2_max_noise": 3.900670940193416,
+      "headroom_bits_to_Q_over_2t": 75.11064435658156
+    },
+    {
+      "point": "group2(G=8,S=32) after_sub",
+      "level": 1,
+      "log2_max_noise": 3.9188522751103685,
+      "headroom_bits_to_Q_over_2t": 75.0924630216646
+    },
+    {
+      "point": "group2(G=8,S=32) after_pmul_first_ct",
+      "level": 1,
+      "log2_max_noise": 30.1156038870525,
+      "headroom_bits_to_Q_over_2t": 48.89571140972247
+    },
+    {
+      "point": "group2(G=8,S=32) after_group_sum",
+      "level": 1,
+      "log2_max_noise": 31.427816729330576,
+      "headroom_bits_to_Q_over_2t": 47.5834985674444
+    },
+    {
+      "point": "group2(G=8,S=32) after_modswitch_to_level0",
+      "level": 0,
+      "log2_max_noise": 3.90967322248056,
+      "headroom_bits_to_Q_over_2t": 30.101642047422086
+    },
+    {
+      "point": "group2(G=8,S=32) after_rotate_sum",
+      "level": 0,
+      "log2_max_noise": 7.658211482751795,
+      "headroom_bits_to_Q_over_2t": 26.35310378715085
+    },
+    {
+      "point": "group2(G=8,S=32) before_mask",
+      "level": 0,
+      "log2_max_noise": 7.658211482751795,
+      "headroom_bits_to_Q_over_2t": 26.35310378715085
+    },
+    {
+      "point": "group2(G=8,S=32) after_mask_add",
+      "level": 0,
+      "log2_max_noise": 7.656967527661063,
+      "headroom_bits_to_Q_over_2t": 26.354347742241583
+    },
+    {
+      "point": "group3(G=4,S=64) before_sub",
+      "level": 1,
+      "log2_max_noise": 4.102869351206291,
+      "headroom_bits_to_Q_over_2t": 74.90844594556869
+    },
+    {
+      "point": "group3(G=4,S=64) after_sub",
+      "level": 1,
+      "log2_max_noise": 4.12114104079071,
+      "headroom_bits_to_Q_over_2t": 74.89017425598426
+    },
+    {
+      "point": "group3(G=4,S=64) after_pmul_first_ct",
+      "level": 1,
+      "log2_max_noise": 30.50670510327488,
+      "headroom_bits_to_Q_over_2t": 48.50461019350009
+    },
+    {
+      "point": "group3(G=4,S=64) after_group_sum",
+      "level": 1,
+      "log2_max_noise": 31.58565222209805,
+      "headroom_bits_to_Q_over_2t": 47.42566307467692
+    },
+    {
+      "point": "group3(G=4,S=64) after_modswitch_to_level0",
+      "level": 0,
+      "log2_max_noise": 3.931536712509578,
+      "headroom_bits_to_Q_over_2t": 30.079778557393066
+    },
+    {
+      "point": "group3(G=4,S=64) after_rotate_sum",
+      "level": 0,
+      "log2_max_noise": 9.350939181546432,
+      "headroom_bits_to_Q_over_2t": 24.660376088356212
+    },
+    {
+      "point": "group3(G=4,S=64) before_mask",
+      "level": 0,
+      "log2_max_noise": 9.350939181546432,
+      "headroom_bits_to_Q_over_2t": 24.660376088356212
+    },
+    {
+      "point": "group3(G=4,S=64) after_mask_add",
+      "level": 0,
+      "log2_max_noise": 9.351876677956039,
+      "headroom_bits_to_Q_over_2t": 24.659438591946603
+    }
+  ],
+  "headroom_gate_bits": 5,
+  "headroom_gate": "passed: min headroom of the final ciphertexts (after mask add) 24.66 bits \u003e= 5 (before mask 24.66)",
+  "memory_checkpoints": [
+    {
+      "name": "after_fv_setup",
+      "vm_hwm_kb": 206008,
+      "total_alloc_kb": 316874,
+      "heap_alloc_kb": 285497
+    },
+    {
+      "name": "after_cipher_init_and_enckey",
+      "vm_hwm_kb": 689000,
+      "total_alloc_kb": 1335284,
+      "heap_alloc_kb": 799313
+    },
+    {
+      "name": "after_crypt",
+      "vm_hwm_kb": 1059332,
+      "total_alloc_kb": 2006691,
+      "heap_alloc_kb": 711514
+    },
+    {
+      "name": "after_keystream_modswitch",
+      "vm_hwm_kb": 1059340,
+      "total_alloc_kb": 2045136,
+      "heap_alloc_kb": 749959
+    },
+    {
+      "name": "after_weight_plaintexts",
+      "vm_hwm_kb": 1057868,
+      "total_alloc_kb": 2054757,
+      "heap_alloc_kb": 361131
+    },
+    {
+      "name": "after_noise_checks",
+      "vm_hwm_kb": 1057868,
+      "total_alloc_kb": 2121840,
+      "heap_alloc_kb": 428213
+    },
+    {
+      "name": "after_online_stages",
+      "vm_hwm_kb": 1057868,
+      "total_alloc_kb": 2146490,
+      "heap_alloc_kb": 452864
+    },
+    {
+      "name": "after_mask_tests",
+      "vm_hwm_kb": 1057868,
+      "total_alloc_kb": 2201078,
+      "heap_alloc_kb": 507452
+    },
+    {
+      "name": "after_correctness",
+      "vm_hwm_kb": 1057868,
+      "total_alloc_kb": 2213786,
+      "heap_alloc_kb": 520160
+    }
+  ],
+  "correctness": {
+    "bit_exact": false,
+    "integer_to_logit": "logit = integer / 2^14 (bias included server-side)",
+    "max_abs_integer_diff": 1343,
+    "max_abs_logit_error_vs_float_plaintext": 0.07736387815989687,
+    "max_abs_quantisation_error_integer_sim_vs_float (no HE)": 0.039200967865541614,
+    "mean_abs_integer_diff": 409.5625,
+    "mean_abs_logit_error_vs_float_plaintext": 0.029722987016835734,
+    "rows": 16,
+    "rows_not_equal_to_integer_simulation": 16
+  },
+  "mask_tests": {
+    "chi_square_masked_nonoutput_slots": {
+      "df": 63,
+      "p": 0.7517410240444393,
+      "samples": 15424,
+      "stat": 55.053863478060556
+    },
+    "chi_square_unmasked_nonoutput_slots": {
+      "df": 63,
+      "p": 0,
+      "samples": 15424,
+      "stat": 523739.93572300347
+    },
+    "test5_masked_equals_unmasked_plus_bias_mismatching_lanes": 0,
+    "test5_negative_control_raw_unscaled_mask_mismatching_lanes": 960,
+    "weight_recovery_masked_exact (chance ~ targets/t)": 0,
+    "weight_recovery_targets_nonoutput_slots": 256,
+    "weight_recovery_unmasked_exact": 256
+  },
+  "crypt_calls": 1,
+  "row_set": "first 16 rows (CNP_ROWS=16)",
+  "row_set_estimate_s": 160.05287999999996,
+  "vm_hwm_kb_end": 1057868,
+  "total_alloc_kb_end": 2213934
+}

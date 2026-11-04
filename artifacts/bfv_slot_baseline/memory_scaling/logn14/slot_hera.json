@@ -1,0 +1,378 @@
+{
+  "date_utc": "2026-11-03T17:12:18Z",
+  "arm": "slot",
+  "param_state": {
+    "cipher": "hera",
+    "param_set": "128af",
+    "param_index": 2,
+    "log_n": 14,
+    "log_slots": 13,
+    "mod_count": 24,
+    "rounds": 5,
+    "block_size": 16,
+    "radix": 2,
+    "full_coeffs": true
+  },
+  "n": 16384,
+  "plain_modulus": 33292289,
+  "q0_bits": 60.000000000009024,
+  "q_bits_at_eval_level": 105.00000002688135,
+  "scale_up_server_side": "exact: round(c*Q_l/t) at the evaluation level (slotScaler); level-0 mask uses cnpScaleUp",
+  "groups": [
+    {
+      "base_ct": 0,
+      "cts_G": 16,
+      "slots_per_lane_S": 16,
+      "lanes": 1024
+    }
+  ],
+  "keystream_level_after_crypt": 8,
+  "eval_level": 1,
+  "final_ct_level": 0,
+  "lanes_per_crypt": 1024,
+  "output_cts_per_crypt": 1,
+  "keystream_cts_per_crypt": 16,
+  "lanes_per_output_ct_mean": 1024,
+  "rotations_per_crypt": 4,
+  "weight_poly_nonzero_coeffs_per_group": [
+    31
+  ],
+  "rotation_key_indexes": [
+    1,
+    2,
+    4,
+    8
+  ],
+  "rotation_key_counts": {
+    "slot_rotations": 4
+  },
+  "rotation_key_bytes_allocated": 176160768,
+  "rotation_key_bytes_touched_at_level0_computed": 5242880,
+  "wire_bytes": {
+    "download": "FV ciphertext at level 0: 2 polys x 1 limb x N; no compression",
+    "download_bytes_per_output_ct_60bit_packed": 245760,
+    "download_bytes_per_output_ct_uint64_limbs": 262144,
+    "download_bytes_per_transaction_60bit_packed": 240,
+    "download_bytes_per_transaction_uint64_limbs": 256,
+    "download_limbs": 1,
+    "note": "computed from the object layout (the fork has no ciphertext marshaller)",
+    "upload": "RtF symmetric ciphertext: N elements mod t per keystream ciphertext; the server does the slot encoding and scale-up",
+    "upload_bits_per_element": 25,
+    "upload_bytes_per_crypt_bitpacked": 819200,
+    "upload_bytes_per_transaction_bitpacked": 800,
+    "upload_bytes_per_transaction_uint32_wire": 1024
+  },
+  "reps": 1,
+  "data_source": "real test set from /tmp/claude-1000/-home-raghavp-BTP-cnpb/84c2401b-c650-4230-a777-c5d606a33fbb/scratchpad/cnpb_data",
+  "data_check": "Go integer sim vs expected.i64 (numpy): 0 mismatching rows of 56962",
+  "seeding_note": "Unseeded: HE keys, nonces, Rubato counter and noise, and the masks come from crypto/rand each run. Symmetric key is fixed (1..blocksize). Synthetic data (if used) is seeded.",
+  "host_loadavg_start": "2.39 2.40 1.82 3/1808 29755",
+  "host_loadavg_end": "2.57 2.44 1.84 2/1731 29774",
+  "gomaxprocs": 20,
+  "gogc_env": "",
+  "gomemlimit_env": "11GiB",
+  "provenance": {
+    "build_date": "",
+    "image_ref": "",
+    "repo_sha": "ad0a5dfd7e94683fa0d493f9659d3782d213122d",
+    "rtf_patch_sha256": "",
+    "rtf_sha": ""
+  },
+  "setup_ms": {
+    "encode_weights_ptmul_signed_lift": 10.394,
+    "fv_evaluator": 82.131,
+    "keygen": 181.289,
+    "relinearization_key": 124.448,
+    "slot_rotation_keys": 490.896
+  },
+  "setup_retained_heap_kb": {
+    "encode_weights_ptmul_signed_lift": 4095,
+    "fv_evaluator": 442767,
+    "keygen": 350416,
+    "relinearization_key": 86033,
+    "slot_rotation_keys": 172066
+  },
+  "slot_stages_per_crypt_batch": {
+    "bank_decrypt_and_read (not server)": {
+      "runs_ms": [
+        0.794
+      ],
+      "median_ms": 0.794,
+      "min_ms": 0.794,
+      "max_ms": 0.794,
+      "vm_hwm_kb_after": 2599184
+    },
+    "client_build_symmetric_cts (not server)": {
+      "runs_ms": [
+        2.786
+      ],
+      "median_ms": 2.786,
+      "min_ms": 2.786,
+      "max_ms": 2.786,
+      "vm_hwm_kb_after": 2599184
+    },
+    "keystream_crypt (offline)": {
+      "runs_ms": [
+        16770.343
+      ],
+      "median_ms": 16770.343,
+      "min_ms": 16770.343,
+      "max_ms": 16770.343,
+      "vm_hwm_kb_after": 2600740
+    },
+    "keystream_modswitch (offline, all usable cts)": {
+      "runs_ms": [
+        22.109
+      ],
+      "median_ms": 22.109,
+      "min_ms": 22.109,
+      "max_ms": 22.109,
+      "vm_hwm_kb_after": 2600744
+    },
+    "mask_encode_scaleup_add": {
+      "runs_ms": [
+        0.304
+      ],
+      "median_ms": 0.304,
+      "min_ms": 0.304,
+      "max_ms": 0.304,
+      "vm_hwm_kb_after": 2599184
+    },
+    "mask_generate (CSPRNG, rejection sampling)": {
+      "runs_ms": [
+        0.135
+      ],
+      "median_ms": 0.135,
+      "min_ms": 0.135,
+      "max_ms": 0.135,
+      "vm_hwm_kb_after": 2599184
+    },
+    "modswitch_to_level0": {
+      "runs_ms": [
+        0.041
+      ],
+      "median_ms": 0.041,
+      "min_ms": 0.041,
+      "max_ms": 0.041,
+      "vm_hwm_kb_after": 2599184
+    },
+    "online_total": {
+      "runs_ms": [
+        32.606
+      ],
+      "median_ms": 32.606,
+      "min_ms": 32.606,
+      "max_ms": 32.606,
+      "vm_hwm_kb_after": 2599184
+    },
+    "pmul_and_group_add": {
+      "runs_ms": [
+        16.691
+      ],
+      "median_ms": 16.691,
+      "min_ms": 16.691,
+      "max_ms": 16.691,
+      "vm_hwm_kb_after": 2599184
+    },
+    "rotate_and_sum": {
+      "runs_ms": [
+        10.089
+      ],
+      "median_ms": 10.089,
+      "min_ms": 10.089,
+      "max_ms": 10.089,
+      "vm_hwm_kb_after": 2599184
+    },
+    "scaleup (exact)": {
+      "runs_ms": [
+        1.477
+      ],
+      "median_ms": 1.477,
+      "min_ms": 1.477,
+      "max_ms": 1.477,
+      "vm_hwm_kb_after": 2599184
+    },
+    "slot_encode (inverse NTT mod t)": {
+      "runs_ms": [
+        2.417
+      ],
+      "median_ms": 2.417,
+      "min_ms": 2.417,
+      "max_ms": 2.417,
+      "vm_hwm_kb_after": 2599184
+    },
+    "sub": {
+      "runs_ms": [
+        1.449
+      ],
+      "median_ms": 1.449,
+      "min_ms": 1.449,
+      "max_ms": 1.449,
+      "vm_hwm_kb_after": 2599184
+    }
+  },
+  "per_crypt_batch_ms": {
+    "offline": 16792.452,
+    "online": 32.606,
+    "total": 16825.058
+  },
+  "per_keystream_ct_ms": {
+    "offline": 1049.52825,
+    "online": 2.037875,
+    "total": 1051.566125
+  },
+  "per_output_ct_ms": {
+    "offline": 16792.452,
+    "online": 32.606,
+    "total": 16825.058
+  },
+  "per_transaction_ms": {
+    "offline": 16.39887890625,
+    "online": 0.031841796875,
+    "total": 16.430720703125
+  },
+  "offline_note": "Offline (keystream_crypt, keystream_modswitch) depends only on nonces. No SlotToCoeff on this path. Online = client-dependent stages only.",
+  "noise_headroom": [
+    {
+      "point": "group0(G=16,S=16) before_sub",
+      "level": 1,
+      "log2_max_noise": 4.0565668665789385,
+      "headroom_bits_to_Q_over_2t": 74.95474843019603
+    },
+    {
+      "point": "group0(G=16,S=16) after_sub",
+      "level": 1,
+      "log2_max_noise": 4.050266358769373,
+      "headroom_bits_to_Q_over_2t": 74.9610489380056
+    },
+    {
+      "point": "group0(G=16,S=16) after_pmul_first_ct",
+      "level": 1,
+      "log2_max_noise": 29.637415653744814,
+      "headroom_bits_to_Q_over_2t": 49.37389964303016
+    },
+    {
+      "point": "group0(G=16,S=16) after_group_sum",
+      "level": 1,
+      "log2_max_noise": 31.778762565930254,
+      "headroom_bits_to_Q_over_2t": 47.23255273084472
+    },
+    {
+      "point": "group0(G=16,S=16) after_modswitch_to_level0",
+      "level": 0,
+      "log2_max_noise": 3.920705207028809,
+      "headroom_bits_to_Q_over_2t": 30.090610062873836
+    },
+    {
+      "point": "group0(G=16,S=16) after_rotate_sum",
+      "level": 0,
+      "log2_max_noise": 7.718011982585647,
+      "headroom_bits_to_Q_over_2t": 26.293303287316995
+    },
+    {
+      "point": "group0(G=16,S=16) before_mask",
+      "level": 0,
+      "log2_max_noise": 7.718011982585647,
+      "headroom_bits_to_Q_over_2t": 26.293303287316995
+    },
+    {
+      "point": "group0(G=16,S=16) after_mask_add",
+      "level": 0,
+      "log2_max_noise": 7.717831400213027,
+      "headroom_bits_to_Q_over_2t": 26.293483869689616
+    }
+  ],
+  "headroom_gate_bits": 5,
+  "headroom_gate": "passed: min headroom of the final ciphertexts (after mask add) 26.29 bits \u003e= 5 (before mask 26.29)",
+  "memory_checkpoints": [
+    {
+      "name": "after_fv_setup",
+      "vm_hwm_kb": 607124,
+      "total_alloc_kb": 1115435,
+      "heap_alloc_kb": 1051620
+    },
+    {
+      "name": "after_cipher_init_and_enckey",
+      "vm_hwm_kb": 1115100,
+      "total_alloc_kb": 2141421,
+      "heap_alloc_kb": 2077606
+    },
+    {
+      "name": "after_crypt",
+      "vm_hwm_kb": 2600740,
+      "total_alloc_kb": 5149262,
+      "heap_alloc_kb": 1601807
+    },
+    {
+      "name": "after_keystream_modswitch",
+      "vm_hwm_kb": 2600744,
+      "total_alloc_kb": 5186144,
+      "heap_alloc_kb": 1638689
+    },
+    {
+      "name": "after_weight_plaintexts",
+      "vm_hwm_kb": 2599184,
+      "total_alloc_kb": 5196394,
+      "heap_alloc_kb": 1126790
+    },
+    {
+      "name": "after_noise_checks",
+      "vm_hwm_kb": 2599184,
+      "total_alloc_kb": 5265266,
+      "heap_alloc_kb": 1195662
+    },
+    {
+      "name": "after_online_stages",
+      "vm_hwm_kb": 2599184,
+      "total_alloc_kb": 5291419,
+      "heap_alloc_kb": 1221816
+    },
+    {
+      "name": "after_mask_tests",
+      "vm_hwm_kb": 2599184,
+      "total_alloc_kb": 5399015,
+      "heap_alloc_kb": 1329411
+    },
+    {
+      "name": "after_correctness",
+      "vm_hwm_kb": 2599184,
+      "total_alloc_kb": 5425122,
+      "heap_alloc_kb": 1355518
+    }
+  ],
+  "correctness": {
+    "bit_exact": true,
+    "integer_to_logit": "logit = integer / 2^14 (bias included server-side)",
+    "max_abs_integer_diff": 0,
+    "max_abs_logit_error_vs_float_plaintext": 0.039200967865541614,
+    "max_abs_quantisation_error_integer_sim_vs_float (no HE)": 0.039200967865541614,
+    "mean_abs_integer_diff": 0,
+    "mean_abs_logit_error_vs_float_plaintext": 0.010893837564697972,
+    "rows": 16,
+    "rows_not_equal_to_integer_simulation": 0
+  },
+  "mask_tests": {
+    "chi_square_masked_nonoutput_slots": {
+      "df": 63,
+      "p": 0.4831057507431491,
+      "samples": 15360,
+      "stat": 62.808350471529764
+    },
+    "chi_square_unmasked_nonoutput_slots": {
+      "df": 63,
+      "p": 0,
+      "samples": 15360,
+      "stat": 523442.4913571597
+    },
+    "test5_masked_equals_unmasked_plus_bias_mismatching_lanes": 0,
+    "test5_negative_control_raw_unscaled_mask_mismatching_lanes": 1024,
+    "weight_recovery_masked_exact (chance ~ targets/t)": 0,
+    "weight_recovery_targets_nonoutput_slots": 512,
+    "weight_recovery_unmasked_exact": 512
+  },
+  "crypt_calls": 1,
+  "row_set": "first 16 rows (CNP_ROWS=16)",
+  "row_set_estimate_s": 942.4037280000001,
+  "vm_hwm_kb_end": 2599184,
+  "total_alloc_kb_end": 5425242
+}
