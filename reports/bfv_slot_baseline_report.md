@@ -209,6 +209,8 @@ Peak RSS, 16 rows, `CNP_ARMS=cnp`. CONFIRMED-RAN.
 
 All numbers are from one session on this laptop: `A/laptop_20261103T205043Z/`, repo SHA aa35277, REPS=5 medians, stratified 4096 rows for slot and CNP-B (all 98 frauds), 128af, t = 33,292,289, (8, 6), LogN 10 and 12. CONFIRMED-RAN. Headline values: `comparison.json`, `comparison.md`. Ranges: `replicate_ranges.json`, from `scripts/bfv_slot_baseline/replicate_ranges.py`.
 
+Run built from aa35277; after the history rewrite this is dd4286f, with identical code under tools/, scripts/ and third_party/patches/.
+
 **Machine state.** AC on all 16 arms, at start and end of each (`machine_state_start.json`, `machine_state_end.json`); the battery was charging. Governor `powersave`, which needs root to change. Load average 1.0 to 2.8. Chrome stayed open. Other processes used a median of 0.61 cores, p95 1.78 and max 2.34 of 20, never reaching the abort limit of 4 fixed before the run (`contention_monitor.jsonl`). The harness used about 1 core. Parameters are in `param_state` in each slot JSON and `param_set` in each CNP JSON.
 
 **How to read the ranges.** Each arm ran twice. Slot: `slot`, `slot_repeat`. CNP-B: `cnp`, and the same CNP code inside the `halfboot` arm (16 rows, so only 4 output cts at LogN 10 and 1 at LogN 12). A range is the lowest and highest winner ratio over all pairs. Times are milliseconds per transaction, amortized over full batches.
