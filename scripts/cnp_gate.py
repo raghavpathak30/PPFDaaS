@@ -4,6 +4,10 @@
 Reproduce:  python scripts/cnp_gate.py [--artifacts DIR]
 Writes:     artifacts/cnp_gate.json   (docs/cnp_gate.md is written by hand from it)
 
+            python scripts/cnp_gate.py --add-bias-margin
+            adds only the "value_margin_with_bias" section to an existing cnp_gate.json, leaving
+            every existing byte as it was (asserted). Seconds, not the ~8 min of a full run.
+
 Plaintext only. Nothing here says anything about real HE timing or noise.
 Inputs (read-only): X_test.npy, y_test.npy, weights.npy, model_weights.bin
 (+ X_train.npy for the centering fallback).
@@ -41,6 +45,27 @@ PARAM_SOURCES = {
 }
 
 LOG_RANGE = range(4, 15)
+
+# --- Value-margin-with-bias section: parameters read from the vendored RtF reference (pinned 105fc73) ---
+# The CNP-B harness adds bias_q = round_half_even(bias * dx * dw) mod t on the server, inside the mask
+# (rtf_cnp_test.go:241; slot: rtf_slot_test.go:232), so the decrypted integer is sum(xq*wq) + bias_q and
+# the worst-case bound must include |bias_q|. scripts/cnp_b/prepare_inputs.py:45,48 already uses this rule.
+RTF_DIR = REPO / "third_party" / "RtF-Transciphering" / "ckks_fv"
+VENDORED = {
+    # HERA: the CNP harness uses RtFHeraParams[2] ("128af", rtf_cnp_setup_test.go:76-81).
+    "hera": {"t": 33292289, "file": "rtf_params.go", "line": 414, "expect": "PlainModulus: 33292289",
+             "what": "RtFHeraParams[2] (128af).PlainModulus"},
+    # Rubato: RtFRubatoParams[0] (rtf_params.go:545) has no PlainModulus field; the harness sets
+    # RubatoParams[RUBATO128L].PlainModulus over it (rtf_cnp_setup_test.go:113).
+    "rubato": {"t": 0x1FC0001, "file": "fv_rubato.go", "line": 65, "expect": "PlainModulus: 0x1fc0001",
+               "what": "RubatoParams[RUBATO128L].PlainModulus",
+               "block_size": {"value": 64, "line": 64, "expect": "Blocksize:    64"},
+               "rounds": {"value": 2, "line": 66, "expect": "NumRound:     2"},
+               "noise_bound": {"value": RUBATO_BOUND,
+                               "source": "reference sampler rejects |e| > int(6*sigma) = 9: ring/ring_sampler_gaussian.go:105-121, "
+                                         "called with bound := int(6*sigma) at ckks_fv/RtF_bench_test.go:767"}},
+}
+CHOSEN_PAIR = (8, 6)  # docs/cnp_gate.md "Chosen pair for both ciphers"
 
 
 # ----------------------------------------------------------------- helpers
@@ -241,6 +266,133 @@ def fallbacks(Xte, y, w, b, auc0, t, noise_seeds, Xtr):
     return out
 
 
+# ----------------------------------------------------------------- 4b. value margin with the bias
+def check_vendored():
+    """Confirm the constants in VENDORED against the pinned RtF checkout, if it is present.
+    third_party/ is gitignored, so on a host without it this records 'not checked' instead of failing."""
+    out = {}
+    for name, v in VENDORED.items():
+        p = RTF_DIR / v["file"]
+        items = [("t", v["line"], v["expect"])]
+        if name == "rubato":
+            items += [("block_size", v["block_size"]["line"], v["block_size"]["expect"]),
+                      ("rounds", v["rounds"]["line"], v["rounds"]["expect"])]
+        rec = {"file": f"third_party/RtF-Transciphering/ckks_fv/{v['file']}"}
+        if not p.exists():
+            rec["verified"] = "not checked: third_party/RtF-Transciphering absent (run third_party/fetch_rtf.sh)"
+        else:
+            lines = p.read_text().splitlines()
+            for key, ln, exp in items:
+                got = lines[ln - 1].strip()
+                assert got.startswith(exp), f"{rec['file']}:{ln} is {got!r}, expected {exp!r}"
+            rec["verified"] = True
+        rec["lines"] = {key: ln for key, ln, _ in items}
+        out[name] = rec
+    assert VENDORED["hera"]["t"] == T_HERA and VENDORED["rubato"]["t"] == T_RUBATO, "client t != vendored RtF t"
+    return out
+
+
+def bias_margin_section(X, w, b, cnp_b):
+    """Worst-case and empirical value margins with the server-side bias, for every (dx,dw) cell of both
+    ciphers, computed from the existing sweep cells (their no-bias bounds are re-derived and asserted equal).
+
+    Worst case, per output (|x_j| <= 1, so |xq_j| <= dx; Rubato adds keystream noise |e_j| <= B = 9):
+        |sum_j (xq_j + e_j) * wq_j + bias_q| <= sum_j |wq_j| * (dx + B) + |bias_q|   must be <= t//2
+    margin_bits = log2((t//2) / bound). Empirical margin = log2((t//2) / max_rows |s + bias_q|)."""
+    sec = {"rule": "safe <=> sum_j |wq_j|*(ceil(dx) + B) + |bias_q| <= t//2;  B = 0 (HERA), 9 (Rubato);  "
+                   "bias_q = round_half_even(bias * dx * dw)",
+           "why_bias": "the CNP-B server adds bias_q mod t inside the mask (rtf_cnp_test.go:241, rtf_slot_test.go:232), "
+                       "so it is part of the integer that must not wrap mod t. docs/cnp_gate.md:59-61 omitted it.",
+           "bias": b, "vendored_params": check_vendored(), "params": VENDORED, "chosen_pair": list(CHOSEN_PAIR)}
+    seeds = [SEED + i for i in range(5)]  # the sweep's seeds (main), so Rubato's noise draws are the same
+    for name in ("hera", "rubato"):
+        t = VENDORED[name]["t"]
+        th = t // 2
+        B = RUBATO_BOUND if name == "rubato" else 0
+        cells, n_pass_old, n_pass_new, flipped = [], 0, 0, []
+        for c in cnp_b[name]["cells"]:
+            lx, lw = c["log2_dx"], c["log2_dw"]
+            dx, dw = 2.0 ** lx, 2.0 ** lw
+            wq = round_half_even(w * dw)
+            wc = float(np.sum(np.abs(wq) * (np.ceil(dx) + B)))
+            assert wc == c["worst_case_bound"], (name, lx, lw, wc, c["worst_case_bound"])
+            bq = int(round_half_even(np.float64(b) * dx * dw))
+            wcb = wc + abs(bq)
+            safe_b = wcb <= th
+            old_ok = c["worst_case_safe"] and c["abs_delta_auc"] <= 1e-3
+            new_ok = safe_b and c["abs_delta_auc"] <= 1e-3
+            n_pass_old += old_ok
+            n_pass_new += new_ok
+            if old_ok and not new_ok:
+                flipped.append([lx, lw])
+            cells.append({"log2_dx": lx, "log2_dw": lw, "bias_q": bq, "worst_case_bound_no_bias": wc,
+                          "worst_case_bound_with_bias": wcb, "worst_case_safe_with_bias": bool(safe_b),
+                          "worst_case_margin_bits_no_bias": math.log2(th / wc),
+                          "worst_case_margin_bits_with_bias": math.log2(th / wcb)})
+        lx, lw = CHOSEN_PAIR
+        dx, dw = 2.0 ** lx, 2.0 ** lw
+        cc = next(c for c in cnp_b[name]["cells"] if (c["log2_dx"], c["log2_dw"]) == CHOSEN_PAIR)
+        mc = next(c for c in cells if (c["log2_dx"], c["log2_dw"]) == CHOSEN_PAIR)
+        xq = round_half_even(X * dx)
+        wq = round_half_even(w * dw)
+        bq = mc["bias_q"]
+        if B == 0:
+            s = xq @ wq
+            assert np.abs(s).max() < 2 ** 53
+            emp_nb, emp_b = float(np.abs(s).max()), float(np.abs(s + bq).max())
+        else:
+            emp_nb = emp_b = 0.0
+            for sd in seeds:
+                r = np.random.default_rng(sd)
+                e = np.clip(np.rint(r.normal(0, RUBATO_SIGMA, size=xq.shape)), -RUBATO_BOUND, RUBATO_BOUND)
+                s = (xq + e) @ wq
+                emp_nb, emp_b = max(emp_nb, float(np.abs(s).max())), max(emp_b, float(np.abs(s + bq).max()))
+        assert emp_nb == cc["emp_max_abs_s"], (name, emp_nb, cc["emp_max_abs_s"])  # reproduces the stored sweep
+        sum_wq = float(np.abs(wq).sum())
+        sec[name] = {
+            "t": t, "t_half": th, "noise_bound_B": B,
+            "chosen_pair": {
+                "log2_dx": lx, "log2_dw": lw, "sum_abs_wq": sum_wq, "x_bound": float(np.ceil(dx)), "bias_q": bq,
+                "arithmetic": (f"{sum_wq:.0f} * ({np.ceil(dx):.0f} + {B}) = {mc['worst_case_bound_no_bias']:.0f}; "
+                               f"+ |{bq}| = {mc['worst_case_bound_with_bias']:.0f}; "
+                               f"log2({th} / {mc['worst_case_bound_with_bias']:.0f}) = "
+                               f"{mc['worst_case_margin_bits_with_bias']:.4f} bits"),
+                "worst_case_bound_no_bias": mc["worst_case_bound_no_bias"],
+                "worst_case_bound_with_bias": mc["worst_case_bound_with_bias"],
+                "worst_case_ratio_with_bias": mc["worst_case_bound_with_bias"] / th,
+                "worst_case_margin_bits_no_bias": mc["worst_case_margin_bits_no_bias"],
+                "worst_case_margin_bits_with_bias": mc["worst_case_margin_bits_with_bias"],
+                "worst_case_safe_with_bias": mc["worst_case_safe_with_bias"],
+                "empirical_max_abs_no_bias": emp_nb,
+                "empirical_margin_bits_no_bias": math.log2(th / max(emp_nb, 1.0)),
+                "empirical_max_abs_with_bias": emp_b,
+                "empirical_margin_bits_with_bias": math.log2(th / max(emp_b, 1.0)),
+                "empirical_scope": ("56,962 test rows" + ("" if B == 0 else ", 5 noise seeds (the sweep's), max over seeds")
+                                    + "; observed on this test set, NOT a guarantee for unseen inputs"),
+            },
+            "n_passing_no_bias": int(n_pass_old), "n_passing_with_bias": int(n_pass_new),
+            "passing_cells_unsafe_once_bias_included": flipped,
+            "cells": cells,
+        }
+    return sec
+
+
+def add_bias_margin(art: Path, out: Path):
+    """Append value_margin_with_bias to an existing cnp_gate.json without touching its other bytes."""
+    old = out.read_text()
+    R = json.loads(old)
+    assert "value_margin_with_bias" not in R, f"{out} already has value_margin_with_bias; not overwriting"
+    assert json.dumps(R, indent=1) == old, "existing JSON does not round-trip byte-for-byte; refusing to rewrite"
+    X, y, w, b = load(art)
+    assert b == R["bias"], (b, R["bias"])
+    R["value_margin_with_bias"] = bias_margin_section(X, w, b, R["cnp_b"])
+    new = json.dumps(R, indent=1)
+    head = old[:-2]  # everything before the final "\n}"
+    assert old.endswith("\n}") and new.startswith(head + ",\n"), "existing bytes would change"
+    out.write_text(new)
+    return R["value_margin_with_bias"]
+
+
 # ----------------------------------------------------------------- 5. mask
 def mask_check(X, w, t, rng):
     N, L = 8192, 32
@@ -303,8 +455,18 @@ def main():
     ap.add_argument("--artifacts", default=str(REPO / "artifacts"))
     ap.add_argument("--out", default=str(REPO / "artifacts" / "cnp_gate.json"))
     ap.add_argument("--force-fallbacks", action="store_true", help="exercise fallbacks even if a pair passes")
+    ap.add_argument("--add-bias-margin", action="store_true",
+                    help="only append value_margin_with_bias to the existing --out JSON (existing bytes unchanged)")
     a = ap.parse_args()
     art = Path(a.artifacts)
+    if a.add_bias_margin:
+        sec = add_bias_margin(art, Path(a.out))
+        for name in ("hera", "rubato"):
+            c = sec[name]["chosen_pair"]
+            print(f"{name}: {c['arithmetic']}; empirical with bias {c['empirical_margin_bits_with_bias']:.4f} bits; "
+                  f"passing {sec[name]['n_passing_no_bias']} -> {sec[name]['n_passing_with_bias']} with bias")
+        print("appended value_margin_with_bias to", a.out)
+        return
     rng = np.random.default_rng(SEED)
 
     X, y, w, b = load(art)
@@ -338,6 +500,8 @@ def main():
 
     R["mask"] = mask_check(X, w, T_HERA, rng)
     print("mask:", R["mask"])
+
+    R["value_margin_with_bias"] = bias_margin_section(X, w, b, R["cnp_b"])  # last, as --add-bias-margin appends it
 
     Path(a.out).write_text(json.dumps(R, indent=1))
     print("wrote", a.out)

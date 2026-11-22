@@ -12,14 +12,20 @@ import (
 // "Transciphering Framework for Approximate Homomorphic Encryption", ASIACRYPT
 // 2021) with post-analysis parameters.
 //
-// Post-attack parameter set (safe as of 2026):
+// Parameter set (Par-128a/Par-128as of the paper, Table 4):
 //   - State size m = 16
-//   - Rounds r = 5 (matches RtFHeraParams[3] "128as", the HE-side 128-bit
-//     target in third_party/RtF-Transciphering/ckks_fv/rtf_params.go. The
-//     original HERA-16 spec used r=4; this module matches the server.)
+//   - Rounds r = 5: the paper's round count for 128-bit cipher security
+//     (§4.3 Table 3; Table 4 Par-128a/as). r=4 is the paper's 80-bit setting
+//     (Par-80*), not a 128-bit one. RtFHeraParams entries carry no round
+//     count. ckks_fv passes r=5 in BenchmarkRtFHera128as/128af
+//     (RtF_bench_test.go:46,51), and this module matches that.
 //   - Plaintext modulus t = 33292289 = 0x1fc0001 (25-bit prime), the
 //     PlainModulus of RtFHeraParams[2] ("128af") and [3] ("128as") at
-//     third_party/RtF-Transciphering/ckks_fv/rtf_params.go:414,482. It is a
+//     third_party/RtF-Transciphering/ckks_fv/rtf_params.go:414,482. The paper
+//     constrains t but gives no integer: ceil(log2 t)=25 (Table 4), t prime,
+//     t = 1 mod 2N (§2.1), gcd(3, t-1)=1 (§4.1), and t > 2^16 (§4.3). This t
+//     satisfies all of them (t-1 = 127*2^18). The specific prime is ckks_fv's
+//     choice. It is a
 //     compile-time const (like RubatoModulus) so the compiler can strength-
 //     reduce `% HeraModulus`; TestHeraModulusMatchesCkksFV pins it to the
 //     reference value. An earlier version used t = 2^26, which is not

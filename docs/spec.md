@@ -4323,14 +4323,33 @@ or works.
 80-bit cipher security, 4 slots) OOM-killed this 15 GB host (exit 137) during the
 offline setup phase — before the online transcipher phase was ever reached.
 
-**[CONFIRMED-SOURCE] Literature: confirmed dead end.** Both routes to a literature
-anchor were exhausted:
+**Literature anchors (2026-11-22 update — the RtF/HERA paper is now in hand).**
 
-1. **RtF Table 5** (eprint 2020/1335, Cho et al. ASIACRYPT 2021): HTTP 403 on all
-   accessible mirrors — eprint.iacr.org, Springer/ASIACRYPT 2021 proceedings, ASIACRYPT
-   slides, eprint 2025/669 (CHES SoK), eprint 2025/071. This is not "not yet fetched"
-   but a confirmed dead end via public web access; institutional library or author
-   contact is the only remaining path.
+1. **RtF Table 5** [CONFIRMED-SOURCE: Cho et al., "Transciphering Framework for
+   Approximate Homomorphic Encryption (Full Version)", ASIACRYPT 2021, eprint
+   2020/1335, PDF dated 2021-09-16, 46 pp., local copy `~/ppfdaas_refs/hera_2020_1335.pdf`,
+   sha256 `9f24707e0c6bf56eadf7f3a20119415931fce2bcc03ad26b8d9694e2074a85f9`; §5, §5.2, Table 5].
+   The earlier record here ("HTTP 403 on every mirror, confirmed dead end") is
+   superseded: that was a web-access failure, and the paper has since been read
+   directly. Table 5's server-side rows for the sets this repo uses. 80as and 128as use `RtFHeraParams[3]`; 128af corresponds to Par-128a (see §8.8):
+
+   | Set | Offline latency | Online latency | Server throughput |
+   |---|---|---|---|
+   | Par-80as | 68.31 s | 14.14 s | 0.0020 KB/s |
+   | Par-128as | 84.02 s | 14.31 s | 0.0019 KB/s |
+   | Par-128a | 120.7 s | 20.88 s | 5.077 KB/s |
+
+   Measured single-threaded on an AMD Ryzen 7 2700X @ 3.70 GHz with 64 GB memory,
+   server code in Go 1.16.4 on Lattigo (§5). The paper splits the phases
+   differently from this repo's columns (§5.2): **offline** = randomized key
+   schedule + homomorphic evaluation of HERA + SlotToCoeff^FV; **online** = scale-up
+   to FV ciphertext space + homomorphic subtraction + rescale to the lowest level +
+   HalfBoot. Latency is time to the first HE ciphertext. So these figures are a
+   citable literature anchor for the server-side cost, but they do **not** map 1:1
+   onto `online_transcipher_ms` (BFV evaluation of HERA, which the paper counts as
+   offline) or `repacking_ms`, and they come from other hardware. They are recorded
+   here and **not** copied into `artifacts/hhe_breakeven.json`, whose PENDING cells
+   stay PENDING until this repo measures them. The paper reports no RAM figure.
 
 2. **Presto** (arXiv 2507.00367): §V measures **CLIENT-SIDE** HERA stream-key generation
    on bank edge hardware (AVX2 i7-9700 desktop, D3 FPGA). No server-side HE evaluation
@@ -4347,7 +4366,10 @@ bandwidth, §8.10 client-CPU crossover map) do not depend on.
 
 ### What IS known [CONFIRMED-SOURCE: ckks_fv/rtf_params.go, RtFHeraParams[3], lines 479–542]
 
-**HERA-80as HE parameter set** (the 128as config — see naming note below):
+**HERA-80as HE parameter set** (`RtFHeraParams[3]`, labelled "128as" in
+`rtf_params.go`. The same entry is used with r=4 by `BenchmarkRtFHera80as` and
+with r=5 by `BenchmarkRtFHera128as`, `RtF_bench_test.go:31,51`. See the naming
+note below):
 
 | Parameter | Value | Source |
 |-----------|-------|--------|
@@ -4360,6 +4382,7 @@ bandwidth, §8.10 client-CPU crossover map) do not depend on.
 | SineEvalModuli | 11 primes × 60-bit = 660 bits | lines 504–516 |
 | CoeffsToSlotsModuli | **4 primes × 58-bit = 232 bits** | lines 520–527 |
 | ArcSineDeg | 7 | line 540 |
+| Total ⌈log₂ QP⌉ (all 28 primes, incl. the 22-bit DiffScaleModulus) | 1533 | summed over lines 486–527. Equals Table 4's ⌈log QP⌉ for Par-80as/Par-128as (Cho et al. §5.1) |
 
 **HalfBoot depth** [CONFIRMED-SOURCE]:
 - CoeffsToSlots: **4 levels** (4 CoeffsToSlotsModuli primes)
@@ -4380,12 +4403,33 @@ Minimum cloud tier for HERA-80as: **r7i.4xlarge (128 GiB)**. r7i.2xlarge (64 GiB
 has no margin. Spot pricing and exact on-demand price for r7i.4xlarge/8xlarge not
 yet pulled.
 
-**Naming note:** ALL RtFHeraParams entries (128f, 128s, 128af, 128as) use LogN=16.
-"80"/"128" in benchmark names (`BenchmarkRtFHera80as` etc.) = symmetric-cipher
-security level. "128" in the HE parameter-set name (128as) = HE parameter family
-label, NOT the ring security level. Sparse LogSlots=4 (16 active slots) does NOT
-reduce RAM: BSGS CoeffsToSlots Galois keys scale with N, not with LogSlots.
-[CONFIRMED-SOURCE: ckks_fv/rtf_params.go]
+**Naming note** [CONFIRMED-SOURCE: Cho et al. 2021 (eprint 2020/1335 full version)
+§4.1, §5.1, Table 4; `ckks_fv/rtf_params.go`; `ckks_fv/RtF_bench_test.go:15-52`].
+
+- **Paper's set names.** The number in a set name is λ, the security level of
+  the HERA cipher. §4.1 says "a stream cipher HERA for λ-bit security", and the λ
+  column of Table 4 is 80 for every Par-80* set and 128 for every Par-128* set.
+  So the paper *does* give Par-128* a security level: 128 bits on the cipher side.
+- **HE side.** §5.1 says: "We use 128-bit secure HE parameters for all parameter
+  sets". The HE side is therefore 128-bit for Par-80* and Par-128* alike, and
+  Table 4's HE columns are identical within each Par-80x / Par-128x pair. This is
+  the authors' claim. It has not been re-derived in this repo.
+- **ckks_fv's labels.** The `RtFHeraParams` entries (128f, 128s, 128af, 128as)
+  hold only HE parameters. The round count is a separate benchmark argument, and
+  one entry serves both cipher levels. For example, `RtFHeraParams[3]` runs with
+  r=4 in `BenchmarkRtFHera80as` and with r=5 in `BenchmarkRtFHera128as`. The
+  cipher's 128-bit level comes from r=5 (Table 3), not from the entry.
+- **What the paper does not settle.** The paper does not name ckks_fv's entries.
+  It does not say whether "128" in an `RtFHeraParams` label refers to the 128-bit
+  HE claim (which holds for every entry) or to the λ of the Par-128* sets.
+- **Withdrawn.** The earlier wording "'128' = HE parameter family label, NOT a
+  security level" is withdrawn.
+
+ALL RtFHeraParams entries use LogN=16. "80"/"128" in benchmark names
+(`BenchmarkRtFHera80as` etc.) = cipher security level λ. Sparse LogSlots=4 (16
+active slots) does NOT reduce RAM: BSGS CoeffsToSlots Galois keys scale with N,
+not with LogSlots. On "f": the paper has no "f" suffix. See §8.8,
+"HERA parameters vs. the paper".
 
 See `tools/transciphering/README.md` and `RESEARCH_FINDINGS_v3.md §B`.
 
@@ -4471,8 +4515,8 @@ See `tools/transciphering/README.md §Cipher: HERA-16` for the full parameter ta
 
 | Cipher | Decision | Reason |
 |---|---|---|
-| HERA-16 (m=16, r=5, t=0x1fc0001; `HeraModulus` in `tools/transciphering/cipher/hera.go`) | **SELECTED** | No attack known to us at these parameters as of 2026-09-29 (no source in this repo analyses HERA r=5 at the 128as/128af params) |
-| Rubato (family) | NOT SELECTED; Rubato-128L implemented as a benchmarking comparison point only (§8.8.1) | Grassi et al. CRYPTO 2023 — 5/6 family members below claimed security for ≥25% of modulus choices. Rubato-128L is not covered by the Grassi et al. (CRYPTO 2023) attack bound (§8.8.1) |
+| HERA-16 (m=16, r=5, t=0x1fc0001; `HeraModulus` in `tools/transciphering/cipher/hera.go`) | **SELECTED** | Designers' claim: 128-bit cipher security at r=5 for t > 2^16 (Cho et al. 2021, §4.3 Table 3 and App. B Tables 7, 10–12; Table 4 Par-128a/Par-128as). No third-party analysis of HERA is cited in this repo. See "HERA parameters vs. the paper" below |
+| Rubato (family) | NOT SELECTED; Rubato-128L implemented as a benchmarking comparison point only (§8.8.1) | Grassi et al. CRYPTO 2023 (eprint 2023/822) break 5 of 6 variants (80S/M/L, 128S/M) for composite q with small factors: 25%–58.47% of q per variant, Table 4; ≥25% overall, abstract and §1.2. They have no attack on Rubato-128L: m_min > m_max, 0% of q (§7.1, Table 4). Prime q is immune to the attack (§8.1), and our q is prime (§8.8.1) |
 | Elisabeth-4 | NOT USED | Broken (Cosseron et al.) |
 | Kreyvium/Trivium | Not considered | Bit-oriented, poor fit for large-modulus CKKS inputs |
 
@@ -4481,56 +4525,171 @@ The cipher is treated as a replaceable module (CipherBackend interface in
 can be substituted without changing the transciphering protocol.
 
 **Symmetric assumption note:** HHE trades bandwidth reduction for a younger,
-less-audited symmetric security assumption. The HERA algebraic cryptanalysis is
-ongoing research (as of 2026); this paper states this trade-off explicitly and
-pins parameters to `RtFHeraParams[3]` "128as" (r=5) as defined in the vendored
-`ckks_fv` checkout (`third_party/RtF-Transciphering/ckks_fv/rtf_params.go:476`;
+less-audited symmetric security assumption. This paper states this trade-off
+explicitly and pins parameters to `RtFHeraParams[3]` "128as" (r=5) as defined
+in the vendored `ckks_fv` checkout (`third_party/RtF-Transciphering/ckks_fv/rtf_params.go:476`;
 r=5 per `BenchmarkRtFHera128as`, `RtF_bench_test.go:51`; pinned SHA
 `105fc73115b56f1d6ff357029c7682b19a6d8510`).
+
+**HERA parameters vs. the paper** [CONFIRMED-SOURCE: Cho et al. 2021, eprint
+2020/1335 full version, sha256 `9f24707e…a85f9`. See §8.3 for the full
+citation]. "Paper" means the Par-128a / Par-128as rows of Table 4 (§5.1) unless
+another section is named.
+
+| Item | This repo | Paper | Verdict |
+|---|---|---|---|
+| Cipher security λ | 128 (target) | 128 (Table 4 λ column; §4.1 "HERA for λ-bit security") | matches |
+| Rounds r | 5 (`hera.go:62`) | 5 (Table 4). Table 3 (§4.3) gives the rounds needed at λ=128: trivial linearization 5, GCD 1, Gröbner basis 5, interpolation 5, linear cryptanalysis 4. The maximum is 5. Same values in App. B Tables 7, 10, 11, 12 | matches |
+| r=4 | not used | r=4 is the Par-80* setting (λ=80, Table 4). For λ=128, Table 3 says 4 rounds suffice only against linear cryptanalysis | r=4 is the 80-bit spec, not a 128-bit spec |
+| ⌈log₂ t⌉ | 25 (t = 33292289, log₂ t ≈ 24.989) | 25 for Par-128a/as (Table 4) | matches |
+| Exact t | 33292289 = 0x1fc0001 | **not given**. The paper specifies only ⌈log t⌉ and the conditions below | ckks_fv's choice (`rtf_params.go:414,482`) |
+| t prime | yes (checked) | required: §2.1 footnote 5 (primitive root needs odd prime t ≡ 1 mod M); §4.2 and App. D (MDS over Z_t for prime t > 17); App. C ("t is prime") | satisfies |
+| t ≡ 1 (mod M), M = 2N | t − 1 = 127·2^18, so t ≡ 1 mod 2^17 at N = 2^16 | §2.1: "t ≡ 1 (mod M) throughout this paper" | satisfies |
+| gcd(3, t−1) = 1 | t − 1 ≡ 1 (mod 3) | §4.1, needed for Cube S-box bijectivity | satisfies |
+| t > 2^16 | yes | §4.3 (assumption behind Table 3); App. B.1, B.2, B.3, B.5 | satisfies |
+| log N | 16 | 16 | matches |
+| FV slots ℓ | 128af: 2^LogN = 2^16 (`RtF_bench_test.go:131-132`); 128as: 2^LogSlots = 2^4 (`:134`) | Par-128a log ℓ = 16; Par-128as log ℓ = 4 | matches |
+| ⌈log₂ QP⌉ | 1533 (summed over all 28 primes of `RtFHeraParams[2]` and `[3]`) | 1533 | matches |
+| Δ_CKKS | 2^45 | 2^45 | matches |
+| q0/Δ′ | `MessageRatio` 16 | 16 | matches |
+| (h, K, R, d_sin, d_arcsin) | (192, 25, 2, 63, 7): `H`, `SinRange`, `SinRescal`, `SinDeg`, `ArcSineDeg` | (192, 25, 2, 63, 7) for arcsin sets (Table 4 caption, §5.1) | matches |
+| HE security | not re-derived here | "We use 128-bit secure HE parameters for all parameter sets" (§5.1) | authors' claim only |
+
+**What part of t is paper-sourced.** The paper fixes these properties of t:
+it is prime, ⌈log₂ t⌉ = 25 for the arcsin sets, t ≡ 1 (mod 2N), gcd(3, t−1) = 1,
+and t > 2^16. §3.3 adds that t must exceed the precision bits, with Δ′/q0 ≈ δ/t.
+It does not name an integer. The particular prime 33292289 = 127·2^18 + 1 is
+ckks_fv's choice among primes with these properties.
+
+**On "128af" — no "f" set exists in the paper.** Table 4 has exactly eight sets:
+Par-{80,128}{,a,s,as}. §5.1 defines the suffixes: "a" = inverse-sine (arcsin)
+evaluation, "s" = small number of slots (16). The "f" in ckks_fv's 128f/128af
+labels is ckks_fv's own naming. `rtf_params.go:409` says "Use full coefficients
+for data encoding". It corresponds to the paper's *unsuffixed* full-slot sets
+(log ℓ = log N), not to an extra variant. 128af has the same values as
+**Par-128a** in every Table 4 column above, with r=5 supplied by
+`BenchmarkRtFHera128af` (`RtF_bench_test.go:46`). The Rubato paper's §5 independently
+says it uses "the RtF parameter Par-128a in [25]", and ckks_fv labels Rubato's HE
+parameter set "with RtF param 128af" (`rtf_params.go:89`).
+
+- **What carries over to 128af.** The paper's claims for Par-128a: 128-bit
+  cipher security at r=5 (Table 3) and 128-bit HE parameters (§5.1). Both are
+  stated by the authors and not re-derived here.
+- **What does not carry over.** The paper says nothing about:
+  - the exact choices inside ckks_fv: t = 33292289, the specific RNS primes,
+    `DiffScaleModulus`, `SinType: Cos1`, `MaxN1N2Ratio`, and the CtS radix
+    (`RtF_bench_test.go:46` passes radix 2);
+  - this repo's LogN 16→10 toy reductions, which the paper's claims do not cover
+    at all;
+  - Table 5's performance figures, which were measured with the authors' code on
+    their hardware, not with this pinned checkout.
 
 ### §8.8.1 Rubato-128L benchmarking addendum (2026-08-19)
 
 Phase 7.2 originally set the whole Rubato family aside on the basis of
-Grassi et al. That attack applies to five of the six family members; it does
-not establish a bound for Rubato-128L. Rubato-128L was later implemented
+Grassi et al. That attack breaks five of the six family members. The paper
+reports no attack on Rubato-128L (see "Grassi et al. on Rubato-128L" below).
+Rubato-128L was later implemented
 (`tools/transciphering/cipher/rubato.go`), passes its known-answer test
 against the pinned `ckks_fv` reference (`TestRubatoKnownAnswer`) and the
 toy-scale HE correctness harness, and is benchmarked as a comparison point
 against HERA-16. HERA-16 remains the selected cipher; this is not a reversal
 of that selection. This subsection
-states exactly what parameter set was implemented and whether it is covered
-by the Grassi et al. attack bound cited above.
+states exactly what parameter set was implemented and what Grassi et al.
+establish about it.
 
 **Parameters as implemented, read directly from
 `tools/transciphering/cipher/rubato.go` (lines 78-86), which in turn cites
-`third_party/RtF-Transciphering/ckks_fv/fv_rubato.go:48-53`,
+`third_party/RtF-Transciphering/ckks_fv/fv_rubato.go:62-68`,
 `RubatoParams[RUBATO128L]` at the pinned checkout
-`105fc73115b56f1d6ff357029c7682b19a6d8510`:**
+`105fc73115b56f1d6ff357029c7682b19a6d8510`. The earlier citation `:48-53`
+pointed at the RUBATO128S entry (n=16, r=5, q=0x3ee0001) and is corrected here.
+The values below were always the 128L ones.**
 
-| Parameter | Value |
-|---|---|
-| Block (state) size n | 64 |
-| Rounds r | 2 |
-| Plaintext modulus q | `0x1fc0001` (not a power of two; NTT-friendly prime) |
-| Gaussian noise std dev σ | 1.6356633496458739795537788457309656607510203877762320964302959 |
-| Output length | n−4 = 60 elements |
+The table compares each value with Par-128L in the Rubato paper
+[CONFIRMED-SOURCE: Ha et al., "Rubato: Noisy Ciphers for Approximate Homomorphic
+Encryption (Full Version)", Eurocrypt 2022, eprint 2022/537, PDF dated
+2023-07-19, 39 pp., local copy `~/ppfdaas_refs/rubato_2022_537.pdf`, sha256
+`08a398d516ba6615f80174eb020e185a2f89cf5b996b19326f8dbd910328419c`; §3.1, §3.2
+Table 2]:
 
-**Bound coverage:** Grassi et al. (CRYPTO 2023, eprint 2023/822, §6.1/7.1,
-p.22) give a key-recovery attack with complexity below the claimed security
-level for five of the six Rubato family members, for ≥25% of modulus
-choices. For Rubato-128L specifically, the paper states the attack's bound
-**"cannot be established."** Read literally, that is a statement about which
-variants the published analysis covers, not an independent security proof
-for the excluded one.
+| Parameter | Value (ours) | Rubato paper, Par-128L | Verdict |
+|---|---|---|---|
+| Security λ | 128 (target) | 128 (Table 2) | matches |
+| Block (state) size n | 64 | 64 (Table 2) | matches |
+| Output length ℓ | n−4 = 60 elements | 60 (Table 2; Tr_{n,ℓ}, §3.1) | matches |
+| Rounds r | 2 | 2 (Table 2) | matches |
+| ⌈log₂ q⌉ | 25 | 25 (Table 2) | matches |
+| Plaintext modulus q | `0x1fc0001` = 33292289 (prime) | **not given**. The paper fixes ⌈log q⌉ = 25 and requires q prime (§1.3, §3.1; App. C uses q > 2^20) | exact integer is ckks_fv's choice (`fv_rubato.go:65`), the same prime HERA uses |
+| Gaussian noise | σ = 1.6356633496458739795537788457309656607510203877762320964302959 | αq = 4.1. Noise is D_αq "with zero mean and variance (αq)²/2π" (§3.1), so σ = αq/√(2π) = 4.1/√(2π) = 1.6356633… | matches (paper gives αq; the σ digits are ckks_fv's evaluation of it) |
+| MDS matrix | 8-tap circulant [5,3,4,3,6,2,1,1] (`rubato.go:252`) | y8 = [5,3,4,3,6,2,1,1] (§3.1) | matches |
+| Counter in XOF input | nonce‖counter | z[ctr] = Rubato[k, nc‖ctr](ic) (§3.1) | matches |
+| HE parameters | `RtFRubatoParams[0]` "128af" | "the RtF parameter Par-128a in [25]" (§5; App. F) | see §8.8 on 128af ↔ Par-128a |
 
-**This repo can only support the following claim: Rubato-128L as
-implemented above is NOT COVERED BY the Grassi et al. published bound.**
-That is a different claim from "Rubato-128L IS SECURE," and only the first
-is currently supported by sources available in this repo — no independent
-security re-derivation for this exact (n=64, r=2, q=0x1fc0001) parameter set
-has been performed here. **This is the single open blocker for this
-section's use in a paper's security argument** — see
-`docs/PAPER_HANDOFF.md`.
+The paper's own security summary for Par-128L is Table 3 (§4). It gives log₂ of
+the attack complexity: Gröbner 169.6, linear cryptanalysis 349.8, Arora-Ge 129.6,
+and GCD and lattice attacks above 2^1000. The minimum is 129.6, i.e. ≥ 128. This
+is the designers' analysis.
+
+**Grassi et al. on Rubato-128L** [CONFIRMED-SOURCE: Grassi, Manterola Ayala,
+Hovd, Øygarden, Raddum, Wang, "Cryptanalysis of Symmetric Primitives over Rings
+and a Key Recovery Attack on Rubato", CRYPTO 2023, eprint 2023/822 (version
+received 2023-06-02), 43 pp., local copy `~/ppfdaas_refs/grassi_2023_822.pdf`,
+sha256 `dff9a2f7bc150c4f7b3ad41140fcda1e0ff9da35677e1115ad6e1476aa057478`].
+Read directly on 2026-11-22. This replaces the earlier "not covered by the bound"
+and "not re-verified" wording.
+
+- **What the attack needs from q (§7.1, p.24).**
+  - *Assumption 1:* some integer m divides q, with m_min ≤ m ≤ m_max.
+  - *Assumption 2:* some integer f has all prime factors ≤ m, with fm | q and
+    fm > t.
+  - The bound m_max = ⌊2^(λ/n)⌋ comes from requiring mⁿ < 2^λ (p.25). m_min is
+    found heuristically: it is the smallest m for which the noise mod m is
+    distinguishable (p.26).
+  - The attack is a brute force on the key mod a small factor m of q. It strips
+    the noise (§6.1–6.2) and then recovers the key by linearization (§6.3).
+  - Its premise is a composite q. §5.2 (p.18) notes that the original Rubato
+    allowed any 25- or 26-bit integer q.
+- **Which variants it breaks.** Rubato-80S, 80M, 80L, 128S and 128M. Abstract
+  and §1.2 (p.6): for all but one variant, at least 25% of possible q give key
+  recovery below the claimed security level. Table 5 (p.29) gives the cheapest
+  attack for each of those five, and has no 128L row.
+- **Rubato-128L is not broken.**
+  - §6.1 (p.22): the bound on m "cannot be established in the case of
+    Rubato-128L".
+  - §7.1 (p.26): for 128L, m_min > m_max, "so we do not have an attack on this
+    Rubato variant".
+  - Table 4 (p.28): the fraction of vulnerable q for 128L is **0%**, with no
+    m_min, m_max or t given. From the p.25 formula, m_max = ⌊2^(128/64)⌋ = 4.
+    That arithmetic is ours.
+  - The attack fails at the noise-removal step. With the noise removed,
+    linearizing 128L would cost 2^54.98 per prime factor of q (Table 3, p.24).
+- **Prime q (§8.1, p.29–30).** The paper's first countermeasure is to restrict
+  q to be prime. Its reason: the attack assumes q has small factors, so prime q
+  gives instances "immune to any small-factor attack". The paper stresses that
+  primality is a security requirement for Rubato. For FV, a prime plaintext
+  modulus is only an efficiency choice (§5.2, p.18–19; §8.1).
+  - App. H (p.41): for prime q of 25 or 26 bits, the matrices M_v (v = 4, 6, 8)
+    are always invertible and MDS. Composite q can break this (§5.3, p.19–20,
+    Table 2).
+  - Our q = 0x1fc0001 is prime, so neither Assumption 1 nor the non-MDS concern
+    applies to it.
+- **Where the figures apply.** Table 4's percentages range from 25% (80M,
+  80L) to 58.47% (128S). They come from an exhaustive search over 25-bit
+  integers, and over 26-bit integers for 80S and 128S (p.26). The general
+  "≥25%" is the minimum over the five broken variants. It does **not** apply to
+  Rubato-128L, and it does not apply to prime q for any variant.
+
+**What this repo can state, and nothing beyond it.** Grassi et al. present no
+attack on Rubato-128L at any modulus: 0% of q, Table 4. They state that prime q
+is immune to their small-factor attack on every variant (§8.1). The
+implemented parameters use a prime q. The paper is an attack paper. It does not
+claim or prove that Rubato-128L is secure, and §1.2 (p.5) explicitly leaves
+statistical attacks over rings for future work. The only positive security
+analysis for Par-128L in hand is the designers' own (Rubato Table 3, above).
+This repo has no independent security analysis of the exact (n=64, r=2,
+q=0x1fc0001) set. Any paper claim stronger than the above is still blocked
+on that analysis; see `docs/PAPER_HANDOFF.md`.
 
 ## §8.9 Bandwidth comparison
 

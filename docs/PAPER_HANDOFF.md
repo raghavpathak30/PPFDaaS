@@ -137,25 +137,34 @@ still holds and is unaffected by this finding.
 ## Rubato-128L security status — the open blocker for this section
 
 This is the one item in this handoff that is not a measurement gap but an
-**analysis** gap, and it is the single thing standing between the current
-repo state and a citable security paragraph for Rubato-128L:
+**analysis** gap. Since 2026-11-22, a citable paragraph exists for what the
+attack literature establishes about Rubato-128L (below). Any claim stronger
+than that is still blocked on analysis this repo does not have:
 
 - The parameter set actually implemented and benchmarked is Rubato-128L:
   **n=64, r=2, q=0x1fc0001, σ≈1.6357** (`tools/transciphering/cipher/rubato.go` lines 78-86).
-- Grassi et al. (CRYPTO 2023, eprint 2023/822, §6.1/7.1, p.22) give a
-  key-recovery attack breaking five of the six Rubato family members for
-  ≥25% of modulus choices. For Rubato-128L specifically, the paper states
-  the attack's bound **"cannot be established."**
-- The only claim this repo currently supports is: **Rubato-128L as
-  implemented above is NOT COVERED BY the Grassi et al. published bound.**
-  That is a strictly weaker claim than "Rubato-128L is secure." No
-  independent security re-derivation for this exact parameter set has been
+- Grassi et al. (CRYPTO 2023, eprint 2023/822), read directly 2026-11-22, give a key-recovery
+  attack below the claimed security level for five of the six Rubato
+  variants (80S/M/L, 128S/M).
+  - It requires a composite q with a small factor m ∈ [m_min, m_max] and a
+    smooth cofactor (§7.1 Assumptions 1–2, p.24).
+  - 25%–58.47% of q are vulnerable per broken variant (Table 4). "≥25%" is
+    the general figure (abstract; §1.2).
+  - **For Rubato-128L they have no attack.** m_min > m_max (§7.1, p.26; §6.1,
+    p.22), so 0% of q is vulnerable (Table 4, p.28).
+  - Restricting q to primes makes Rubato immune to the attack (§8.1,
+    p.29–30), and q = 0x1fc0001 is prime.
+- What this repo can state: **Grassi et al. present no attack on Rubato-128L,
+  and our prime q is outside their attack's preconditions.** That is the
+  absence of a published attack, not "Rubato-128L is secure". The only
+  positive analysis in hand is the designers' (Rubato Table 3). No
+  independent security analysis for this exact parameter set has been
   performed anywhere in this repo.
 - Full statement and citation: `docs/spec.md` §8.8.1;
   `PPFDaaS_REMEDIATION_PLAN.md` §7.2 addendum.
 
-**For the paper: write "not covered by the published attack bound," not
-"secure."** If the paper's security section needs the stronger claim, that
+**For the paper: write "no attack in Grassi et al. (0% of q for
+Rubato-128L; prime q immune, §7.1 and §8.1)", not "secure."** If the paper's security section needs the stronger claim, that
 requires either an independent cryptanalytic argument (out of scope for
 this repo as it stands) or reframing Rubato-128L strictly as a performance/
 feasibility comparison point against HERA-16, not as a proposed production

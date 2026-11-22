@@ -17,7 +17,7 @@ import (
 // Eurocrypt 2022; eprint 2022/537), the noisy-keystream sibling of HERA used
 // in the RtF transciphering framework.
 //
-// Parameters (third_party/RtF-Transciphering/ckks_fv/fv_rubato.go:48-53,
+// Parameters (third_party/RtF-Transciphering/ckks_fv/fv_rubato.go:62-68,
 // RubatoParams[RUBATO128L], at the pinned SHA
 // 105fc73115b56f1d6ff357029c7682b19a6d8510):
 //   - State (block) size n = 64
@@ -28,12 +28,20 @@ import (
 //   - Output length: n-4 = 60 elements (the last 4 state elements are
 //     internal-diffusion-only and discarded)
 //
-// Variant choice: Grassi et al. (CRYPTO 2023, eprint 2023/822 §6.1/7.1, p.22)
-// give a key-recovery attack with complexity below the claimed security
-// level for five of the six Rubato variants. For Rubato-128L specifically,
-// the paper states the attack's bound "cannot be established" -- i.e.
-// Rubato-128L is NOT COVERED by this attack's established bound (not the
-// same as proven secure). See cipher/backend.go's package doc.
+// Against the Rubato paper (full version, eprint 2022/537, §3.1-3.2 Table
+// 2, Par-128L): n=64, l=60, r=2 and ceil(log2 q)=25 all match. sigma matches
+// the paper's alpha*q = 4.1 via variance (alpha*q)^2/(2*pi), so sigma =
+// 4.1/sqrt(2*pi). The paper requires q prime but gives no integer, so
+// q = 0x1fc0001 is ckks_fv's choice.
+//
+// Variant choice: Grassi et al. (CRYPTO 2023, eprint 2023/822) break five
+// of the six Rubato variants (80S/M/L, 128S/M) for composite q with small
+// factors (§7.1 Assumptions 1-2, p.24; 25%-58.47% of q per variant, Table
+// 4). They report no attack on Rubato-128L: m_min > m_max, and Table 4
+// gives 0% of q vulnerable (§7.1, p.26; §6.1, p.22). Prime q is immune to
+// their small-factor attack (§8.1, p.29-30), and q = 0x1fc0001 is prime.
+// This is the absence of an attack, not a proof of security. See
+// docs/spec.md §8.8.1.
 //
 // Round-key derivation matches ckks_fv exactly: SHAKE256(nonce || counter)
 // seeds an XOF, and sampleZqx-drawn scalars are multiplied against each key

@@ -14,7 +14,7 @@ Epistemics legend (unchanged from v1/v2): **[CONFIRMED-RAN]** verified by execut
 |---|---|---|---|
 | 1 | B1: CoeffsToSlotsModuli for 128as — exact count/bit-widths | **CLOSED → [CONFIRMED-SOURCE]** (rtf_params.go, line 520–527: 4 × 58-bit) | §B1 |
 | 2 | B1: KeySwitchModuli count for 128as | **CORRECTED** — v2 (session summary) said 5 primes; actual file shows **4 primes** × 61-bit | §B1 |
-| 3 | B5: RtF Table 5 server-side timing rows | **DEAD END** — HTTP 403 on eprint, Springer, ASIACRYPT slides, eprint 2025/669, eprint 2025/071; upgraded from "not yet fetched" to "no accessible mirror found" | §B5 |
+| 3 | B5: RtF Table 5 server-side timing rows | **DEAD END** — HTTP 403 on eprint, Springer, ASIACRYPT slides, eprint 2025/669, eprint 2025/071; upgraded from "not yet fetched" to "no accessible mirror found". **[SUPERSEDED 2026-11-22: paper read directly; Table 5 available — see §B5 note]** | §B5 |
 | 4 | B5: Presto §V software-baseline recoverable as server-side timing | **WRONG — CORRECTED** — Presto §V measures CLIENT-SIDE HERA stream-key generation, not server-side HE evaluation; v2 §B5's "×3–5" claim is retracted | §B5 |
 | 5 | B3: r7i cloud SKU starting tier | **UPDATED** — r7i.2xlarge (64 GiB) is bare-minimum-with-no-margin given ~60 GB RAM anchor; real starting tier is r7i.4xlarge (128 GiB) | §B3 |
 
@@ -47,7 +47,11 @@ This closes the single remaining UNVERIFIED gap from v2. HalfBoot depth for 128a
 
 **Correction to v2/session-summary KeySwitchModuli claim:** The session summary stated "KeySwitchModuli P: 5 primes × 61-bit = 305 bits" for 128as. The actual file shows **4 primes × 61-bit = 244 bits** for 128as (entries 128f and 128s, which share a different parameter set, do have 5 KeySwitchModuli; 128af and 128as both have 4). The 5-prime figure applies to `RtFHeraParams[0]` (128f) and `RtFHeraParams[1]` (128s) only.
 
-**NAMING TRAP [CONFIRMED-SOURCE]:** ALL four `RtFHeraParams` entries (128f, 128s, 128af, 128as) have `LogN: 16` (N = 65,536). The "80" in `BenchmarkRtFHera80as` and the "128" in the HE parameter name refer to different things. "80"/"128" in the benchmark name = symmetric cipher security level (HERA-80 vs HERA-128). "128" in the HE parameter name (128f, 128s, 128af, 128as) refers to the HE parameter family label, not the ring security level. LogN=16 is the same ring for every HERA configuration. Sparse LogSlots=4 (16 active slots) does NOT change the ring dimension and therefore does not rescue RAM: the BSGS CoeffsToSlots butterfly operates on the full N=65,536 ring.
+**NAMING TRAP [CONFIRMED-SOURCE]:** ALL four `RtFHeraParams` entries (128f, 128s, 128af, 128as) have `LogN: 16` (N = 65,536). The "80" in `BenchmarkRtFHera80as` and the "128" in the HE parameter name refer to different things. "80"/"128" in the benchmark name = symmetric cipher security level (HERA-80 vs HERA-128). "128" in the HE parameter name (128f, 128s, 128af, 128as) refers to the HE parameter family label, not the ring security level. LogN=16 is the same ring for every HERA configuration. **[CORRECTED 2026-11-22]** The
+"family label, not a security level" reading is withdrawn. In the paper, "128"
+in Par-128* is λ, the cipher security level. The paper also states that all its
+sets use 128-bit HE parameters (Cho et al. §4.1, §5.1, Table 4). See the naming
+note in `docs/spec.md` §8.3. Sparse LogSlots=4 (16 active slots) does NOT change the ring dimension and therefore does not rescue RAM: the BSGS CoeffsToSlots butterfly operates on the full N=65,536 ring.
 
 **BSGS Galois key count and RAM [UNVERIFIED — key count derivation not confirmed by code read, only by first-principles estimate]:**
 - Baby step = ceil(√(N/2)) = ceil(√32,768) = 182; Giant = 182 → ~364 rotation keys
@@ -65,6 +69,11 @@ This closes the single remaining UNVERIFIED gap from v2. HalfBoot depth for 128a
 **Updated recommendation: r7i.4xlarge (128 GiB) as real starting tier.** On-demand pricing for r7i.4xlarge and r7i.8xlarge NOT yet pulled (v2 only priced 64 GiB). Do not invent a price — pull from Vantage Instances before quoting. Cloud harness scaffolding at `scripts/cloud_transcipher_bench/` covers r7i.4xlarge provisioning — prepped-not-executed.
 
 ### B5. RtF Table 5 — DEAD END; Presto §V — CORRECTED
+
+**[SUPERSEDED 2026-11-22]** The RtF paper (eprint 2020/1335 full version) has
+since been read directly, and Table 5 is now available. The "dead end" below
+records a web-access failure only. See `docs/spec.md` §8.3 for the Table 5 rows
+and why they are not a drop-in value for `online_transcipher_ms`/`repacking_ms`.
 
 **[CONFIRMED-SOURCE] RtF Table 5 (eprint 2020/1335): UNREACHABLE via all accessible mirrors.**
 All paths tried this session returned HTTP 403 or equivalent access denial:
@@ -107,7 +116,7 @@ v2's C and D findings stand unchanged.
 
 ### Open items after this pass
 
-1. **[DEAD END via web]** RtF Table 5 server-side transcipher/HalfBoot timing — need institutional access or cloud execution.
+1. **[DEAD END via web — SUPERSEDED 2026-11-22: Table 5 now read; see §B5 note and `docs/spec.md` §8.3]** RtF Table 5 server-side transcipher/HalfBoot timing — need institutional access or cloud execution.
 2. **[UNVERIFIED]** Internal key-count breakdown driving the ~60 GB RAM figure — first-principles estimate of ~364 BSGS keys is plausible but not confirmed by code read (implementation may generate a different key set for sparse LogSlots=4 CoeffsToSlots).
 3. **[NOT YET EXECUTED]** Cloud benchmark: `scripts/cloud_transcipher_bench/run_benchmark.sh` on r7i.4xlarge (128 GiB), `BenchmarkRtFHera80as` with peak-RSS monitoring. Scaffolding complete — pending Raghav go-ahead.
 4. **[NOT YET PULLED]** On-demand pricing for r7i.4xlarge and r7i.8xlarge — v2 only has 64 GiB pricing.

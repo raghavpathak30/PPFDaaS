@@ -281,10 +281,12 @@ benchmarking comparison point, not as a reversal of the HERA-16 selection.
 
 **Rubato-128L status.** It passes its known-answer test against the pinned `ckks_fv`
 reference keystream (`tools/transciphering/cipher/rubato_test.go: TestRubatoKnownAnswer`) and
-the toy-scale end-to-end HE correctness harness (below). Security framing: Rubato-128L is
-**not covered by the Grassi et al. (CRYPTO 2023) attack bound**. That is a statement about
-which Rubato variants the published attack covers; no independent security analysis of this
-parameter set exists in this repo. See `docs/spec.md` §8.8 and §8.8.1.
+the toy-scale end-to-end HE correctness harness (below). Security framing: Grassi et al. (CRYPTO 2023, eprint 2023/822)
+break five of the six Rubato variants for composite q with small factors. They report **no
+attack on Rubato-128L**: m_min > m_max, so 0% of q is vulnerable (§7.1, Table 4). Prime q,
+as used here, is immune to their attack (§8.1). This is the absence of a published attack,
+not a security proof, and no independent security analysis of this parameter set exists in
+this repo. See `docs/spec.md` §8.8 and §8.8.1.
 
 **Client side: complete and measured for both ciphers** (`tools/transciphering/`, standalone
 Go module, explicitly not part of the deployed TCB — same status as
@@ -397,11 +399,13 @@ and pinned at commit `105fc73115b56f1d6ff357029c7682b19a6d8510` under `third_par
   36 cells of `artifacts/hhe_breakeven.json` have `online_transcipher_ms` and `repacking_ms`
   = `"PENDING"`. **There is no end-to-end HHE-vs-CKKS latency verdict.**
 - Other open items: batched-reduction correctness at 256-slot blocks (everything above is
-  single-block); the toy harness runs `2x+1`, not the real fraud circuit. Two literature
-  fallbacks were checked for an external server-side number and both dead-ended (RtF Table 5
-  is unreachable — HTTP 403 on every accessible mirror; Presto measures client-side
-  stream-key generation on bank hardware, not server-side HE evaluation) — see
-  `docs/spec.md` §8.3 for the full trail.
+  single-block); the toy harness runs `2x+1`, not the real fraud circuit. One external
+  server-side number now exists: RtF Table 5 (Cho et al. 2021, eprint 2020/1335 §5.2) has
+  been read directly, superseding the earlier "HTTP 403 on every mirror" record. Par-128as:
+  offline 84.02 s and online 14.31 s, on an AMD Ryzen 7 2700X, single-threaded. Its
+  offline/online split differs from this repo's columns, so it is a literature anchor, not
+  a fill for the PENDING cells. Presto measures client-side stream-key generation on bank
+  hardware, not server-side HE evaluation. See `docs/spec.md` §8.3.
 
 **The honest framing of this arm's current contribution is bandwidth reduction, not
 latency.** §8.10 additionally shows the CPU-time motivation for HHE is regime-dependent, not

@@ -13,19 +13,25 @@
 //
 // Cipher choice (§7.2): HERA-16 and Rubato128L, both benchmarked.
 //   - Rubato: Grassi et al. (CRYPTO 2023, eprint 2023/822) give a key
-//     recovery attack with complexity below the claimed security level for
-//     five of the six Rubato variants (§6-7). For Rubato-128L specifically,
-//     the paper states the attack's bound "cannot be established" (p.22,
-//     §6.1/7.1) — i.e. Rubato-128L is NOT COVERED by this attack's
-//     established bound. That is not the same as proven secure; it is the
-//     basis for benchmarking Rubato-128L here rather than the other five
-//     variants.
+//     recovery attack below the claimed security level for five of the six
+//     Rubato variants (80S/M/L, 128S/M). It works only for composite q with
+//     suitable small factors (§7.1 Assumptions 1-2; Table 4: 25%-58.47% of q
+//     per variant). They report no attack on Rubato-128L: m_min > m_max, and
+//     0% of q is vulnerable (§7.1, p.26; Table 4, p.28). Prime q is immune to
+//     the attack (§8.1, p.29-30), and q = 0x1fc0001 is prime. This is the
+//     absence of an attack, not a proof of security. It is the basis for
+//     benchmarking Rubato-128L here rather than the other five variants.
 //   - Elisabeth-4: broken (Cosseron et al.).
-//   - HERA-16 (m=16, r=5, t=0x1fc0001): algebraic analysis found round-key
-//     collisions but current parameters remain secure. r=5 matches
-//     RtFHeraParams[3] ("128as"), the HE-side 128-bit target — the
-//     original HERA-16 spec used r=4. Best-studied HHE cipher for
-//     CKKS-adjacent workflows.
+//   - HERA-16 (m=16, r=5, t=0x1fc0001): the designers recommend r=5 for
+//     128-bit cipher security, assuming t > 2^16 (Cho et al., ASIACRYPT 2021,
+//     eprint 2020/1335 full version, §4.3 Table 3; Table 4 Par-128a and
+//     Par-128as both have r=5). The original HERA spec has r=4 only for its
+//     80-bit sets (Table 4, Par-80*), not for 128-bit. RtFHeraParams[3]
+//     ("128as") holds HE parameters only. The paper says all its sets use
+//     128-bit HE parameters (§5.1), and ckks_fv runs this one entry with r=4
+//     in BenchmarkRtFHera80as and r=5 in BenchmarkRtFHera128as
+//     (RtF_bench_test.go:31,51). No third-party analysis of HERA is cited in
+//     this repo.
 package cipher
 
 import "errors"
