@@ -72,3 +72,4 @@ third_party/*
 
 # Stray build outputs not covered above
 tools/local_benchmark/precision_probe
+env_check.txt
